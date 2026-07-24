@@ -1,4 +1,3 @@
-// app/login/page.tsx
 'use client'
 
 import { useState } from 'react'
@@ -57,7 +56,6 @@ export default function LoginPage() {
 
     return (
         <div className='flex min-h-screen'>
-            {/* left panel: login form */}
             <div className='flex flex-1 items-center justify-center bg-[#f4f2ec] px-6 py-12'>
                 <div className='w-full max-w-sm'>
                     <div className='mb-8 flex items-center gap-2.5'>
@@ -121,126 +119,6 @@ export default function LoginPage() {
                         </button>
                     </form>
                 </div>
-            </div>
-
-            {/* right panel: meter -> gateway -> cloud data flow */}
-            <div className='relative hidden w-[42%] flex-col justify-between overflow-hidden bg-[#0f2b22] px-12 py-10 text-white md:flex'>
-                <div
-                    className='pointer-events-none absolute inset-0 opacity-[0.06]'
-                    style={{
-                        backgroundImage:
-                            'linear-gradient(#fff 1px, transparent 1px), linear-gradient(90deg, #fff 1px, transparent 1px)',
-                        backgroundSize: '28px 28px',
-                    }}
-                />
-
-                <div className='relative'>
-                    <p className='font-mono text-xs uppercase tracking-[0.2em] text-white/40'>Data pipeline</p>
-                    <h1 className='mt-3 text-2xl font-semibold leading-snug tracking-tight'>
-                        智慧勾表數據，
-                        <br />
-                        即時上傳雲端。
-                    </h1>
-                </div>
-
-                <div className='relative flex items-center justify-center py-6'>
-                    <svg viewBox='0 0 340 240' className='w-full max-w-xs'>
-                        {meters.map((m) => (
-                            <g key={m.label}>
-                                <line
-                                    x1='60'
-                                    y1={m.y}
-                                    x2='170'
-                                    y2='115'
-                                    stroke='rgba(255,255,255,0.15)'
-                                    strokeWidth='1'
-                                />
-                                <line
-                                    x1='60'
-                                    y1={m.y}
-                                    x2='170'
-                                    y2='115'
-                                    stroke='#4ade80'
-                                    strokeWidth='1.5'
-                                    strokeDasharray='4 6'
-                                    className='flow-line'
-                                />
-                                <circle cx='60' cy={m.y} r='4' fill='#f4f2ec' />
-                                <text
-                                    x='48'
-                                    y={m.y}
-                                    textAnchor='end'
-                                    fontSize='9'
-                                    fontFamily='var(--font-mono)'
-                                    fill='rgba(255,255,255,0.55)'>
-                                    {m.label}
-                                </text>
-                            </g>
-                        ))}
-
-                        <rect
-                            x='150'
-                            y='95'
-                            width='40'
-                            height='40'
-                            rx='6'
-                            fill='#163a2e'
-                            stroke='#4ade80'
-                            strokeWidth='1.5'
-                        />
-                        <text
-                            x='170'
-                            y='119'
-                            textAnchor='middle'
-                            fontSize='9'
-                            fontFamily='var(--font-mono)'
-                            fill='#4ade80'>
-                            GW
-                        </text>
-
-                        <line x1='190' y1='115' x2='290' y2='115' stroke='rgba(255,255,255,0.15)' strokeWidth='1' />
-                        <line
-                            x1='190'
-                            y1='115'
-                            x2='290'
-                            y2='115'
-                            stroke='#4ade80'
-                            strokeWidth='1.5'
-                            strokeDasharray='4 6'
-                            className='flow-line'
-                        />
-
-                        <circle cx='305' cy='115' r='16' fill='#163a2e' stroke='#4ade80' strokeWidth='1.5' />
-                        <text
-                            x='305'
-                            y='118'
-                            textAnchor='middle'
-                            fontSize='8'
-                            fontFamily='var(--font-mono)'
-                            fill='#4ade80'>
-                            雲
-                        </text>
-                    </svg>
-                </div>
-
-                <div className='relative flex items-center gap-2 text-xs text-white/40'>
-                    <span className='relative flex h-2 w-2'>
-                        <span className='absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75' />
-                        <span className='relative inline-flex h-2 w-2 rounded-full bg-emerald-400' />
-                    </span>
-                    <span className='font-mono'>Edge service 連線正常</span>
-                </div>
-
-                <style jsx>{`
-                    .flow-line {
-                        animation: flow 1.4s linear infinite;
-                    }
-                    @keyframes flow {
-                        to {
-                            stroke-dashoffset: -20;
-                        }
-                    }
-                `}</style>
             </div>
         </div>
     )
