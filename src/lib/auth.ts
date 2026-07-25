@@ -28,10 +28,10 @@ export const authOptions: NextAuthOptions = {
                     console.log("API RESULT:", result)
             
                     return {
-                        id: String(result.data.user.id),
-                        name: result.data.user.username,
-                        role: result.data.user.role,
-                        accessToken: result.data.token,
+                        id: String(result.user.id),
+                        name: result.user.username,
+                        role: result.user.role,
+                        accessToken: result.token,
                     }
             
                 } catch (err) {

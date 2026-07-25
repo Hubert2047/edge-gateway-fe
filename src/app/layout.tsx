@@ -1,22 +1,24 @@
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
-import { AuthProvider } from '@/components/providers/session-provider'
+import type { Metadata } from 'next'
+import { Geist, Geist_Mono } from 'next/font/google'
 import './globals.css'
-import { Inter, IBM_Plex_Mono } from 'next/font/google'
+import { AuthSessionProvider } from '@/components/providers/session-provider'
+import { AppShell } from '@/components/layouts/app-shell'
 
-const inter = Inter({ subsets: ['latin'], variable: '--font-sans' })
-const plexMono = IBM_Plex_Mono({
-    subsets: ['latin'],
-    weight: ['400', '500', '600'],
-    variable: '--font-mono',
-})
-export default async function RootLayout({ children }: { children: React.ReactNode }) {
-    const session = await getServerSession(authOptions)
+const geistSans = Geist({ variable: '--font-sans', subsets: ['latin'] })
+const geistMono = Geist_Mono({ variable: '--font-geist-mono', subsets: ['latin'] })
 
+export const metadata: Metadata = {
+    title: 'MMold Edge',
+    description: 'MMold Edge Gateway Management',
+}
+
+export default function RootLayout({ children }: { children: React.ReactNode }) {
     return (
-        <html lang='zh-TW'>
-            <body className={`${inter.variable} ${plexMono.variable} font-sans`}>
-                <AuthProvider session={session}>{children}</AuthProvider>
+        <html lang="zh-Hant">
+            <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
+                <AuthSessionProvider>
+                    <AppShell>{children}</AppShell>
+                </AuthSessionProvider>
             </body>
         </html>
     )
