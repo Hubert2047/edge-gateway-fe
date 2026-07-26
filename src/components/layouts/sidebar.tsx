@@ -80,7 +80,7 @@ export function Sidebar() {
                     </div>
                     <button
                         onClick={() => signOut({ callbackUrl: '/login' })}
-                        className="cursor-pointer rounded-md bg-sidebar-accent px-3 py-1.5 text-xs hover:bg-sidebar-accent/80"
+                        className="cursor-pointer bg-sidebar-accent px-3 py-1.5 text-xs hover:bg-sidebar-accent/80"
                     >
                         登出
                     </button>

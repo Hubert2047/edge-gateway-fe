@@ -1,49 +1,197 @@
 # AGENTS.md — EDGE-GATEWAY-FE
 
 ## Tech stack
-- Next.js (App Router) — version: TODO
+- Next.js (App Router)
 - TypeScript
-- Auth: NextAuth (`api/auth/[...nextauth]/route.ts`)
-- Styling: TODO (Tailwind? CSS Modules? styled-components?)
-- UI kit: TODO (shadcn/ui? Radix? MUI? tự viết components/?)
-- Data fetching: TODO (fetch thuần + useEffect? SWR? React Query?)
-- Backend API base: TODO (vd. https://api.mmold.com/api/v1)
+- Auth: NextAuth (`app/api/auth/[...nextauth]/route.ts`), session-based, redirect to sign-in on 401/expired session
+- Styling: Tailwind CSS
+- UI kit: shadcn/ui (`components/ui/`)
+- Data fetching:
+  - Server Components: plain `fetch` wrapped in `lib/api/server.ts`'s `serverApiFetch()`
+  - Client Components: **TanStack Query (react-query)**, via per-feature hooks in `lib/api/<feature>.queries.ts`
+- Backend API base: for now set via `BACKEND_URL` in `.env.local`, read server-side only in `lib/api/server.ts` (never exposed to the browser)
 
-## Cấu trúc thư mục
+## Data flow pattern (important)
+This app does NOT call the Go backend directly from the browser. Instead:
+
+1. **Server Components** (e.g. `page.tsx`) fetch initial data via a `*.server.ts` file
+   (e.g. `lib/api/hub.server.ts` → `getHubs()`, `lib/api/cloud-target.server.ts` → `getCloudTargets()`),
+   which talks to the Go backend server-side via `lib/api/server.ts`'s `serverApiFetch()`
+   (uses `BACKEND_URL` env var + session `accessToken`). This initial data is passed down as
+   `initialData` into the corresponding react-query hook so the first render has no loading state.
+2. **Client Components** (e.g. `gateway-list.tsx`, `cloud-target-list.tsx`) call react-query hooks
+   from `lib/api/<feature>.queries.ts` (e.g. `useCloudTargets`, `useCreateCloudTarget`,
+   `useUpdateCloudTarget`, `useDeleteCloudTarget`) instead of calling API functions directly.
+3. Those hooks internally call the existing thin wrapper functions in `lib/api/<feature>.ts`
+   (e.g. `getCloudTargets`, `createCloudTarget`, `updateCloudTarget`, `deleteCloudTarget`), which
+   still use `apiFetch()` from `lib/api/client.ts` against **internal Next.js API routes**
+   (e.g. `/api/cloud-targets`) — never the Go backend directly. `lib/api/<feature>.ts` is unchanged;
+   react-query hooks are a layer on top of it, not a replacement for it.
+4. Those internal API routes (`app/api/hubs/route.ts`, `app/api/cloud-targets/route.ts`, etc.)
+   act as a proxy: they use `lib/api/route-handler.ts`'s `handleRoute()` wrapper (catches
+   `ServerApiError`, returns consistent JSON error shape) and internally call
+   `serverApiFetch()` from `lib/api/server.ts`, same as step 1.
+
+So each CRUD feature typically has:
+- `types/<feature>.ts` — entity + form value types
+- `lib/api/<feature>.ts` — client-side functions using `apiFetch`, hit `/api/<feature>` routes
+- `lib/api/<feature>.queries.ts` — react-query layer: query key factory + `useQuery`/`useMutation`
+  hooks wrapping the functions in `lib/api/<feature>.ts` (see Query layer section below)
+- `lib/api/<feature>.server.ts` — server-side function(s) for initial page load (Server Components)
+- `app/api/<feature>/route.ts` + `app/api/<feature>/[id]/route.ts` (+ nested action routes like
+  `[id]/test/route.ts` when needed) — Next.js route handlers proxying to Go backend
+- `components/<feature>/<feature>-list.tsx` — client component: table + inline edit forms +
+  create form + confirm dialogs, driven by the feature's react-query hooks (see
+  `cloud-target-list.tsx` as reference)
+- `app/<feature>/page.tsx` — Server Component, calls `.server.ts` getter, renders `<FeatureList>`
+  with the server-fetched data as `initialData`/`initialTargets` prop
+
+## Query layer (`lib/api/<feature>.queries.ts`)
+- Query keys use a small factory per feature, e.g.:
+  ```ts
+  export const cloudTargetKeys = {
+    all: ['cloud-targets'] as const,
+    list: () => [...cloudTargetKeys.all, 'list'] as const,
+  }
+  ```
+- List hook (`useCloudTargets`, `useHubs`) takes the server-fetched array as `initialData` and
+  polls with `refetchInterval: 30_000`.
+- Mutations follow one of two patterns:
+  - **Simple invalidate** (create, delete, test-connection): `onSuccess` (or nothing, for
+    read-only actions like test connection) just calls
+    `queryClient.invalidateQueries({ queryKey: <feature>Keys.list() })`.
+  - **Optimistic update** (update/save, toggle `enabled`): `onMutate` cancels in-flight list
+    queries, snapshots the previous list with `getQueryData`, and writes the optimistic result
+    with `setQueryData`; `onError` rolls back to the snapshot; `onSettled` invalidates the list
+    to reconcile with the server.
+- `QueryProvider` (`components/providers/query-provider.tsx`) wraps the app with a client-scoped
+  `QueryClient` (`staleTime: 10_000`, `refetchOnWindowFocus: true`) — created once via
+  `useState(() => new QueryClient(...))` so it isn't recreated on re-render.
+
+## Backend response envelope & how the client layer handles it
+The Go backend (`edge-gateway`) is migrating all endpoints to a consistent envelope:
+
+```json
+// success
+{ "ok": true, "data": <payload> }
+
+// error
+{ "ok": false, "message": "<error message>" }
+```
+
+- `CloudTarget` handlers already use this envelope. `Hub` handlers are legacy
+  (still return raw arrays/objects, and `{ "message": ... }` on error) and will be
+  migrated later.
+- `serverApiFetch()` (`lib/api/server.ts`) handles **both formats transparently**:
+  it detects an envelope via `isEnvelope(body)` (checks for a boolean `ok` field);
+  if present, unwraps `.data` and throws using `.message` on `ok: false`; if not
+  present, falls back to treating the raw body as the payload (legacy Hub behavior).
+  Callers (`hub.server.ts`, `cloud-target.server.ts`, route handlers) don't need to
+  care which format the backend returned — they just get `T` back.
+- `apiFetch()` (`lib/api/client.ts`) does **not** need this logic — it talks to our
+  own Next.js API routes, which already return unwrapped `data` via `handleRoute()`.
+- When Hub is migrated backend-side, no FE changes are needed; the legacy branch
+  in `isEnvelope()`/`serverApiFetch()` simply stops being hit for that domain.
+
+## `apiFetch()` behavior (`lib/api/client.ts`)
+- Adds `Content-Type: application/json` automatically when a body is present.
+- On 401 / auth-expired response (checked via `isAuthError()` in `lib/utils.ts`), triggers
+  `signIn()` redirect back to current path, then throws `ApiError`.
+- Throws `ApiError` (with `status`) on any non-OK response; returns `undefined` on 204.
+- This is unchanged by the react-query migration — react-query hooks call `lib/api/<feature>.ts`
+  functions, which still go through `apiFetch()`; auth-redirect behavior is unaffected.
+
+## Confirm dialogs
+List components use a single `pendingAction` state (`{ type, id/uid, displayName } | null`) +
+one shared `<AlertDialog>` at the bottom of the component, with per-type title/description
+text (see `dialogText` map in `gateway-list.tsx` / `cloud-target-list.tsx`). Reuse this exact
+pattern for new features. Actions that don't need confirmation (e.g. toggling `enabled` via
+checkbox, test connection) run immediately without a dialog, via the mutation hook directly.
+Per-row loading state is derived from the mutation itself, e.g.
+`updateMutation.isPending && updateMutation.variables?.id === target.id`, rather than local
+per-row boolean state.
+
+## Directory structure
 src/
-app/
-cloud-sync/
-gateways/
-history-data/
-history-events/
-meters/
-process-control/
-process-rules/
-settings/
-layout.tsx
-page.tsx
-api/
-auth/[...nextauth]/route.ts
-login/
-page.tsx
-globals.css
-layout.tsx
-page.tsx
-components/
-lib/
-api/
-auth.ts # TODO: mô tả chức năng
-client.ts # TODO: mô tả chức năng
-auth.ts
-utils.ts
-types/
-auth.ts
-next-auth.d.ts
-proxy.ts
+  app/
+    api/
+      auth/[...nextauth]/route.ts
+      hubs/
+        [uid]/route.ts
+        route.ts
+      cloud-targets/
+        [id]/
+          route.ts
+          test/route.ts
+        route.ts
+    cloud-sync/
+      page.tsx        # renders CloudTargetList, fed by getCloudTargets()
+    gateways/
+      page.tsx
+    history-data/
+    history-events/
+    login/
+      page.tsx
+    meters/
+    process-control/
+    process-rules/
+    settings/
+      page.tsx
+    globals.css
+    layout.tsx
+    page.tsx
+  components/
+    cloud-sync/
+      cloud-target-list.tsx   # list + inline edit + create form + test connection (react-query)
+    gateways/
+      gateway-list.tsx        # reference pattern for new list+CRUD components
+    layouts/
+      app-shell.tsx
+      sidebar.tsx
+    providers/
+      query-provider.tsx      # TanStack QueryClientProvider — see Query layer section above
+      session-provider.tsx
+    ui/           # shadcn: alert-dialog, badge, button, card, checkbox, dialog,
+                  # dropdown-menu, input, label, select, separator, switch, table
+  lib/
+    api/
+      auth.ts             # TODO: describe purpose
+      client.ts           # apiFetch() — see above
+      cloud-target.queries.ts # react-query hooks: useCloudTargets, useCreateCloudTarget,
+                               # useUpdateCloudTarget, useDeleteCloudTarget, useTestCloudTargetConnection
+      cloud-target.server.ts  # getCloudTargets()
+      cloud-target.ts          # createCloudTarget/updateCloudTarget/deleteCloudTarget/testCloudTargetConnection
+      hub.queries.ts       # react-query hooks: useHubs, useCreateHub, useUpdateHub, useDeleteHub
+      hub.server.ts        # getHubs(), getHub()
+      hub.ts               # createHub/updateHub/deleteHub
+      route-handler.ts       # handleRoute() wrapper for API route handlers
+      server.ts               # serverApiFetch() — see envelope section above
+    auth.ts
+    utils.ts        # includes isAuthError()
+  types/
+    auth.ts
+    cloud-target.ts  # CloudTarget, CloudTargetFormValues, TestConnectionResult
+    hub.ts          # Hub, HubFormValues — reference shape for new entity types
+    next-auth.d.ts
+  proxy.ts
+
 ## Convention
-- Mỗi thư mục trong cung level voi app là 1 module tính năng, tự chứa page + component con nếu có.
-- Gọi API qua `lib/api/client.ts` — TODO: mô tả cách xử lý token/interceptor.
-- Auth session lấy qua `lib/auth.ts` — TODO: NextAuth config (provider, callback, session strategy).
-- i18n: TODO (next-intl? i18next? hard-code phồn thể trực tiếp?)
-- Không dùng comment trong code trừ khi thật cần thiết.
-- Ưu tiên viết lại toàn bộ file khi sửa lớn, thay vì diff nhỏ lẻ (theo yêu cầu riêng của bạn).
+- Each folder at the same level as root `app/` pages is a self-contained feature module
+  (page + local sub-components).
+- Client-side data access goes through react-query hooks in `lib/api/<feature>.queries.ts`;
+  those hooks call `lib/api/<feature>.ts`'s functions, which use `apiFetch()`
+  (`lib/api/client.ts`). Server-side data access uses `lib/api/server.ts`'s `serverApiFetch()`.
+  Components should not call `apiFetch()` or the `lib/api/<feature>.ts` functions directly —
+  go through the query/mutation hooks so caching/invalidation stays consistent.
+- Auth session is read via `lib/auth.ts` — TODO: document NextAuth config (provider, callbacks,
+  session strategy).
+- i18n: none — UI strings are hard-coded Traditional Chinese directly in components.
+- Avoid code comments unless truly necessary.
+- Prefer rewriting the whole file on major changes, rather than small diffs (per your own preference).
+
+## Known TODOs / not yet implemented
+- Cloud-sync "執行佇列上傳" (run queued uploads) button — no backend endpoint yet
+  (depends on an offline-buffer/upload-worker module planned backend-side). Currently
+  a no-op placeholder in `cloud-target-list.tsx`.
+- `pendingCount` / queue count on `CloudTarget` — backend field not implemented yet either
+  (see backend AGENTS.md poller/cloud-target notes).

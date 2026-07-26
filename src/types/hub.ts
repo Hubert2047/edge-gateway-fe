@@ -1,5 +1,5 @@
 export interface Hub {
-    id: number
+    uid: string
     hubName: string
     hubIp: string
     hubPort: number
@@ -11,6 +11,7 @@ export interface Hub {
 }
 
 export interface HubFormValues {
+    uid?: string
     hubName: string
     hubIp: string
     hubPort: number

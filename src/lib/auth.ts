@@ -15,23 +15,18 @@ export const authOptions: NextAuthOptions = {
             },
             async authorize(credentials) {
                 if (!credentials?.username || !credentials?.password) {
-                    console.log("missing credentials")
                     return null
                 }
-            
                 try {
                     const result = await loginRequest({
                         username: credentials.username,
                         password: credentials.password,
                     })
-            
-                    console.log("API RESULT:", result)
-            
                     return {
-                        id: String(result.user.id),
-                        name: result.user.username,
-                        role: result.user.role,
-                        accessToken: result.token,
+                        id: String(result.data.user.id),
+                        name: result.data.user.username,
+                        role: result.data.user.role,
+                        accessToken: result.data.token,
                     }
             
                 } catch (err) {
