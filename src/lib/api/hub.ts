@@ -16,3 +16,6 @@ export function updateHub(uid: string, form: HubFormValues) {
 export function deleteHub(uid: string) {
     return apiFetch<void>(`/api/hubs/${uid}`, { method: 'DELETE' })
 }
+export async function syncHubMeters(uid: string): Promise<void> {
+    return apiFetch(`/api/hubs/${uid}/sync-meters`, { method: 'PUT' })
+}

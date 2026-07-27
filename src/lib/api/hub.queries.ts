@@ -1,7 +1,7 @@
 'use client'
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { getHubs, createHub, updateHub, deleteHub } from './hub'
+import { getHubs, createHub, updateHub, deleteHub, syncHubMeters } from './hub'
 import type { Hub, HubFormValues } from '@/types/hub'
 
 export const hubKeys = {
@@ -53,6 +53,15 @@ export function useDeleteHub() {
     const queryClient = useQueryClient()
     return useMutation({
         mutationFn: (uid: string) => deleteHub(uid),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: hubKeys.list() })
+        },
+    })
+}
+export function useSyncHubMeters() {
+    const queryClient = useQueryClient()
+    return useMutation({
+        mutationFn: (uid: string) => syncHubMeters(uid),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: hubKeys.list() })
         },

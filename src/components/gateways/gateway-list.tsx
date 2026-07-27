@@ -20,7 +20,7 @@ import {
     AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
 import type { Hub, HubFormValues } from '@/types/hub'
-import { useHubs, useUpdateHub, useDeleteHub, useCreateHub } from '@/lib/api/hub.queries'
+import { useHubs, useUpdateHub, useDeleteHub, useCreateHub, useSyncHubMeters } from '@/lib/api/hub.queries'
 import { formatRelativeTime, getErrorMessage } from '@/lib/utils'
 import { StatusBadge } from '../status-badge'
 
@@ -67,7 +67,7 @@ export function GatewayList({ initialHubs }: { initialHubs: Hub[] }) {
     const updateHubMutation = useUpdateHub()
     const deleteHubMutation = useDeleteHub()
     const createHubMutation = useCreateHub()
-
+    const syncHubMetersMutation = useSyncHubMeters()
     const [rowFormState, setRowFormState] = useState<Record<string, RowFormState>>({})
     const [collectingUids, setCollectingUids] = useState<Set<string>>(new Set())
 
@@ -167,17 +167,16 @@ export function GatewayList({ initialHubs }: { initialHubs: Hub[] }) {
 
         if (type === 'collect') {
             setCollectingUids((prev) => new Set(prev).add(uid))
-            try {
-                // TODO: nối API thu thập ngay khi có endpoint, ví dụ:
-                // await collectHubNow(uid)
-                console.log('collect now:', uid)
-            } finally {
-                setCollectingUids((prev) => {
-                    const next = new Set(prev)
-                    next.delete(uid)
-                    return next
-                })
-            }
+            syncHubMetersMutation.mutate(uid, {
+                onError: (err) => toast.error(getErrorMessage(err, '收集失敗')),
+                onSettled: () => {
+                    setCollectingUids((prev) => {
+                        const next = new Set(prev)
+                        next.delete(uid)
+                        return next
+                    })
+                },
+            })
         }
     }
 
@@ -229,14 +228,16 @@ export function GatewayList({ initialHubs }: { initialHubs: Hub[] }) {
                                 const saving = updateHubMutation.isPending && updateHubMutation.variables?.uid === hub.uid
                                 const collecting = collectingUids.has(hub.uid)
                                 const deleting = deletingUid === hub.uid
+                                const rowBusy = saving || collecting || deleting
                                 return (
                                     <tr
                                         key={hub.uid}
-                                        className={`border-t align-top transition-colors  ${deleting ? 'opacity-50 pointer-events-none' : ''}`}
+                                        className={`border-t align-top transition-colors ${rowBusy ? 'opacity-50 pointer-events-none' : ''}`}
                                     >
                                         <td className="p-4 space-y-2">
                                             <Checkbox
                                                 checked={form.enabled}
+                                                disabled={rowBusy}
                                                 onCheckedChange={(checked) => toggleEnabled(hub, checked === true)}
                                             />
                                             <StatusBadge enabled={form.enabled} activeLabel="監控中" />
@@ -251,6 +252,7 @@ export function GatewayList({ initialHubs }: { initialHubs: Hub[] }) {
                                                 <Input
                                                     id={`name-${hub.uid}`}
                                                     value={form.hubName}
+                                                    disabled={rowBusy}
                                                     onChange={(e) => updateRowForm(hub.uid, { hubName: e.target.value })}
                                                     className={errors.hubName ? 'border-destructive' : ''}
                                                 />
@@ -262,6 +264,7 @@ export function GatewayList({ initialHubs }: { initialHubs: Hub[] }) {
                                                     <Input
                                                         id={`ip-${hub.uid}`}
                                                         value={form.hubIp}
+                                                        disabled={rowBusy}
                                                         onChange={(e) => updateRowForm(hub.uid, { hubIp: e.target.value })}
                                                         className={errors.hubIp ? 'border-destructive' : ''}
                                                     />
@@ -273,6 +276,7 @@ export function GatewayList({ initialHubs }: { initialHubs: Hub[] }) {
                                                         id={`port-${hub.uid}`}
                                                         type="number"
                                                         value={form.hubPort}
+                                                        disabled={rowBusy}
                                                         onChange={(e) => updateRowForm(hub.uid, { hubPort: Number(e.target.value) })}
                                                         className={errors.hubPort ? 'border-destructive' : ''}
                                                     />
@@ -285,6 +289,7 @@ export function GatewayList({ initialHubs }: { initialHubs: Hub[] }) {
                                                     id={`poll-${hub.uid}`}
                                                     type="number"
                                                     value={form.pollIntervalSeconds}
+                                                    disabled={rowBusy}
                                                     onChange={(e) => updateRowForm(hub.uid, { pollIntervalSeconds: Number(e.target.value) })}
                                                     className={errors.pollIntervalSeconds ? 'border-destructive' : ''}
                                                 />
@@ -300,7 +305,7 @@ export function GatewayList({ initialHubs }: { initialHubs: Hub[] }) {
                                                 <Button
                                                     size="sm"
                                                     className="w-20"
-                                                    disabled={saving}
+                                                    disabled={rowBusy}
                                                     onClick={() => requestSave(hub)}
                                                 >
                                                     {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : '儲存'}
@@ -308,7 +313,7 @@ export function GatewayList({ initialHubs }: { initialHubs: Hub[] }) {
                                                 <Button
                                                     size="sm"
                                                     variant="secondary"
-                                                    disabled={!form.enabled || collecting}
+                                                    disabled={!form.enabled || rowBusy}
                                                     onClick={() => requestCollect(hub)}
                                                     className={
                                                         form.enabled
@@ -322,7 +327,7 @@ export function GatewayList({ initialHubs }: { initialHubs: Hub[] }) {
                                                     size="sm"
                                                     className="w-20 bg-rose-50 text-rose-600 hover:bg-rose-100 border border-rose-200"
                                                     variant="ghost"
-                                                    disabled={deleting}
+                                                    disabled={rowBusy}
                                                     onClick={() => requestDelete(hub)}
                                                 >
                                                     {deleting ? <Loader2 className="h-4 w-4 animate-spin" /> : '刪除'}
@@ -398,7 +403,7 @@ export function GatewayList({ initialHubs }: { initialHubs: Hub[] }) {
                         {newErrors.pollIntervalSeconds && <p className="text-xs text-destructive">{newErrors.pollIntervalSeconds}</p>}
                     </div>
                 </div>
-                <div className="space-y-1.5 mb-0">
+                {/* <div className="space-y-1.5 mb-0">
                     <Label htmlFor="new-note" className="text-xs text-muted-foreground">備註</Label>
                     <Input
                         id="new-note"
@@ -406,7 +411,7 @@ export function GatewayList({ initialHubs }: { initialHubs: Hub[] }) {
                         value={newForm.note}
                         onChange={(e) => updateNewForm({ note: e.target.value })}
                     />
-                </div>
+                </div> */}
                 <Button disabled={createHubMutation.isPending} onClick={createHub} size="lg" className="w-full sm:w-max">
                     {createHubMutation.isPending ? (
                         <>
