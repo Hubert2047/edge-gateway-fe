@@ -165,6 +165,8 @@ src/
       history-events-view.tsx # historical event filters and result table
     process-rules/
       process-rules-view.tsx # process rule list and create form
+    users/
+      user-management.tsx # admin-only user list, create, enable/disable, role and delete UI
   lib/
     api/
       auth.ts             # TODO: describe purpose
@@ -206,9 +208,15 @@ src/
 - `admin` can access all application pages.
 - `viewer` can access read-only/public pages: `/overview`, `/history-data`, `/history-events`,
   and `/process-control`.
-- Admin-only pages are `/cloud-sync`, `/gateways`, `/meters`, `/process-rules`, and `/settings`.
+- Admin-only pages are `/cloud-sync`, `/gateways`, `/meters`, `/process-rules`, `/users`, and `/settings`.
   They are filtered from the sidebar and protected by `src/proxy.ts` plus server-page guards.
 - If a viewer tries to open an admin-only URL directly, they are redirected to `/overview`.
+- `/users` is also admin-only and uses the backend user endpoints through Next.js proxy routes.
+- Current backend user endpoints support list/create, enabled toggle, role update, delete, and
+  admin password reset via `PUT /users/:id/password`. Username editing still needs a separate
+  endpoint if it is required later. The UI exposes only `admin` and `viewer`; `viewer` is mapped
+  to the backend's `user` role because the current database CHECK constraint allows `admin`,
+  `user`, and `readonly` only.
 
 ## Known TODOs / not yet implemented
 - Cloud-sync "執行佇列上傳" (run queued uploads) button — no backend endpoint yet

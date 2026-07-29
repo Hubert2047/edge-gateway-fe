@@ -20,6 +20,7 @@ const adminNavItems = [
     { key: 'nav.gateways', href: '/gateways' },
     { key: 'nav.meters', href: '/meters' },
     { key: 'nav.processRules', href: '/process-rules' },
+    { key: 'nav.users', href: '/users' },
     { key: 'nav.settings', href: '/settings' },
 ]
 

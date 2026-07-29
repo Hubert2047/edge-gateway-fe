@@ -1,7 +1,7 @@
 import { getToken } from 'next-auth/jwt'
 import { NextResponse, type NextRequest } from 'next/server'
 
-const adminOnlyRoutes = ['/cloud-sync', '/gateways', '/meters', '/process-rules', '/settings']
+const adminOnlyRoutes = ['/cloud-sync', '/gateways', '/meters', '/process-rules', '/users', '/settings']
 
 export async function proxy(request: NextRequest) {
     if (request.nextUrl.pathname.startsWith('/api/')) {
