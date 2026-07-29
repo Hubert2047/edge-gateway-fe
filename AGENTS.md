@@ -137,6 +137,8 @@ src/
     process-rules/
     settings/
       page.tsx
+    overview/
+      page.tsx             # operations dashboard, fed by hubs, cloud targets and meter metadata
     globals.css
     layout.tsx
     page.tsx
@@ -153,6 +155,8 @@ src/
       session-provider.tsx
     ui/           # shadcn: alert-dialog, badge, button, card, checkbox, dialog,
                   # dropdown-menu, input, label, select, separator, switch, table
+    overview/
+      overview-dashboard.tsx # operations overview UI; real-time reading fields are placeholders until backend APIs exist
   lib/
     api/
       auth.ts             # TODO: describe purpose
@@ -195,3 +199,14 @@ src/
   a no-op placeholder in `cloud-target-list.tsx`.
 - `pendingCount` / queue count on `CloudTarget` — backend field not implemented yet either
   (see backend AGENTS.md poller/cloud-target notes).
+
+## Operations overview API gaps
+- The overview page currently uses the existing `/api/hubs`, `/api/cloud-targets`, and
+  `/api/hubs/{uid}/meters` endpoints. Counts and enabled/disabled states are real data.
+- The screenshot includes gateway health/last-seen status, current readings (average current,
+  L1/L2/L3), and latest sample timestamps. No backend endpoints currently expose those fields,
+  so the UI displays `—` for them and must not fabricate values.
+- To complete the overview, add a backend/API contract for an aggregated overview response (or
+  health and latest-reading endpoints) containing gateway online/last-seen, cloud upload totals,
+  meter phase currents, and latest sample timestamps. Then add the corresponding Next.js proxy
+  route and server/client API layer before replacing the placeholders.

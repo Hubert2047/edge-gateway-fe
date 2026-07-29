@@ -122,6 +122,16 @@
         @apply border-border outline-ring/50;
         border-radius: 0 !important;
     }
+    .rounded-full {
+        border-radius: 9999px !important;
+    }
+    .sidebar-status-dot {
+        display: block;
+        width: 0.5rem;
+        height: 0.5rem;
+        flex-shrink: 0;
+        border-radius: 50% !important;
+    }
     body {
         @apply bg-background text-foreground;
     }

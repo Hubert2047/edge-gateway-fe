@@ -63,6 +63,13 @@ const messages: Record<Locale, Messages> = {
         'settings.title': '系統設定', 'settings.languageTitle': '語言',
         'settings.languageLabel': '介面語言', 'settings.zhTW': '繁體中文', 'settings.en': 'English',
         'settings.save': '儲存設定', 'settings.saved': '語言設定已儲存',
+        'overview.title': '營運總覽', 'overview.refresh': '重新整理', 'overview.gatewayOnline': '閘道器在線',
+        'overview.cloudOnline': '雲端在線', 'overview.meterCount': '智慧勾表', 'overview.uploaded': '成功投遞',
+        'overview.pending': '等待上傳', 'overview.gatewayStatus': '閘道器狀態', 'overview.cloudStatus': '雲端狀態',
+        'overview.meterStatus': '智慧勾表實時狀態', 'overview.meters': '個智慧勾表', 'overview.monitoring': '監控中',
+        'overview.online': '在線', 'overview.voltage': '電壓', 'overview.averageCurrent': '平均電流',
+        'overview.latestDataUnavailable': '最新資料：尚未提供即時讀值 API', 'overview.noGateways': '尚未設定任何本地閘道',
+        'overview.noCloudTargets': '尚未設定任何雲端服務器', 'overview.noMeters': '尚未設定任何智慧勾表',
     },
     en: {
         'nav.overview': 'Overview', 'nav.cloudSync': 'Cloud Sync', 'nav.gateways': 'Local Gateways',
@@ -119,6 +126,13 @@ const messages: Record<Locale, Messages> = {
         'settings.title': 'Settings', 'settings.languageTitle': 'Language',
         'settings.languageLabel': 'Interface language', 'settings.zhTW': '繁體中文', 'settings.en': 'English',
         'settings.save': 'Save settings', 'settings.saved': 'Language preference saved',
+        'overview.title': 'Operations overview', 'overview.refresh': 'Refresh', 'overview.gatewayOnline': 'Gateways online',
+        'overview.cloudOnline': 'Cloud targets online', 'overview.meterCount': 'Smart meters', 'overview.uploaded': 'Successful uploads',
+        'overview.pending': 'Pending uploads', 'overview.gatewayStatus': 'Gateway status', 'overview.cloudStatus': 'Cloud status',
+        'overview.meterStatus': 'Smart meter live status', 'overview.meters': 'smart meters', 'overview.monitoring': 'Monitoring',
+        'overview.online': 'Online', 'overview.voltage': 'Voltage', 'overview.averageCurrent': 'Average current',
+        'overview.latestDataUnavailable': 'Latest data: real-time readings API is not available yet', 'overview.noGateways': 'No local gateways configured',
+        'overview.noCloudTargets': 'No cloud targets configured', 'overview.noMeters': 'No smart meters configured',
     },
 }
 
