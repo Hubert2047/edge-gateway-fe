@@ -354,7 +354,7 @@ export function MeterList({ hubUid, initialMeters }: { hubUid: string; initialMe
                     </Button>
                 </div>
             </Card>
-            <Card className='flex flex-1 min-h-0 flex-col overflow-hidden border pt-0 max-md:flex-none max-md:overflow-visible'>
+            <Card className='flex flex-1 min-h-0 flex-col overflow-hidden border border-border/60 pt-0 max-md:flex-none max-md:overflow-visible'>
                 <div className='flex items-center justify-between border-b px-4 py-3'>
                     <span className='text-sm text-muted-foreground'>
                         {dirtyCount > 0 ? `${dirtyCount} 筆尚未儲存` : '所有變更已儲存'}

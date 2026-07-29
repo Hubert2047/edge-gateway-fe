@@ -120,6 +120,7 @@
 @layer base {
     * {
         @apply border-border outline-ring/50;
+        border-radius: 0 !important;
     }
     body {
         @apply bg-background text-foreground;
@@ -270,6 +271,16 @@
         flex-basis: 100%;
     }
 }
+
+.responsive-table {
+    --table-border: color-mix(in oklch, var(--border) 62%, transparent);
+}
+
+.responsive-table tr,
+.responsive-table td {
+    border-color: var(--table-border);
+}
+
 input:-webkit-autofill,
 input:-webkit-autofill:hover,
 input:-webkit-autofill:focus {

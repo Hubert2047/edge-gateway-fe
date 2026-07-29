@@ -232,7 +232,7 @@ export function CloudTargetList({ initialTargets }: { initialTargets: CloudTarge
                 </Button>
             </div>
 
-            <Card className='flex flex-1 min-h-0 flex-col overflow-hidden border pt-0 max-md:flex-none max-md:overflow-visible'>
+            <Card className='flex flex-1 min-h-0 flex-col overflow-hidden border border-border/60 pt-0 max-md:flex-none max-md:overflow-visible'>
                 <div className='flex-1 min-h-0 overflow-y-auto max-md:overflow-visible'>
                     <table className='responsive-table w-full text-sm'>
                         <colgroup>
