@@ -2,8 +2,10 @@ import { GatewayList } from '@/components/gateways/gateway-list'
 import { serverApiFetch } from '@/lib/api/server'
 import { Hub } from '@/types/hub'
 import { LocalizedText } from '@/components/i18n/localized-text'
+import { requireAdmin } from '@/lib/auth-guard'
 
 export default async function GatewaysPage() {
+    await requireAdmin()
     const hubs = await serverApiFetch<Hub[]>('/api/hubs')
 
     return (

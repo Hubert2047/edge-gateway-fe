@@ -3,8 +3,10 @@ import type { Meter } from '@/types/meter'
 import type { Hub } from '@/types/hub'
 import { MetersClient } from '@/components/meter/meters-client'
 import { LocalizedText } from '@/components/i18n/localized-text'
+import { requireAdmin } from '@/lib/auth-guard'
 
 export default async function MetersPage({ searchParams }: { searchParams: Promise<{ hubUid?: string }> }) {
+    await requireAdmin()
     const hubs = await serverApiFetch<Hub[]>('/api/hubs')
 
     if (hubs.length === 0) {

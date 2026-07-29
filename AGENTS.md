@@ -201,6 +201,15 @@ src/
 - Avoid code comments unless truly necessary.
 - Prefer rewriting the whole file on major changes, rather than small diffs (per your own preference).
 
+## Role-based access
+- Roles are normalized from the backend value to `admin` or `viewer` in `lib/roles.ts`.
+- `admin` can access all application pages.
+- `viewer` can access read-only/public pages: `/overview`, `/history-data`, `/history-events`,
+  and `/process-control`.
+- Admin-only pages are `/cloud-sync`, `/gateways`, `/meters`, `/process-rules`, and `/settings`.
+  They are filtered from the sidebar and protected by `src/proxy.ts` plus server-page guards.
+- If a viewer tries to open an admin-only URL directly, they are redirected to `/overview`.
+
 ## Known TODOs / not yet implemented
 - Cloud-sync "執行佇列上傳" (run queued uploads) button — no backend endpoint yet
   (depends on an offline-buffer/upload-worker module planned backend-side). Currently

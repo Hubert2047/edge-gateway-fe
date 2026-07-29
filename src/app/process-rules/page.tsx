@@ -2,8 +2,10 @@ import { ProcessRulesView } from '@/components/process-rules/process-rules-view'
 import { serverApiFetch } from '@/lib/api/server'
 import type { Hub } from '@/types/hub'
 import type { Meter } from '@/types/meter'
+import { requireAdmin } from '@/lib/auth-guard'
 
 export default async function ProcessRulesPage() {
+    await requireAdmin()
     const hubs = await serverApiFetch<Hub[]>('/api/hubs')
     const meterResults = await Promise.all(hubs.map((hub) => serverApiFetch<Meter[]>(`/api/hubs/${encodeURIComponent(hub.uid)}/meters`)))
 

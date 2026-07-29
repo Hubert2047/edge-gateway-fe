@@ -6,15 +6,19 @@ import { signOut, useSession } from 'next-auth/react'
 import { Menu, X } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useI18n } from '@/lib/i18n'
+import { normalizeRole } from '@/lib/roles'
 
-const navItems = [
+const publicNavItems = [
     { key: 'nav.overview', href: '/overview' },
-    { key: 'nav.cloudSync', href: '/cloud-sync' },
-    { key: 'nav.gateways', href: '/gateways' },
-    { key: 'nav.meters', href: '/meters' },
     { key: 'nav.historyData', href: '/history-data' },
     { key: 'nav.historyEvents', href: '/history-events' },
     { key: 'nav.processControl', href: '/process-control' },
+]
+
+const adminNavItems = [
+    { key: 'nav.cloudSync', href: '/cloud-sync' },
+    { key: 'nav.gateways', href: '/gateways' },
+    { key: 'nav.meters', href: '/meters' },
     { key: 'nav.processRules', href: '/process-rules' },
     { key: 'nav.settings', href: '/settings' },
 ]
@@ -29,8 +33,11 @@ export function Sidebar() {
     const { data: session } = useSession()
     const { t } = useI18n()
     const [mobileOpen, setMobileOpen] = useState(false)
+    const isAdmin = normalizeRole(session?.user?.role) === 'admin'
+    const navItems = isAdmin ? [...publicNavItems, ...adminNavItems] : publicNavItems
 
     useEffect(() => {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setMobileOpen(false)
     }, [pathname])
 
@@ -85,7 +92,7 @@ export function Sidebar() {
                 <div>
                     <p className='text-sm font-medium'>{session?.user?.name ?? 'admin'}</p>
                     <p className='text-xs uppercase text-sidebar-foreground/60'>
-                        {(session?.user as any)?.role ?? 'ADMIN'}
+                        {session?.user?.role ?? 'ADMIN'}
                     </p>
                 </div>
                 <button
