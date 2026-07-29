@@ -1,6 +1,7 @@
 'use client'
 
 import { createContext, createElement, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
+import { getStoredSettings, saveSettings } from '@/lib/settings'
 
 export type Locale = 'zh-TW' | 'en'
 
@@ -59,6 +60,9 @@ const messages: Record<Locale, Messages> = {
         'toast.statusFailed': '更新狀態失敗', 'toast.added': '新增成功', 'toast.connectionFailed': '連線失敗',
         'time.justNow': '剛剛', 'time.secondsAgo': '{count} 秒前', 'time.minutesAgo': '{count} 分鐘前',
         'time.hoursAgo': '{count} 小時前', 'time.daysAgo': '{count} 天前',
+        'settings.title': '系統設定', 'settings.languageTitle': '語言',
+        'settings.languageLabel': '介面語言', 'settings.zhTW': '繁體中文', 'settings.en': 'English',
+        'settings.save': '儲存設定', 'settings.saved': '語言設定已儲存',
     },
     en: {
         'nav.overview': 'Overview', 'nav.cloudSync': 'Cloud Sync', 'nav.gateways': 'Local Gateways',
@@ -112,11 +116,15 @@ const messages: Record<Locale, Messages> = {
         'toast.statusFailed': 'Failed to update status', 'toast.added': 'Added successfully', 'toast.connectionFailed': 'Connection failed',
         'time.justNow': 'Just now', 'time.secondsAgo': '{count}s ago', 'time.minutesAgo': '{count}m ago',
         'time.hoursAgo': '{count}h ago', 'time.daysAgo': '{count}d ago',
+        'settings.title': 'Settings', 'settings.languageTitle': 'Language',
+        'settings.languageLabel': 'Interface language', 'settings.zhTW': '繁體中文', 'settings.en': 'English',
+        'settings.save': 'Save settings', 'settings.saved': 'Language preference saved',
     },
 }
 
 type I18nContextValue = {
     locale: Locale
+    setLocale: (locale: Locale) => void
     t: (key: string, values?: Record<string, string | number>) => string
 }
 
@@ -132,14 +140,22 @@ export function I18nProvider({ children }: { children: ReactNode }) {
     const [locale, setLocale] = useState<Locale>('zh-TW')
 
     useEffect(() => {
-        const detected = detectLocale()
+        const stored = getStoredSettings().locale
+        const detected: Locale = stored === 'en' || stored === 'zh-TW' ? stored : detectLocale()
         // eslint-disable-next-line react-hooks/set-state-in-effect
         setLocale(detected)
         document.documentElement.lang = detected === 'en' ? 'en' : 'zh-Hant'
     }, [])
 
+    const changeLocale = (nextLocale: Locale) => {
+        saveSettings({ locale: nextLocale })
+        setLocale(nextLocale)
+        document.documentElement.lang = nextLocale === 'en' ? 'en' : 'zh-Hant'
+    }
+
     const value = useMemo<I18nContextValue>(() => ({
         locale,
+        setLocale: changeLocale,
         t: (key, values = {}) => {
             const template = messages[locale][key] ?? messages['zh-TW'][key] ?? key
             return template.replace(/\{(\w+)\}/g, (_, name: string) => String(values[name] ?? `{${name}}`))
