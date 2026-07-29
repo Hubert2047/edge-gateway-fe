@@ -86,6 +86,13 @@ const messages: Record<Locale, Messages> = {
         'historyData.selectMeter': '請選擇智慧勾表', 'historyData.showThreePhase': '顯示三相電流', 'historyData.query': '查詢',
         'historyData.samples': '樣本數', 'historyData.dataUnavailable': '尚未提供歷史資料 API', 'historyData.noData': '查無歷史資料',
         'historyData.time': '時間', 'historyData.voltage': '電壓', 'historyData.activePower': '有效功率', 'historyData.status': '狀態',
+        'historyEvents.title': '歷史事件', 'historyEvents.records': '筆事件', 'historyEvents.timeRange': '時間軸',
+        'historyEvents.daily': '每天（0:00–24:00）', 'historyEvents.weekly': '每週', 'historyEvents.monthly': '每月',
+        'historyEvents.date': '指定時間', 'historyEvents.gateway': '閘道器', 'historyEvents.meter': '智慧勾表',
+        'historyEvents.rule': '製程規則', 'historyEvents.allGateways': '全部閘道器', 'historyEvents.allMeters': '全部智慧勾表',
+        'historyEvents.allRules': '全部製程規則', 'historyEvents.query': '查詢', 'historyEvents.noData': '查無歷史事件',
+        'historyEvents.time': '時間', 'historyEvents.ruleName': '規則名稱', 'historyEvents.metric': '分析指標',
+        'historyEvents.triggerValue': '觸發值', 'historyEvents.threshold': '閾值', 'historyEvents.reason': '觸發原因',
     },
     en: {
         'nav.overview': 'Overview', 'nav.cloudSync': 'Cloud Sync', 'nav.gateways': 'Local Gateways',
@@ -165,6 +172,13 @@ const messages: Record<Locale, Messages> = {
         'historyData.selectMeter': 'Select smart meter', 'historyData.showThreePhase': 'Show three-phase current', 'historyData.query': 'Query',
         'historyData.samples': 'samples', 'historyData.dataUnavailable': 'Historical data API is not available yet', 'historyData.noData': 'No historical data',
         'historyData.time': 'Time', 'historyData.voltage': 'Voltage', 'historyData.activePower': 'Active power', 'historyData.status': 'Status',
+        'historyEvents.title': 'Historical events', 'historyEvents.records': 'events', 'historyEvents.timeRange': 'Time range',
+        'historyEvents.daily': 'Daily (0:00–24:00)', 'historyEvents.weekly': 'Weekly', 'historyEvents.monthly': 'Monthly',
+        'historyEvents.date': 'Date', 'historyEvents.gateway': 'Gateway', 'historyEvents.meter': 'Smart meter',
+        'historyEvents.rule': 'Process rule', 'historyEvents.allGateways': 'All gateways', 'historyEvents.allMeters': 'All smart meters',
+        'historyEvents.allRules': 'All process rules', 'historyEvents.query': 'Query', 'historyEvents.noData': 'No historical events',
+        'historyEvents.time': 'Time', 'historyEvents.ruleName': 'Rule name', 'historyEvents.metric': 'Metric',
+        'historyEvents.triggerValue': 'Trigger value', 'historyEvents.threshold': 'Threshold', 'historyEvents.reason': 'Trigger reason',
     },
 }
 

@@ -161,6 +161,8 @@ src/
       process-control-analysis.tsx # process control filters, summary cards and history chart
     history-data/
       history-data-view.tsx # historical data filters, bar chart and result table
+    history-events/
+      history-events-view.tsx # historical event filters and result table
   lib/
     api/
       auth.ts             # TODO: describe purpose
@@ -225,3 +227,9 @@ src/
 - `/history-data` currently uses existing gateway and meter metadata for its selectors.
 - The chart and table remain empty until the backend exposes a historical samples query
   endpoint returning timestamp, gateway, meter, voltage, current, active power, and status.
+
+## History events API gaps
+- `/history-events` currently uses existing gateway and meter metadata for its selectors.
+- The rule selector and event table remain empty until the backend exposes process rules and
+  historical event records with timestamp, rule, gateway, meter, metric, trigger value,
+  threshold, and trigger reason.
