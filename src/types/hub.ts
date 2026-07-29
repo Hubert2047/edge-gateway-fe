@@ -1,8 +1,8 @@
 export interface Hub {
     uid: string
-    hubName: string
-    hubIp: string
-    hubPort: number
+    name: string
+    ip: string
+    port: number
     enabled: boolean
     pollIntervalSeconds: number
     meterCount: number
@@ -12,9 +12,9 @@ export interface Hub {
 
 export interface HubFormValues {
     uid?: string
-    hubName: string
-    hubIp: string
-    hubPort: number
+    name: string
+    ip: string
+    port: number
     enabled: boolean
     pollIntervalSeconds: number
     note: string

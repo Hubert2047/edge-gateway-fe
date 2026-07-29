@@ -20,28 +20,29 @@ import {
     AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
 import type { Hub, HubFormValues } from '@/types/hub'
-import { useHubs, useUpdateHub, useDeleteHub, useCreateHub, useSyncHubMeters } from '@/lib/api/hub.queries'
 import { formatRelativeTime, getErrorMessage } from '@/lib/utils'
 import { StatusBadge } from '../status-badge'
+import { useCreateHub, useDeleteHub, useHubs, useSyncHubMeters, useUpdateHub } from '@/lib/api/hub'
+import { RelativeTime } from '../RelativeTime'
 
 function emptyForm(): HubFormValues {
     return {
         uid: '',
-        hubName: '',
-        hubIp: '192.168.1.100',
-        hubPort: 10123,
+        name: '',
+        ip: '192.168.1.100',
+        port: 10123,
         enabled: true,
         pollIntervalSeconds: 60,
-        note: ''
+        note: '',
     }
 }
 
 function hubToForm(hub: Hub): HubFormValues {
     return {
         uid: hub.uid,
-        hubName: hub.hubName,
-        hubIp: hub.hubIp,
-        hubPort: hub.hubPort,
+        name: hub.name,
+        ip: hub.ip,
+        port: hub.port,
         enabled: hub.enabled,
         pollIntervalSeconds: hub.pollIntervalSeconds,
         note: hub.note,
@@ -52,9 +53,9 @@ type FormErrors = Partial<Record<'hubName' | 'hubIp' | 'hubPort' | 'pollInterval
 
 function validateForm(form: HubFormValues): FormErrors {
     const errors: FormErrors = {}
-    if (!form.hubName.trim()) errors.hubName = '請輸入顯示名稱'
-    if (!form.hubIp.trim()) errors.hubIp = '請輸入 IP'
-    if (!form.hubPort || form.hubPort <= 0) errors.hubPort = '請輸入有效的 PORT'
+    if (!form.name.trim()) errors.hubName = '請輸入顯示名稱'
+    if (!form.ip.trim()) errors.hubIp = '請輸入 IP'
+    if (!form.port || form.port <= 0) errors.hubPort = '請輸入有效的 PORT'
     if (!form.pollIntervalSeconds || form.pollIntervalSeconds <= 0) errors.pollIntervalSeconds = '請輸入有效的秒數'
     return errors
 }
@@ -126,17 +127,17 @@ export function GatewayList({ initialHubs }: { initialHubs: Hub[] }) {
             return
         }
 
-        setPendingAction({ type: 'save', uid: hub.uid, displayName: form.hubName || hub.uid })
+        setPendingAction({ type: 'save', uid: hub.uid, displayName: form.name || hub.uid })
     }
 
     function requestDelete(hub: Hub) {
         const { form } = getRowForm(hub)
-        setPendingAction({ type: 'delete', uid: hub.uid, displayName: form.hubName || hub.uid })
+        setPendingAction({ type: 'delete', uid: hub.uid, displayName: form.name || hub.uid })
     }
 
     function requestCollect(hub: Hub) {
         const { form } = getRowForm(hub)
-        setPendingAction({ type: 'collect', uid: hub.uid, displayName: form.hubName || hub.uid })
+        setPendingAction({ type: 'collect', uid: hub.uid, displayName: form.name || hub.uid })
     }
 
     async function confirmPendingAction() {
@@ -153,7 +154,7 @@ export function GatewayList({ initialHubs }: { initialHubs: Hub[] }) {
                 {
                     onSuccess: () => clearRowForm(uid),
                     onError: (err) => toast.error(getErrorMessage(err, '儲存失敗')),
-                }
+                },
             )
         }
 
@@ -204,133 +205,169 @@ export function GatewayList({ initialHubs }: { initialHubs: Hub[] }) {
     } as const
 
     return (
-        <div className="flex h-full flex-col gap-4 overflow-hidden">
-            <Card className="flex flex-1 min-h-0 flex-col overflow-hidden pt-0 border">
-                <div className="flex-1 min-h-0 overflow-y-auto">
-                    <table className="w-full text-sm">
+        <div className='flex h-full flex-col gap-4 overflow-hidden'>
+            <Card className='flex flex-1 min-h-0 flex-col overflow-hidden pt-0 border'>
+                <div className='flex-1 min-h-0 overflow-y-auto'>
+                    <table className='w-full text-sm'>
                         <colgroup>
-                            <col className="w-28" />
+                            <col className='w-28' />
                             <col className='min-w-72' />
-                            <col className="min-w-42 xl:w-72" />
-                            <col className="w-28" />
+                            <col className='min-w-42 xl:w-72' />
+                            <col className='w-28' />
                         </colgroup>
-                        <thead className="bg-muted text-left sticky top-0 z-10">
+                        <thead className='bg-muted text-left sticky top-0 z-10'>
                             <tr>
-                                <th className="p-4">狀態</th>
-                                <th className="p-4">閘道器</th>
-                                <th className="p-4">細部設定</th>
-                                <th className="p-4">操作</th>
+                                <th className='p-4'>狀態</th>
+                                <th className='p-4'>閘道器</th>
+                                <th className='p-4'>細部設定</th>
+                                <th className='p-4'>操作</th>
                             </tr>
                         </thead>
                         <tbody>
                             {hubs.map((hub) => {
                                 const { form, errors } = getRowForm(hub)
-                                const saving = updateHubMutation.isPending && updateHubMutation.variables?.uid === hub.uid
+                                const saving =
+                                    updateHubMutation.isPending && updateHubMutation.variables?.uid === hub.uid
                                 const collecting = collectingUids.has(hub.uid)
                                 const deleting = deletingUid === hub.uid
                                 const rowBusy = saving || collecting || deleting
                                 return (
                                     <tr
                                         key={hub.uid}
-                                        className={`border-t align-top transition-colors ${rowBusy ? 'opacity-50 pointer-events-none' : ''}`}
-                                    >
-                                        <td className="p-4 space-y-2">
+                                        className={`border-t align-top transition-colors ${rowBusy ? 'opacity-50 pointer-events-none' : ''}`}>
+                                        <td className='p-4 space-y-2'>
                                             <Checkbox
                                                 checked={form.enabled}
                                                 disabled={rowBusy}
                                                 onCheckedChange={(checked) => toggleEnabled(hub, checked === true)}
                                             />
-                                            <StatusBadge enabled={form.enabled} activeLabel="監控中" />
+                                            <StatusBadge enabled={form.enabled} activeLabel='監控中' />
                                         </td>
-                                        <td className="p-4 space-y-3">
-                                            <div className="space-y-1.5">
-                                                <Label className="text-xs text-muted-foreground">ID</Label>
-                                                <p className="text-sm font-mono text-foreground/80">{hub.uid}</p>
+                                        <td className='p-4 space-y-3'>
+                                            <div className='space-y-1.5'>
+                                                <Label className='text-xs text-muted-foreground'>ID</Label>
+                                                <p className='text-sm font-mono text-foreground/80'>{hub.uid}</p>
                                             </div>
-                                            <div className="space-y-1.5">
-                                                <Label htmlFor={`name-${hub.uid}`} className="text-xs text-muted-foreground">顯示名稱</Label>
+                                            <div className='space-y-1.5'>
+                                                <Label
+                                                    htmlFor={`name-${hub.uid}`}
+                                                    className='text-xs text-muted-foreground'>
+                                                    顯示名稱
+                                                </Label>
                                                 <Input
                                                     id={`name-${hub.uid}`}
-                                                    value={form.hubName}
+                                                    value={form.name}
                                                     disabled={rowBusy}
-                                                    onChange={(e) => updateRowForm(hub.uid, { hubName: e.target.value })}
+                                                    onChange={(e) => updateRowForm(hub.uid, { name: e.target.value })}
                                                     className={errors.hubName ? 'border-destructive' : ''}
                                                 />
-                                                {errors.hubName && <p className="text-xs text-destructive">{errors.hubName}</p>}
+                                                {errors.hubName && (
+                                                    <p className='text-xs text-destructive'>{errors.hubName}</p>
+                                                )}
                                             </div>
-                                            <div className="flex gap-2">
-                                                <div className="flex-1 space-y-1.5">
-                                                    <Label htmlFor={`ip-${hub.uid}`} className="text-xs text-muted-foreground">IP</Label>
+                                            <div className='flex gap-2'>
+                                                <div className='flex-1 space-y-1.5'>
+                                                    <Label
+                                                        htmlFor={`ip-${hub.uid}`}
+                                                        className='text-xs text-muted-foreground'>
+                                                        IP
+                                                    </Label>
                                                     <Input
                                                         id={`ip-${hub.uid}`}
-                                                        value={form.hubIp}
+                                                        value={form.ip}
                                                         disabled={rowBusy}
-                                                        onChange={(e) => updateRowForm(hub.uid, { hubIp: e.target.value })}
+                                                        onChange={(e) => updateRowForm(hub.uid, { ip: e.target.value })}
                                                         className={errors.hubIp ? 'border-destructive' : ''}
                                                     />
-                                                    {errors.hubIp && <p className="text-xs text-destructive">{errors.hubIp}</p>}
+                                                    {errors.hubIp && (
+                                                        <p className='text-xs text-destructive'>{errors.hubIp}</p>
+                                                    )}
                                                 </div>
-                                                <div className="w-28 space-y-1.5">
-                                                    <Label htmlFor={`port-${hub.uid}`} className="text-xs text-muted-foreground">PORT</Label>
+                                                <div className='w-28 space-y-1.5'>
+                                                    <Label
+                                                        htmlFor={`port-${hub.uid}`}
+                                                        className='text-xs text-muted-foreground'>
+                                                        PORT
+                                                    </Label>
                                                     <Input
                                                         id={`port-${hub.uid}`}
-                                                        type="number"
-                                                        value={form.hubPort}
+                                                        type='number'
+                                                        value={form.port}
                                                         disabled={rowBusy}
-                                                        onChange={(e) => updateRowForm(hub.uid, { hubPort: Number(e.target.value) })}
+                                                        onChange={(e) =>
+                                                            updateRowForm(hub.uid, { port: Number(e.target.value) })
+                                                        }
                                                         className={errors.hubPort ? 'border-destructive' : ''}
                                                     />
-                                                    {errors.hubPort && <p className="text-xs text-destructive">{errors.hubPort}</p>}
+                                                    {errors.hubPort && (
+                                                        <p className='text-xs text-destructive'>{errors.hubPort}</p>
+                                                    )}
                                                 </div>
                                             </div>
-                                            <div className="space-y-1.5">
-                                                <Label htmlFor={`poll-${hub.uid}`} className="text-xs text-muted-foreground">採集頻率（秒）</Label>
+                                            <div className='space-y-1.5'>
+                                                <Label
+                                                    htmlFor={`poll-${hub.uid}`}
+                                                    className='text-xs text-muted-foreground'>
+                                                    採集頻率（秒）
+                                                </Label>
                                                 <Input
                                                     id={`poll-${hub.uid}`}
-                                                    type="number"
+                                                    type='number'
                                                     value={form.pollIntervalSeconds}
                                                     disabled={rowBusy}
-                                                    onChange={(e) => updateRowForm(hub.uid, { pollIntervalSeconds: Number(e.target.value) })}
+                                                    onChange={(e) =>
+                                                        updateRowForm(hub.uid, {
+                                                            pollIntervalSeconds: Number(e.target.value),
+                                                        })
+                                                    }
                                                     className={errors.pollIntervalSeconds ? 'border-destructive' : ''}
                                                 />
-                                                {errors.pollIntervalSeconds && <p className="text-xs text-destructive">{errors.pollIntervalSeconds}</p>}
+                                                {errors.pollIntervalSeconds && (
+                                                    <p className='text-xs text-destructive'>
+                                                        {errors.pollIntervalSeconds}
+                                                    </p>
+                                                )}
                                             </div>
                                         </td>
-                                        <td className="p-4 text-muted-foreground">
+                                        <td className='p-4 text-muted-foreground'>
                                             <p>{hub.meterCount} 智慧勾表數</p>
-                                            <p>最近成功：{formatRelativeTime(hub.updatedAt)}</p>
+                                            <p>
+                                                最近成功：
+                                                <RelativeTime value={hub.updatedAt} />
+                                            </p>
                                         </td>
-                                        <td className="p-4">
-                                            <div className="flex flex-col items-end gap-1.5">
+                                        <td className='p-4'>
+                                            <div className='flex flex-col items-end gap-1.5'>
                                                 <Button
-                                                    size="sm"
-                                                    className="w-20"
+                                                    size='sm'
+                                                    className='w-20'
                                                     disabled={rowBusy}
-                                                    onClick={() => requestSave(hub)}
-                                                >
-                                                    {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : '儲存'}
+                                                    onClick={() => requestSave(hub)}>
+                                                    {saving ? <Loader2 className='h-4 w-4 animate-spin' /> : '儲存'}
                                                 </Button>
                                                 <Button
-                                                    size="sm"
-                                                    variant="secondary"
+                                                    size='sm'
+                                                    variant='secondary'
                                                     disabled={!form.enabled || rowBusy}
                                                     onClick={() => requestCollect(hub)}
                                                     className={
                                                         form.enabled
                                                             ? 'w-20 border text-emerald-700'
                                                             : 'w-20 border text-muted-foreground'
-                                                    }
-                                                >
-                                                    {collecting ? <Loader2 className="h-4 w-4 animate-spin" /> : '立即收集'}
+                                                    }>
+                                                    {collecting ? (
+                                                        <Loader2 className='h-4 w-4 animate-spin' />
+                                                    ) : (
+                                                        '立即收集'
+                                                    )}
                                                 </Button>
                                                 <Button
-                                                    size="sm"
-                                                    className="w-20 bg-rose-50 text-rose-600 hover:bg-rose-100 border border-rose-200"
-                                                    variant="ghost"
+                                                    size='sm'
+                                                    className='w-20 bg-rose-50 text-rose-600 hover:bg-rose-100 border border-rose-200'
+                                                    variant='ghost'
                                                     disabled={rowBusy}
-                                                    onClick={() => requestDelete(hub)}
-                                                >
-                                                    {deleting ? <Loader2 className="h-4 w-4 animate-spin" /> : '刪除'}
+                                                    onClick={() => requestDelete(hub)}>
+                                                    {deleting ? <Loader2 className='h-4 w-4 animate-spin' /> : '刪除'}
                                                 </Button>
                                             </div>
                                         </td>
@@ -342,65 +379,75 @@ export function GatewayList({ initialHubs }: { initialHubs: Hub[] }) {
                 </div>
             </Card>
 
-            <Card className="shrink-0 px-4 sm:px-6 pt-4 space-y-4">
-                <h2 className="text-lg font-medium mb-0 font-bold">新增閘道器</h2>
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-0">
-                    <div className="space-y-1.5">
-                        <Label htmlFor="new-id" className="text-xs text-muted-foreground">
+            <Card className='shrink-0 px-4 sm:px-6 pt-4 space-y-4'>
+                <h2 className='text-lg font-medium mb-0 font-bold'>新增閘道器</h2>
+                <div className='grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-0'>
+                    <div className='space-y-1.5'>
+                        <Label htmlFor='new-id' className='text-xs text-muted-foreground'>
                             ID
                         </Label>
                         <Input
-                            id="new-id"
-                            placeholder="例如：GW001"
+                            id='new-id'
+                            placeholder='例如：GW001'
                             value={newForm.uid}
                             onChange={(e) => updateNewForm({ uid: e.target.value })}
                         />
                     </div>
-                    <div className="space-y-1.5">
-                        <Label htmlFor="new-name" className="text-xs text-muted-foreground">顯示名稱</Label>
+                    <div className='space-y-1.5'>
+                        <Label htmlFor='new-name' className='text-xs text-muted-foreground'>
+                            顯示名稱
+                        </Label>
                         <Input
-                            id="new-name"
-                            placeholder="例如：一樓機房"
-                            value={newForm.hubName}
-                            onChange={(e) => updateNewForm({ hubName: e.target.value })}
+                            id='new-name'
+                            placeholder='例如：一樓機房'
+                            value={newForm.name}
+                            onChange={(e) => updateNewForm({ name: e.target.value })}
                             className={newErrors.hubName ? 'border-destructive' : ''}
                         />
-                        {newErrors.hubName && <p className="text-xs text-destructive">{newErrors.hubName}</p>}
+                        {newErrors.hubName && <p className='text-xs text-destructive'>{newErrors.hubName}</p>}
                     </div>
-                    <div className="space-y-1.5">
-                        <Label htmlFor="new-ip" className="text-xs text-muted-foreground">IP 位址</Label>
+                    <div className='space-y-1.5'>
+                        <Label htmlFor='new-ip' className='text-xs text-muted-foreground'>
+                            IP 位址
+                        </Label>
                         <Input
-                            id="new-ip"
-                            placeholder="192.168.1.100"
-                            value={newForm.hubIp}
-                            onChange={(e) => updateNewForm({ hubIp: e.target.value })}
+                            id='new-ip'
+                            placeholder='192.168.1.100'
+                            value={newForm.ip}
+                            onChange={(e) => updateNewForm({ ip: e.target.value })}
                             className={newErrors.hubIp ? 'border-destructive' : ''}
                         />
-                        {newErrors.hubIp && <p className="text-xs text-destructive">{newErrors.hubIp}</p>}
+                        {newErrors.hubIp && <p className='text-xs text-destructive'>{newErrors.hubIp}</p>}
                     </div>
-                    <div className="space-y-1.5">
-                        <Label htmlFor="new-port" className="text-xs text-muted-foreground">PORT</Label>
+                    <div className='space-y-1.5'>
+                        <Label htmlFor='new-port' className='text-xs text-muted-foreground'>
+                            PORT
+                        </Label>
                         <Input
-                            id="new-port"
-                            type="number"
-                            placeholder="10123"
-                            value={newForm.hubPort}
-                            onChange={(e) => updateNewForm({ hubPort: Number(e.target.value) })}
+                            id='new-port'
+                            type='number'
+                            placeholder='10123'
+                            value={newForm.port}
+                            onChange={(e) => updateNewForm({ port: Number(e.target.value) })}
                             className={newErrors.hubPort ? 'border-destructive' : ''}
                         />
-                        {newErrors.hubPort && <p className="text-xs text-destructive">{newErrors.hubPort}</p>}
+                        {newErrors.hubPort && <p className='text-xs text-destructive'>{newErrors.hubPort}</p>}
                     </div>
-                    <div className="space-y-1.5">
-                        <Label htmlFor="new-poll" className="text-xs text-muted-foreground">採集頻率（秒）</Label>
+                    <div className='space-y-1.5'>
+                        <Label htmlFor='new-poll' className='text-xs text-muted-foreground'>
+                            採集頻率（秒）
+                        </Label>
                         <Input
-                            id="new-poll"
-                            type="number"
-                            placeholder="60"
+                            id='new-poll'
+                            type='number'
+                            placeholder='60'
                             value={newForm.pollIntervalSeconds}
                             onChange={(e) => updateNewForm({ pollIntervalSeconds: Number(e.target.value) })}
                             className={newErrors.pollIntervalSeconds ? 'border-destructive' : ''}
                         />
-                        {newErrors.pollIntervalSeconds && <p className="text-xs text-destructive">{newErrors.pollIntervalSeconds}</p>}
+                        {newErrors.pollIntervalSeconds && (
+                            <p className='text-xs text-destructive'>{newErrors.pollIntervalSeconds}</p>
+                        )}
                     </div>
                 </div>
                 {/* <div className="space-y-1.5 mb-0">
@@ -412,10 +459,14 @@ export function GatewayList({ initialHubs }: { initialHubs: Hub[] }) {
                         onChange={(e) => updateNewForm({ note: e.target.value })}
                     />
                 </div> */}
-                <Button disabled={createHubMutation.isPending} onClick={createHub} size="lg" className="w-full sm:w-max">
+                <Button
+                    disabled={createHubMutation.isPending}
+                    onClick={createHub}
+                    size='lg'
+                    className='w-full sm:w-max'>
                     {createHubMutation.isPending ? (
                         <>
-                            <Loader2 className="h-4 w-4 animate-spin" />
+                            <Loader2 className='h-4 w-4 animate-spin' />
                             新增中...
                         </>
                     ) : (
@@ -427,9 +478,7 @@ export function GatewayList({ initialHubs }: { initialHubs: Hub[] }) {
             <AlertDialog open={pendingAction !== null} onOpenChange={(open) => !open && setPendingAction(null)}>
                 <AlertDialogContent>
                     <AlertDialogHeader>
-                        <AlertDialogTitle>
-                            {pendingAction ? dialogText[pendingAction.type].title : ''}
-                        </AlertDialogTitle>
+                        <AlertDialogTitle>{pendingAction ? dialogText[pendingAction.type].title : ''}</AlertDialogTitle>
                         <AlertDialogDescription>
                             {pendingAction ? dialogText[pendingAction.type].desc(pendingAction.displayName) : ''}
                         </AlertDialogDescription>
@@ -439,11 +488,8 @@ export function GatewayList({ initialHubs }: { initialHubs: Hub[] }) {
                         <AlertDialogAction
                             onClick={confirmPendingAction}
                             className={
-                                pendingAction?.type === 'delete'
-                                    ? 'bg-rose-600 text-white hover:bg-rose-700'
-                                    : ''
-                            }
-                        >
+                                pendingAction?.type === 'delete' ? 'bg-rose-600 text-white hover:bg-rose-700' : ''
+                            }>
                             確認
                         </AlertDialogAction>
                     </AlertDialogFooter>

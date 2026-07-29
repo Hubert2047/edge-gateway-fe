@@ -1,12 +1,10 @@
 import { NextRequest } from 'next/server'
 import { serverApiFetch } from '@/lib/api/server'
 import { handleRoute } from '@/lib/api/route-handler'
-import { fromBackend, toBackend } from '@/lib/api/cloud-target.mapper'
 
 export async function GET() {
     return handleRoute(async () => {
-        const raw = await serverApiFetch<any[]>('/api/cloud-targets')
-        return raw.map(fromBackend)
+        return serverApiFetch<any[]>('/api/cloud-targets')
     })
 }
 
@@ -15,8 +13,8 @@ export async function POST(req: NextRequest) {
         const form = await req.json()
         const raw = await serverApiFetch<any>('/api/cloud-targets', {
             method: 'POST',
-            body: JSON.stringify(toBackend(form)),
+            body: JSON.stringify(form),
         })
-        return fromBackend(raw)
+        return raw
     }, 201)
 }
