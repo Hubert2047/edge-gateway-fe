@@ -93,6 +93,12 @@ const messages: Record<Locale, Messages> = {
         'historyEvents.allRules': '全部製程規則', 'historyEvents.query': '查詢', 'historyEvents.noData': '查無歷史事件',
         'historyEvents.time': '時間', 'historyEvents.ruleName': '規則名稱', 'historyEvents.metric': '分析指標',
         'historyEvents.triggerValue': '觸發值', 'historyEvents.threshold': '閾值', 'historyEvents.reason': '觸發原因',
+        'processRules.title': '製程規則', 'processRules.rules': '條規則', 'processRules.status': '狀態',
+        'processRules.ruleName': '規則名稱', 'processRules.gatewayMetric': '閘道器／分析指標', 'processRules.meterThreshold': '智慧勾表／閾值',
+        'processRules.noRules': '尚未建立任何製程規則', 'processRules.gateway': '閘道器', 'processRules.metric': '分析指標',
+        'processRules.meter': '智慧勾表', 'processRules.lower': '下限閾值', 'processRules.upper': '上限閾值',
+        'processRules.activePower': '有效功率', 'processRules.allMeters': '全部智慧勾表', 'processRules.selectGateway': '請選擇閘道器',
+        'processRules.addTitle': '新增製程規則',
     },
     en: {
         'nav.overview': 'Overview', 'nav.cloudSync': 'Cloud Sync', 'nav.gateways': 'Local Gateways',
@@ -179,6 +185,12 @@ const messages: Record<Locale, Messages> = {
         'historyEvents.allRules': 'All process rules', 'historyEvents.query': 'Query', 'historyEvents.noData': 'No historical events',
         'historyEvents.time': 'Time', 'historyEvents.ruleName': 'Rule name', 'historyEvents.metric': 'Metric',
         'historyEvents.triggerValue': 'Trigger value', 'historyEvents.threshold': 'Threshold', 'historyEvents.reason': 'Trigger reason',
+        'processRules.title': 'Process rules', 'processRules.rules': 'rules', 'processRules.status': 'Status',
+        'processRules.ruleName': 'Rule name', 'processRules.gatewayMetric': 'Gateway / metric', 'processRules.meterThreshold': 'Smart meter / threshold',
+        'processRules.noRules': 'No process rules configured', 'processRules.gateway': 'Gateway', 'processRules.metric': 'Metric',
+        'processRules.meter': 'Smart meter', 'processRules.lower': 'Lower limit', 'processRules.upper': 'Upper limit',
+        'processRules.activePower': 'Active power', 'processRules.allMeters': 'All smart meters', 'processRules.selectGateway': 'Select gateway',
+        'processRules.addTitle': 'Add process rule',
     },
 }
 

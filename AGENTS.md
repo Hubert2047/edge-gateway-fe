@@ -163,6 +163,8 @@ src/
       history-data-view.tsx # historical data filters, bar chart and result table
     history-events/
       history-events-view.tsx # historical event filters and result table
+    process-rules/
+      process-rules-view.tsx # process rule list and create form
   lib/
     api/
       auth.ts             # TODO: describe purpose
@@ -233,3 +235,8 @@ src/
 - The rule selector and event table remain empty until the backend exposes process rules and
   historical event records with timestamp, rule, gateway, meter, metric, trigger value,
   threshold, and trigger reason.
+
+## Process rules API gaps
+- `/process-rules` currently uses existing gateway and meter metadata for selectors.
+- Rule list/create/update/delete actions are local UI state until the backend exposes a
+  process-rules CRUD API with name, enabled state, gateway, meter, metric, and thresholds.
