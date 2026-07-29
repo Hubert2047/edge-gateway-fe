@@ -36,8 +36,8 @@ export function MetersClient({
 
     return (
         <>
-            <div className='flex items-center justify-between'>
-                <h1 className='text-2xl font-bold'>智慧勾表</h1>
+            <div className='flex items-center justify-between gap-3 max-sm:items-start max-sm:flex-col'>
+                <h1 className='text-xl font-bold sm:text-2xl'>智慧勾表</h1>
                 <HubSwitcher hubs={hubs} currentHubUid={hubUid} onHubChange={handleHubChange} />
             </div>
             <div className='flex-1 min-h-0'>

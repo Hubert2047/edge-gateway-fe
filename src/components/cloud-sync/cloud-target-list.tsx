@@ -33,8 +33,8 @@ function emptyForm(): CloudTargetFormValues {
     return {
         name: '',
         apiBaseUrl: 'https://api.mmold.com',
-        cloudServerId: '',
-        cloudServerSecret: '',
+        apiKey: '',
+        apiSecret: '',
         uploadIntervalSeconds: 60,
         enabled: true,
     }
@@ -45,23 +45,23 @@ function targetToForm(target: CloudTarget): CloudTargetFormValues {
         id: target.id,
         name: target.name ?? '',
         apiBaseUrl: target.apiBaseUrl ?? '',
-        cloudServerId: target.cloudServerId ?? '',
-        cloudServerSecret: target.cloudServerSecret ?? '',
+        apiKey: target.apiKey ?? '',
+        apiSecret: target.apiSecretMasked ?? '',
         uploadIntervalSeconds: target.uploadIntervalSeconds ?? 0,
         enabled: target.enabled ?? true,
     }
 }
 
 type FormErrors = Partial<
-    Record<'name' | 'apiBaseUrl' | 'cloudServerId' | 'cloudServerSecret' | 'uploadIntervalSeconds', string>
+    Record<'name' | 'apiBaseUrl' | 'apiKey' | 'cloudServerSecret' | 'uploadIntervalSeconds', string>
 >
 
 function validateForm(form: CloudTargetFormValues): FormErrors {
     const errors: FormErrors = {}
     if (!form.name.trim()) errors.name = '請輸入顯示名稱'
     if (!form.apiBaseUrl.trim()) errors.apiBaseUrl = '請輸入 API BASE URL'
-    if (!form.cloudServerId.trim()) errors.cloudServerId = '請輸入雲端服務器 ID'
-    if (!form.cloudServerSecret.trim()) errors.cloudServerSecret = '請輸入雲端服務器密鑰'
+    if (!form.apiKey.trim()) errors.apiKey = '請輸入雲端服務器 ID'
+    if (!form.apiSecret.trim()) errors.cloudServerSecret = '請輸入雲端服務器密鑰'
     if (!form.uploadIntervalSeconds || form.uploadIntervalSeconds <= 0)
         errors.uploadIntervalSeconds = '請輸入有效的秒數'
     return errors
@@ -72,6 +72,7 @@ type TestResult = { success: boolean; message?: string }
 type RowFormState = { form: CloudTargetFormValues; errors: FormErrors }
 
 export function CloudTargetList({ initialTargets }: { initialTargets: CloudTarget[] }) {
+    console.log(initialTargets)
     const { data: targets = initialTargets } = useCloudTargets(initialTargets)
     const updateMutation = useUpdateCloudTarget()
     const deleteMutation = useDeleteCloudTarget()
@@ -216,10 +217,10 @@ export function CloudTargetList({ initialTargets }: { initialTargets: CloudTarge
     } as const
 
     return (
-        <div className='flex h-full flex-col gap-4 overflow-hidden'>
-            <div className='flex shrink-0 items-center justify-between'>
+        <div className='flex h-full flex-col gap-4 overflow-hidden max-md:h-auto max-md:overflow-visible'>
+            <div className='flex shrink-0 items-center justify-between gap-3 max-sm:items-start max-sm:flex-col'>
                 <h1 className='text-2xl font-bold'>雲端同步</h1>
-                <Button disabled={runningQueue} onClick={runQueuedUploads}>
+                <Button className='max-sm:w-full' disabled={runningQueue} onClick={runQueuedUploads}>
                     {runningQueue ? (
                         <>
                             <Loader2 className='h-4 w-4 animate-spin' />
@@ -231,9 +232,9 @@ export function CloudTargetList({ initialTargets }: { initialTargets: CloudTarge
                 </Button>
             </div>
 
-            <Card className='flex flex-1 min-h-0 flex-col overflow-hidden pt-0 border'>
-                <div className='flex-1 min-h-0 overflow-y-auto'>
-                    <table className='w-full table-fixed text-sm'>
+            <Card className='flex flex-1 min-h-0 flex-col overflow-hidden border pt-0 max-md:flex-none max-md:overflow-visible'>
+                <div className='flex-1 min-h-0 overflow-y-auto max-md:overflow-visible'>
+                    <table className='responsive-table w-full text-sm'>
                         <colgroup>
                             <col className='w-28' />
                             <col className='min-w-72' />
@@ -242,204 +243,227 @@ export function CloudTargetList({ initialTargets }: { initialTargets: CloudTarge
                         </colgroup>
                         <thead className='bg-muted text-left sticky top-0 z-10'>
                             <tr>
-                                <th className='p-4'>狀態</th>
-                                <th className='p-4'>雲端服務器</th>
-                                <th className='p-4'>細部設定</th>
-                                <th className='p-4'>操作</th>
+                                <th className='whitespace-nowrap p-4'>狀態</th>
+                                <th className='whitespace-nowrap p-4'>雲端服務器</th>
+                                <th className='whitespace-nowrap p-4'>細部設定</th>
+                                <th className='whitespace-nowrap p-4'>操作</th>
                             </tr>
                         </thead>
                         <tbody>
-                            {targets.map((target) => {
-                                const { form, errors } = getRowForm(target)
-                                const saving = updateMutation.isPending && updateMutation.variables?.id === target.id
-                                const testing = testMutation.isPending && testMutation.variables === target.id
-                                const deleting = deletingId === target.id
-                                const rowBusy = saving || deleting
-                                const testResult = testResults[target.id]
-                                return (
-                                    <tr
-                                        key={target.id}
-                                        className={`relative border-t align-top transition-colors ${rowBusy ? 'opacity-60 pointer-events-none' : ''}`}>
-                                        <td className='p-4 space-y-2'>
-                                            <Checkbox
-                                                checked={form.enabled}
-                                                disabled={rowBusy}
-                                                onCheckedChange={(checked) => toggleEnabled(target, checked === true)}
-                                            />
-                                            <StatusBadge enabled={form.enabled} activeLabel='在線' />
-                                        </td>
-                                        <td className='p-4 space-y-3'>
-                                            <div className='space-y-1.5'>
-                                                <Label
-                                                    htmlFor={`name-${target.id}`}
-                                                    className='text-xs text-muted-foreground'>
-                                                    顯示名稱
-                                                </Label>
-                                                <Input
-                                                    id={`name-${target.id}`}
-                                                    value={form.name}
+                            {targets.length === 0 ? (
+                                <tr>
+                                    <td
+                                        colSpan={4}
+                                        data-label='雲端服務器'
+                                        className='p-6 text-center text-sm text-muted-foreground'>
+                                        尚未設定任何雲端服務器
+                                    </td>
+                                </tr>
+                            ) : (
+                                targets.map((target) => {
+                                    const { form, errors } = getRowForm(target)
+                                    const saving =
+                                        updateMutation.isPending && updateMutation.variables?.id === target.id
+                                    const testing = testMutation.isPending && testMutation.variables === target.id
+                                    const deleting = deletingId === target.id
+                                    const rowBusy = saving || deleting
+                                    const testResult = testResults[target.id]
+                                    return (
+                                        <tr
+                                            key={target.id}
+                                            className={`relative border-t align-top transition-colors ${rowBusy ? 'opacity-60 pointer-events-none' : ''}`}>
+                                            <td data-label='狀態' className='p-4 space-y-2'>
+                                                <Checkbox
+                                                    checked={form.enabled}
                                                     disabled={rowBusy}
-                                                    onChange={(e) => updateRowForm(target.id, { name: e.target.value })}
-                                                    className={errors.name ? 'border-destructive' : ''}
-                                                />
-                                                {errors.name && (
-                                                    <p className='text-xs text-destructive'>{errors.name}</p>
-                                                )}
-                                            </div>
-                                            <div className='space-y-1.5'>
-                                                <Label
-                                                    htmlFor={`serverid-${target.id}`}
-                                                    className='text-xs text-muted-foreground'>
-                                                    雲端服務器
-                                                </Label>
-                                                <Input
-                                                    id={`serverid-${target.id}`}
-                                                    className={`font-mono ${errors.cloudServerId ? 'border-destructive' : ''}`}
-                                                    value={form.cloudServerId}
-                                                    disabled={rowBusy}
-                                                    onChange={(e) =>
-                                                        updateRowForm(target.id, { cloudServerId: e.target.value })
+                                                    onCheckedChange={(checked) =>
+                                                        toggleEnabled(target, checked === true)
                                                     }
                                                 />
-                                                {errors.cloudServerId && (
-                                                    <p className='text-xs text-destructive'>{errors.cloudServerId}</p>
-                                                )}
-                                            </div>
-                                            <div className='space-y-1.5'>
-                                                <Label
-                                                    htmlFor={`secret-${target.id}`}
-                                                    className='text-xs text-muted-foreground'>
-                                                    雲端服務器密鑰
-                                                </Label>
-                                                <Input
-                                                    id={`secret-${target.id}`}
-                                                    className={errors.cloudServerSecret ? 'border-destructive' : ''}
-                                                    value={form.cloudServerSecret}
-                                                    disabled={rowBusy}
-                                                    onChange={(e) =>
-                                                        updateRowForm(target.id, { cloudServerSecret: e.target.value })
-                                                    }
-                                                />
-                                                {errors.cloudServerSecret && (
-                                                    <p className='text-xs text-destructive'>
-                                                        {errors.cloudServerSecret}
-                                                    </p>
-                                                )}
-                                            </div>
-                                        </td>
-                                        <td className='p-4 space-y-3'>
-                                            <div className='space-y-1.5'>
-                                                <Label
-                                                    htmlFor={`url-${target.id}`}
-                                                    className='text-xs text-muted-foreground'>
-                                                    API BASE URL
-                                                </Label>
-                                                <Input
-                                                    id={`url-${target.id}`}
-                                                    value={form.apiBaseUrl}
-                                                    disabled={rowBusy}
-                                                    onChange={(e) =>
-                                                        updateRowForm(target.id, { apiBaseUrl: e.target.value })
-                                                    }
-                                                    className={errors.apiBaseUrl ? 'border-destructive' : ''}
-                                                />
-                                                {errors.apiBaseUrl && (
-                                                    <p className='text-xs text-destructive'>{errors.apiBaseUrl}</p>
-                                                )}
-                                            </div>
-                                            <div className='flex gap-3 flex-col'>
-                                                <div className='w-28 shrink-0 space-y-1.5'>
+                                                <StatusBadge enabled={form.enabled} activeLabel='在線' />
+                                            </td>
+                                            <td data-label='雲端服務器' className='p-4 space-y-3'>
+                                                <div className='space-y-1.5'>
                                                     <Label
-                                                        htmlFor={`interval-${target.id}`}
+                                                        htmlFor={`name-${target.id}`}
                                                         className='text-xs text-muted-foreground'>
-                                                        上傳頻率
+                                                        顯示名稱
                                                     </Label>
-                                                    <div className='flex items-center gap-1.5'>
-                                                        <Input
-                                                            id={`interval-${target.id}`}
-                                                            type='number'
-                                                            value={form.uploadIntervalSeconds}
-                                                            disabled={rowBusy}
-                                                            onChange={(e) =>
-                                                                updateRowForm(target.id, {
-                                                                    uploadIntervalSeconds: Number(e.target.value),
-                                                                })
-                                                            }
-                                                            className={
-                                                                errors.uploadIntervalSeconds ? 'border-destructive' : ''
-                                                            }
-                                                        />
-                                                        <span className='text-xs text-muted-foreground'>秒</span>
-                                                    </div>
-                                                    {errors.uploadIntervalSeconds && (
+                                                    <Input
+                                                        id={`name-${target.id}`}
+                                                        value={form.name}
+                                                        disabled={rowBusy}
+                                                        onChange={(e) =>
+                                                            updateRowForm(target.id, { name: e.target.value })
+                                                        }
+                                                        className={errors.name ? 'border-destructive' : ''}
+                                                    />
+                                                    {errors.name && (
+                                                        <p className='text-xs text-destructive'>{errors.name}</p>
+                                                    )}
+                                                </div>
+                                                <div className='space-y-1.5'>
+                                                    <Label
+                                                        htmlFor={`serverid-${target.id}`}
+                                                        className='text-xs text-muted-foreground'>
+                                                        雲端服務器
+                                                    </Label>
+                                                    <Input
+                                                        id={`serverid-${target.id}`}
+                                                        className={`font-mono ${errors.apiKey ? 'border-destructive' : ''}`}
+                                                        value={form.apiKey}
+                                                        disabled={rowBusy}
+                                                        onChange={(e) =>
+                                                            updateRowForm(target.id, { apiKey: e.target.value })
+                                                        }
+                                                    />
+                                                    {errors.apiKey && (
+                                                        <p className='text-xs text-destructive'>{errors.apiKey}</p>
+                                                    )}
+                                                </div>
+                                                <div className='space-y-1.5'>
+                                                    <Label
+                                                        htmlFor={`secret-${target.id}`}
+                                                        className='text-xs text-muted-foreground'>
+                                                        雲端服務器密鑰
+                                                    </Label>
+                                                    <Input
+                                                        id={`secret-${target.id}`}
+                                                        className={errors.cloudServerSecret ? 'border-destructive' : ''}
+                                                        value={form.apiSecret}
+                                                        disabled={rowBusy}
+                                                        onChange={(e) =>
+                                                            updateRowForm(target.id, {
+                                                                apiSecret: e.target.value,
+                                                            })
+                                                        }
+                                                    />
+                                                    {errors.cloudServerSecret && (
                                                         <p className='text-xs text-destructive'>
-                                                            {errors.uploadIntervalSeconds}
+                                                            {errors.cloudServerSecret}
                                                         </p>
                                                     )}
                                                 </div>
-                                                <div className='min-w-0 flex-1 pt-4 space-y-1 text-xs text-muted-foreground'>
-                                                    <div className='flex gap-4'>
-                                                        <p className='leading-snug'>上次正確上傳時間</p>
-                                                        <p className='font-bold'>
-                                                            {' '}
-                                                            {target.lastUploadAt
-                                                                ? formatRelativeTime(target.lastUploadAt)
-                                                                : '尚未上傳'}
-                                                        </p>
+                                            </td>
+                                            <td data-label='細部設定' className='p-4 space-y-3'>
+                                                <div className='space-y-1.5'>
+                                                    <Label
+                                                        htmlFor={`url-${target.id}`}
+                                                        className='text-xs text-muted-foreground'>
+                                                        API BASE URL
+                                                    </Label>
+                                                    <Input
+                                                        id={`url-${target.id}`}
+                                                        value={form.apiBaseUrl}
+                                                        disabled={rowBusy}
+                                                        onChange={(e) =>
+                                                            updateRowForm(target.id, { apiBaseUrl: e.target.value })
+                                                        }
+                                                        className={errors.apiBaseUrl ? 'border-destructive' : ''}
+                                                    />
+                                                    {errors.apiBaseUrl && (
+                                                        <p className='text-xs text-destructive'>{errors.apiBaseUrl}</p>
+                                                    )}
+                                                </div>
+                                                <div className='flex gap-3 flex-col'>
+                                                    <div className='w-28 shrink-0 space-y-1.5'>
+                                                        <Label
+                                                            htmlFor={`interval-${target.id}`}
+                                                            className='text-xs text-muted-foreground'>
+                                                            上傳頻率
+                                                        </Label>
+                                                        <div className='flex items-center gap-1.5'>
+                                                            <Input
+                                                                id={`interval-${target.id}`}
+                                                                type='number'
+                                                                value={form.uploadIntervalSeconds}
+                                                                disabled={rowBusy}
+                                                                onChange={(e) =>
+                                                                    updateRowForm(target.id, {
+                                                                        uploadIntervalSeconds: Number(e.target.value),
+                                                                    })
+                                                                }
+                                                                className={
+                                                                    errors.uploadIntervalSeconds
+                                                                        ? 'border-destructive'
+                                                                        : ''
+                                                                }
+                                                            />
+                                                            <span className='text-xs text-muted-foreground'>秒</span>
+                                                        </div>
+                                                        {errors.uploadIntervalSeconds && (
+                                                            <p className='text-xs text-destructive'>
+                                                                {errors.uploadIntervalSeconds}
+                                                            </p>
+                                                        )}
                                                     </div>
-                                                    <div className='flex gap-4'>
-                                                        <p>待續傳</p>
-                                                        <p className='font-bold'>{target.pendingCount}</p>
+                                                    <div className='min-w-0 flex-1 pt-4 space-y-1 text-xs text-muted-foreground'>
+                                                        <div className='flex gap-4'>
+                                                            <p className='leading-snug'>上次正確上傳時間</p>
+                                                            <p className='font-bold'>
+                                                                {target.lastUploadAt
+                                                                    ? formatRelativeTime(target.lastUploadAt)
+                                                                    : '尚未上傳'}
+                                                            </p>
+                                                        </div>
+                                                        <div className='flex gap-4'>
+                                                            <p>待續傳</p>
+                                                            <p className='font-bold'>{target.pendingCount}</p>
+                                                        </div>
                                                     </div>
                                                 </div>
-                                            </div>
-                                        </td>
-                                        <td className='p-4'>
-                                            <div className='flex flex-col items-end gap-1.5'>
-                                                <Button
-                                                    size='sm'
-                                                    className='w-20'
-                                                    disabled={saving || testing}
-                                                    onClick={() => requestSave(target)}>
-                                                    {saving ? <Loader2 className='h-4 w-4 animate-spin' /> : '儲存'}
-                                                </Button>
-                                                <Button
-                                                    size='sm'
-                                                    variant='secondary'
-                                                    className={
-                                                        form.enabled
-                                                            ? 'w-20 border bg-sky-50 text-sky-700 hover:bg-sky-100 border-sky-200'
-                                                            : 'w-20 border bg-muted text-muted-foreground hover:bg-muted cursor-not-allowed'
-                                                    }
-                                                    disabled={testing || !form.enabled}
-                                                    onClick={() => runTestConnection(target.id)}>
-                                                    {testing ? (
-                                                        <Loader2 className='h-4 w-4 animate-spin' />
-                                                    ) : (
-                                                        '測試連線'
+                                            </td>
+                                            <td data-label='操作' className='p-4'>
+                                                <div className='flex flex-col items-end gap-1.5'>
+                                                    <Button
+                                                        size='sm'
+                                                        className='w-20'
+                                                        disabled={saving || testing}
+                                                        onClick={() => requestSave(target)}>
+                                                        {saving ? <Loader2 className='h-4 w-4 animate-spin' /> : '儲存'}
+                                                    </Button>
+                                                    <Button
+                                                        size='sm'
+                                                        variant='secondary'
+                                                        className={
+                                                            form.enabled
+                                                                ? 'w-20 border bg-sky-50 text-sky-700 hover:bg-sky-100 border-sky-200'
+                                                                : 'w-20 border bg-muted text-muted-foreground hover:bg-muted cursor-not-allowed'
+                                                        }
+                                                        disabled={testing || !form.enabled}
+                                                        onClick={() => runTestConnection(target.id)}>
+                                                        {testing ? (
+                                                            <Loader2 className='h-4 w-4 animate-spin' />
+                                                        ) : (
+                                                            '測試連線'
+                                                        )}
+                                                    </Button>
+                                                    <Button
+                                                        size='sm'
+                                                        className='w-20 bg-rose-50 text-rose-600 hover:bg-rose-100 border border-rose-200'
+                                                        variant='ghost'
+                                                        disabled={deleting}
+                                                        onClick={() => requestDelete(target)}>
+                                                        {deleting ? (
+                                                            <Loader2 className='h-4 w-4 animate-spin' />
+                                                        ) : (
+                                                            '刪除'
+                                                        )}
+                                                    </Button>
+                                                    {testResult && (
+                                                        <p
+                                                            className={`text-xs ${testResult.success ? 'text-emerald-600' : 'text-rose-600'}`}>
+                                                            {testResult.success
+                                                                ? '連線成功'
+                                                                : testResult.message || '連線失敗'}
+                                                        </p>
                                                     )}
-                                                </Button>
-                                                <Button
-                                                    size='sm'
-                                                    className='w-20 bg-rose-50 text-rose-600 hover:bg-rose-100 border border-rose-200'
-                                                    variant='ghost'
-                                                    disabled={deleting}
-                                                    onClick={() => requestDelete(target)}>
-                                                    {deleting ? <Loader2 className='h-4 w-4 animate-spin' /> : '刪除'}
-                                                </Button>
-                                                {testResult && (
-                                                    <p
-                                                        className={`text-xs ${testResult.success ? 'text-emerald-600' : 'text-rose-600'}`}>
-                                                        {testResult.success
-                                                            ? '連線成功'
-                                                            : testResult.message || '連線失敗'}
-                                                    </p>
-                                                )}
-                                            </div>
-                                        </td>
-                                    </tr>
-                                )
-                            })}
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    )
+                                })
+                            )}
                         </tbody>
                     </table>
                 </div>
@@ -489,14 +513,12 @@ export function CloudTargetList({ initialTargets }: { initialTargets: CloudTarge
                         </Label>
                         <Input
                             id='new-serverid'
-                            className={`font-mono ${newErrors.cloudServerId ? 'border-destructive' : ''}`}
-                            value={newForm.cloudServerId}
+                            className={`font-mono ${newErrors.apiKey ? 'border-destructive' : ''}`}
+                            value={newForm.apiKey}
                             disabled={createMutation.isPending}
-                            onChange={(e) => updateNewForm({ cloudServerId: e.target.value })}
+                            onChange={(e) => updateNewForm({ apiKey: e.target.value })}
                         />
-                        {newErrors.cloudServerId && (
-                            <p className='text-xs text-destructive'>{newErrors.cloudServerId}</p>
-                        )}
+                        {newErrors.apiKey && <p className='text-xs text-destructive'>{newErrors.apiKey}</p>}
                     </div>
                     <div className='space-y-1.5'>
                         <Label htmlFor='new-secret' className='text-xs text-muted-foreground'>
@@ -506,9 +528,9 @@ export function CloudTargetList({ initialTargets }: { initialTargets: CloudTarge
                             id='new-secret'
                             type='password'
                             className={newErrors.cloudServerSecret ? 'border-destructive' : ''}
-                            value={newForm.cloudServerSecret}
+                            value={newForm.apiSecret}
                             disabled={createMutation.isPending}
-                            onChange={(e) => updateNewForm({ cloudServerSecret: e.target.value })}
+                            onChange={(e) => updateNewForm({ apiSecret: e.target.value })}
                         />
                         {newErrors.cloudServerSecret && (
                             <p className='text-xs text-destructive'>{newErrors.cloudServerSecret}</p>

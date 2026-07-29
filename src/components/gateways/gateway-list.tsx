@@ -205,10 +205,18 @@ export function GatewayList({ initialHubs }: { initialHubs: Hub[] }) {
     } as const
 
     return (
-        <div className='flex h-full flex-col gap-4 overflow-hidden'>
-            <Card className='flex flex-1 min-h-0 flex-col overflow-hidden pt-0 border'>
-                <div className='flex-1 min-h-0 overflow-y-auto'>
-                    <table className='w-full text-sm'>
+        <div className='flex h-full flex-col gap-4 overflow-hidden max-md:h-auto max-md:overflow-visible'>
+            <Card className='flex flex-1 min-h-0 flex-col overflow-hidden border pt-0 max-md:flex-none max-md:overflow-visible'>
+                <div
+                    className={`flex-1 min-h-0 overflow-y-auto ${
+                        hubs.length === 0 ? 'max-md:overflow-x-auto' : 'max-md:overflow-visible'
+                    }`}
+                >
+                    <table
+                        className={`responsive-table w-full text-sm ${
+                            hubs.length === 0 ? 'responsive-table-empty min-w-[36rem]' : ''
+                        }`}
+                    >
                         <colgroup>
                             <col className='w-28' />
                             <col className='min-w-72' />
@@ -217,14 +225,20 @@ export function GatewayList({ initialHubs }: { initialHubs: Hub[] }) {
                         </colgroup>
                         <thead className='bg-muted text-left sticky top-0 z-10'>
                             <tr>
-                                <th className='p-4'>狀態</th>
-                                <th className='p-4'>閘道器</th>
-                                <th className='p-4'>細部設定</th>
-                                <th className='p-4'>操作</th>
+                                <th className='whitespace-nowrap p-4'>狀態</th>
+                                <th className='whitespace-nowrap p-4'>閘道器</th>
+                                <th className='whitespace-nowrap p-4'>細部設定</th>
+                                <th className='whitespace-nowrap p-4'>操作</th>
                             </tr>
                         </thead>
                         <tbody>
-                            {hubs.map((hub) => {
+                            {hubs.length === 0 ? (
+                                <tr>
+                                    <td colSpan={4} className='p-6 text-center text-sm text-muted-foreground'>
+                                        尚未設定任何本地閘道
+                                    </td>
+                                </tr>
+                            ) : hubs.map((hub) => {
                                 const { form, errors } = getRowForm(hub)
                                 const saving =
                                     updateHubMutation.isPending && updateHubMutation.variables?.uid === hub.uid
@@ -235,7 +249,7 @@ export function GatewayList({ initialHubs }: { initialHubs: Hub[] }) {
                                     <tr
                                         key={hub.uid}
                                         className={`border-t align-top transition-colors ${rowBusy ? 'opacity-50 pointer-events-none' : ''}`}>
-                                        <td className='p-4 space-y-2'>
+                                        <td data-label='狀態' className='p-4 space-y-2'>
                                             <Checkbox
                                                 checked={form.enabled}
                                                 disabled={rowBusy}
@@ -243,7 +257,7 @@ export function GatewayList({ initialHubs }: { initialHubs: Hub[] }) {
                                             />
                                             <StatusBadge enabled={form.enabled} activeLabel='監控中' />
                                         </td>
-                                        <td className='p-4 space-y-3'>
+                                        <td data-label='閘道器' className='p-4 space-y-3'>
                                             <div className='space-y-1.5'>
                                                 <Label className='text-xs text-muted-foreground'>ID</Label>
                                                 <p className='text-sm font-mono text-foreground/80'>{hub.uid}</p>
@@ -329,14 +343,14 @@ export function GatewayList({ initialHubs }: { initialHubs: Hub[] }) {
                                                 )}
                                             </div>
                                         </td>
-                                        <td className='p-4 text-muted-foreground'>
+                                        <td data-label='資訊' className='p-4 text-muted-foreground'>
                                             <p>{hub.meterCount} 智慧勾表數</p>
                                             <p>
                                                 最近成功：
                                                 <RelativeTime value={hub.updatedAt} />
                                             </p>
                                         </td>
-                                        <td className='p-4'>
+                                        <td data-label='操作' className='p-4'>
                                             <div className='flex flex-col items-end gap-1.5'>
                                                 <Button
                                                     size='sm'
@@ -379,7 +393,7 @@ export function GatewayList({ initialHubs }: { initialHubs: Hub[] }) {
                 </div>
             </Card>
 
-            <Card className='shrink-0 px-4 sm:px-6 pt-4 space-y-4'>
+            <Card className='shrink-0 px-4 pt-4 space-y-4 sm:px-6'>
                 <h2 className='text-lg font-medium mb-0 font-bold'>新增閘道器</h2>
                 <div className='grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-0'>
                     <div className='space-y-1.5'>

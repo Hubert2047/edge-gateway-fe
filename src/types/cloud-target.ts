@@ -2,8 +2,8 @@ export interface CloudTarget {
     id: string
     name: string
     apiBaseUrl: string
-    cloudServerId: string
-    cloudServerSecret: string
+    apiKey: string
+    apiSecretMasked: string
     uploadIntervalSeconds: number
     enabled: boolean
     lastUploadAt: string | null
@@ -14,8 +14,8 @@ export interface CloudTargetFormValues {
     id?: string
     name: string
     apiBaseUrl: string
-    cloudServerId: string
-    cloudServerSecret: string
+    apiKey: string
+    apiSecret: string
     uploadIntervalSeconds: number
     enabled: boolean
 }

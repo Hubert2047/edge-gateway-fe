@@ -15,7 +15,7 @@ export function HubSwitcher({
     const current = hubs.find((h) => h.uid === currentHubUid)
     return (
         <Select value={currentHubUid} onValueChange={(v) => v && onHubChange(v)}>
-            <SelectTrigger className='w-48'>
+            <SelectTrigger className='w-48 max-sm:w-full'>
                 <SelectValue>{current?.name ?? currentHubUid}</SelectValue>
             </SelectTrigger>
             <SelectContent>

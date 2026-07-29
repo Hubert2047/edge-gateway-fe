@@ -257,7 +257,7 @@ export function MeterList({ hubUid, initialMeters }: { hubUid: string; initialMe
     const dirtyCount = Object.keys(rowFormState).length
 
     return (
-        <div className='flex h-full flex-col gap-4 overflow-hidden'>
+        <div className='flex h-full flex-col gap-4 overflow-hidden max-md:h-auto max-md:overflow-visible'>
             <Card className='shrink-0 px-4 sm:px-6 pt-4 space-y-4'>
                 <div className='flex items-center justify-between mb-0'>
                     <h2 className='text-lg font-bold'>新增智慧勾表</h2>
@@ -266,8 +266,8 @@ export function MeterList({ hubUid, initialMeters }: { hubUid: string; initialMe
                         {meters.length} 個
                     </span>
                 </div>
-                <div className='grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-0'>
-                    <div className='space-y-1.5'>
+                <div className='flex flex-wrap items-start gap-4'>
+                    <div className='w-full space-y-1.5 sm:w-52'>
                         <Label htmlFor='new-name' className='text-xs text-muted-foreground'>
                             名稱
                         </Label>
@@ -280,7 +280,7 @@ export function MeterList({ hubUid, initialMeters }: { hubUid: string; initialMe
                         />
                         {newErrors.name && <p className='text-xs text-destructive'>{newErrors.name}</p>}
                     </div>
-                    <div className='space-y-1.5'>
+                    <div className='w-full space-y-1.5 sm:w-60'>
                         <Label htmlFor='new-mac' className='text-xs text-muted-foreground'>
                             MAC ID
                         </Label>
@@ -293,7 +293,7 @@ export function MeterList({ hubUid, initialMeters }: { hubUid: string; initialMe
                         />
                         {newErrors.macId && <p className='text-xs text-destructive'>{newErrors.macId}</p>}
                     </div>
-                    <div className='space-y-1.5'>
+                    <div className='w-full space-y-1.5 sm:w-28'>
                         <Label className='text-xs text-muted-foreground'>相位型態</Label>
                         <Select
                             value={newForm.measurementType}
@@ -310,7 +310,7 @@ export function MeterList({ hubUid, initialMeters }: { hubUid: string; initialMe
                             </SelectContent>
                         </Select>
                     </div>
-                    <div className='space-y-1.5'>
+                    <div className='w-full space-y-1.5 sm:w-32'>
                         <Label htmlFor='new-voltage' className='text-xs text-muted-foreground'>
                             設定電壓 (V)
                         </Label>
@@ -323,7 +323,7 @@ export function MeterList({ hubUid, initialMeters }: { hubUid: string; initialMe
                         />
                         {newErrors.voltage && <p className='text-xs text-destructive'>{newErrors.voltage}</p>}
                     </div>
-                    <div className='space-y-1.5'>
+                    <div className='w-full space-y-1.5 sm:w-28'>
                         <Label htmlFor='new-pf' className='text-xs text-muted-foreground'>
                             功率因數
                         </Label>
@@ -337,23 +337,24 @@ export function MeterList({ hubUid, initialMeters }: { hubUid: string; initialMe
                         />
                         {newErrors.powerFactor && <p className='text-xs text-destructive'>{newErrors.powerFactor}</p>}
                     </div>
+                    <Button
+                        disabled={createMeterMutation.isPending}
+                        onClick={createMeter}
+                        size='lg'
+                        className='w-full sm:mt-5 sm:w-max'
+                    >
+                        {createMeterMutation.isPending ? (
+                            <>
+                                <Loader2 className='h-4 w-4 animate-spin' />
+                                新增中...
+                            </>
+                        ) : (
+                            '新增'
+                        )}
+                    </Button>
                 </div>
-                <Button
-                    disabled={createMeterMutation.isPending}
-                    onClick={createMeter}
-                    size='lg'
-                    className='w-full sm:w-max'>
-                    {createMeterMutation.isPending ? (
-                        <>
-                            <Loader2 className='h-4 w-4 animate-spin' />
-                            新增中...
-                        </>
-                    ) : (
-                        '新增'
-                    )}
-                </Button>
             </Card>
-            <Card className='flex flex-1 min-h-0 flex-col overflow-hidden pt-0 border'>
+            <Card className='flex flex-1 min-h-0 flex-col overflow-hidden border pt-0 max-md:flex-none max-md:overflow-visible'>
                 <div className='flex items-center justify-between border-b px-4 py-3'>
                     <span className='text-sm text-muted-foreground'>
                         {dirtyCount > 0 ? `${dirtyCount} 筆尚未儲存` : '所有變更已儲存'}
@@ -369,8 +370,8 @@ export function MeterList({ hubUid, initialMeters }: { hubUid: string; initialMe
                 <div
                     className={`flex-1 min-h-0 overflow-y-auto transition-opacity duration-200 ${
                         isFetching ? 'opacity-60' : 'opacity-100'
-                    }`}>
-                    <table className='w-full text-sm'>
+                    } max-md:overflow-visible`}>
+                    <table className='responsive-table w-full text-sm'>
                         <thead className='bg-muted text-left sticky top-0 z-10'>
                             <tr>
                                 <th className='p-4'>智慧勾表名稱</th>
@@ -394,7 +395,7 @@ export function MeterList({ hubUid, initialMeters }: { hubUid: string; initialMe
                                     <tr
                                         key={meter.macId}
                                         className={`border-t align-top transition-colors ${rowBusy ? 'opacity-50 pointer-events-none' : ''}`}>
-                                        <td className='p-2'>
+                                        <td data-label='名稱' className='p-2'>
                                             <Input
                                                 value={form.name}
                                                 disabled={rowBusy}
@@ -405,10 +406,10 @@ export function MeterList({ hubUid, initialMeters }: { hubUid: string; initialMe
                                                 <p className='text-xs text-destructive mt-1'>{errors.name}</p>
                                             )}
                                         </td>
-                                        <td className='p-2'>
+                                        <td data-label='MAC ID' className='p-2'>
                                             <p className='text-sm font-mono text-foreground/80'>{meter.macId}</p>
                                         </td>
-                                        <td className='p-2'>
+                                        <td data-label='相位型態' className='p-2'>
                                             <Select
                                                 value={form.measurementType}
                                                 disabled={rowBusy}
@@ -425,7 +426,7 @@ export function MeterList({ hubUid, initialMeters }: { hubUid: string; initialMe
                                                 </SelectContent>
                                             </Select>
                                         </td>
-                                        <td className='p-2'>
+                                        <td data-label='設定電壓' className='p-2'>
                                             <Input
                                                 type='number'
                                                 value={form.voltage}
@@ -439,7 +440,7 @@ export function MeterList({ hubUid, initialMeters }: { hubUid: string; initialMe
                                                 <p className='text-xs text-destructive mt-1'>{errors.voltage}</p>
                                             )}
                                         </td>
-                                        <td className='p-2'>
+                                        <td data-label='功率因數' className='p-2'>
                                             <Input
                                                 type='number'
                                                 step='0.01'
@@ -454,7 +455,7 @@ export function MeterList({ hubUid, initialMeters }: { hubUid: string; initialMe
                                                 <p className='text-xs text-destructive mt-1'>{errors.powerFactor}</p>
                                             )}
                                         </td>
-                                        <td className='p-2 space-y-2 flex align-items gap-2'>
+                                        <td data-label='狀態' className='p-2 space-y-2 flex align-items gap-2'>
                                             <Checkbox
                                                 checked={meter.enabled}
                                                 disabled={rowBusy}
@@ -462,7 +463,7 @@ export function MeterList({ hubUid, initialMeters }: { hubUid: string; initialMe
                                             />
                                             <StatusBadge enabled={meter.enabled} activeLabel='啟用' />
                                         </td>
-                                        <td className='p-2'>
+                                        <td data-label='操作' className='p-2'>
                                             <div className='flex items-end gap-1.5'>
                                                 <Button
                                                     size='sm'
