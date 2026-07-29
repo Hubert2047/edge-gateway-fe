@@ -1,0 +1,156 @@
+'use client'
+
+import { createContext, createElement, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
+
+export type Locale = 'zh-TW' | 'en'
+
+type Messages = Record<string, string>
+
+const messages: Record<Locale, Messages> = {
+    'zh-TW': {
+        'nav.overview': '總覽', 'nav.cloudSync': '雲端同步', 'nav.gateways': '本地閘道',
+        'nav.meters': '智慧勾表', 'nav.historyData': '歷史資料', 'nav.historyEvents': '歷史事件',
+        'nav.processControl': '製程管制', 'nav.processRules': '製程規則', 'nav.settings': '系統設定',
+        'nav.apiDocs': 'API 文件', 'nav.logout': '登出', 'nav.edgeService': 'Edge service',
+        'nav.connected': '連線正常', 'nav.openMenu': '開啟選單', 'nav.closeMenu': '關閉選單',
+        'common.enabled': '啟用', 'common.disabled': '停用', 'common.save': '儲存', 'common.delete': '刪除',
+        'common.cancel': '取消', 'common.confirm': '確認', 'common.add': '新增', 'common.adding': '新增中...',
+        'common.saving': '儲存中...', 'common.info': '資訊', 'common.status': '狀態', 'common.actions': '操作',
+        'common.name': '名稱', 'common.displayName': '顯示名稱', 'common.gateway': '閘道器',
+        'common.settings': '細部設定', 'common.ip': 'IP 位址', 'common.port': 'PORT', 'common.seconds': '秒',
+        'common.interval': '採集頻率（秒）', 'common.id': 'ID', 'common.collectNow': '立即收集',
+        'common.confirmSave': '確認儲存', 'common.confirmDelete': '確認刪除', 'common.confirmCollect': '確認收集',
+        'common.confirmSaveDescription': '確定要儲存「{name}」的設定嗎？',
+        'common.confirmDeleteDescription': '確定要刪除「{name}」嗎？此操作無法復原。',
+        'common.confirmCollectDescription': '確定要立即對「{name}」執行收集嗎？',
+        'page.gateways': '本地閘道', 'page.cloudSync': '雲端同步', 'page.meters': '智慧勾表',
+        'page.noGateways': '尚未設定任何本地閘道，請先至「本地閘道」新增閘道。',
+        'empty.noGateways': '尚未設定任何本地閘道', 'empty.noCloudTargets': '尚未設定任何雲端服務器',
+        'gateway.add': '新增閘道器', 'gateway.monitoring': '監控中', 'gateway.meterCount': '{count} 智慧勾表數',
+        'gateway.lastSuccess': '最近成功：', 'gateway.idPlaceholder': '例如：GW001',
+        'gateway.namePlaceholder': '例如：一樓機房', 'gateway.ipPlaceholder': '192.168.1.100',
+        'gateway.portPlaceholder': '10123', 'gateway.intervalPlaceholder': '60', 'gateway.optional': '選填',
+        'cloud.runQueue': '執行佇列上傳', 'cloud.running': '執行中...', 'cloud.online': '在線',
+        'cloud.server': '雲端服務器', 'cloud.secret': '雲端服務器密鑰', 'cloud.apiBaseUrl': 'API BASE URL',
+        'cloud.uploadInterval': '上傳頻率（秒）', 'cloud.lastUpload': '上次正確上傳時間',
+        'cloud.pending': '待續傳', 'cloud.notUploaded': '尚未上傳', 'cloud.testConnection': '測試連線',
+        'cloud.success': '連線成功', 'cloud.failure': '連線失敗', 'cloud.id': '雲端服務器 ID',
+        'cloud.namePlaceholder': '例如：MMold 雲端（展示工廠A）', 'cloud.urlPlaceholder': 'https://api.mmold.com',
+        'cloud.add': '新增雲端服務器',
+        'meter.add': '新增智慧勾表', 'meter.count': '{count} 個', 'meter.phase': '相位型態',
+        'meter.singlePhase': '單相', 'meter.threePhase': '三相', 'meter.voltage': '設定電壓 (V)',
+        'meter.powerFactor': '功率因數', 'meter.namePlaceholder': '例如：主進線',
+        'meter.macPlaceholder': '例如：AA:BB:CC:DD:EE:FF', 'meter.unsaved': '{count} 筆尚未儲存',
+        'meter.allSaved': '所有變更已儲存', 'meter.saveAll': '儲存全部 ({count})',
+        'meter.tableName': '智慧勾表名稱', 'meter.macId': 'MAC ID', 'meter.status': '狀態',
+        'meter.added': '新增成功', 'meter.saved': '已儲存 {count} 筆',
+        'meter.partialSaved': '成功 {success} 筆，失敗 {failure} 筆',
+        'meter.confirmSaveAll': '確認全部儲存', 'meter.confirmSaveAllDescription': '確定要儲存{name}嗎？',
+        'login.title': '登入帳號', 'login.subtitle': '請輸入您的帳號密碼以繼續', 'login.username': '帳號',
+        'login.password': '密碼', 'login.usernamePlaceholder': '輸入帳號', 'login.login': '登入',
+        'login.loggingIn': '登入中...', 'login.usernameRequired': '請輸入帳號', 'login.passwordRequired': '請輸入密碼',
+        'validation.nameRequired': '請輸入名稱', 'validation.displayNameRequired': '請輸入顯示名稱',
+        'validation.ipRequired': '請輸入 IP', 'validation.portInvalid': '請輸入有效的 PORT',
+        'validation.intervalInvalid': '請輸入有效的秒數', 'validation.voltageInvalid': '請輸入有效的電壓',
+        'validation.powerFactorInvalid': '請輸入 0 ~ 1 之間的功率因數', 'validation.macRequired': '請輸入 MAC ID',
+        'validation.urlRequired': '請輸入 API BASE URL', 'validation.cloudIdRequired': '請輸入雲端服務器 ID',
+        'validation.secretRequired': '請輸入雲端服務器密鑰', 'toast.saveFailed': '儲存失敗',
+        'toast.deleteFailed': '刪除失敗', 'toast.collectFailed': '收集失敗', 'toast.addFailed': '新增失敗',
+        'toast.statusFailed': '更新狀態失敗', 'toast.added': '新增成功', 'toast.connectionFailed': '連線失敗',
+        'time.justNow': '剛剛', 'time.secondsAgo': '{count} 秒前', 'time.minutesAgo': '{count} 分鐘前',
+        'time.hoursAgo': '{count} 小時前', 'time.daysAgo': '{count} 天前',
+    },
+    en: {
+        'nav.overview': 'Overview', 'nav.cloudSync': 'Cloud Sync', 'nav.gateways': 'Local Gateways',
+        'nav.meters': 'Smart Meters', 'nav.historyData': 'Historical Data', 'nav.historyEvents': 'Historical Events',
+        'nav.processControl': 'Process Control', 'nav.processRules': 'Process Rules', 'nav.settings': 'Settings',
+        'nav.apiDocs': 'API Docs', 'nav.logout': 'Log out', 'nav.edgeService': 'Edge service',
+        'nav.connected': 'Connected', 'nav.openMenu': 'Open menu', 'nav.closeMenu': 'Close menu',
+        'common.enabled': 'Enabled', 'common.disabled': 'Disabled', 'common.save': 'Save', 'common.delete': 'Delete',
+        'common.cancel': 'Cancel', 'common.confirm': 'Confirm', 'common.add': 'Add', 'common.adding': 'Adding...',
+        'common.saving': 'Saving...', 'common.info': 'Info', 'common.status': 'Status', 'common.actions': 'Actions',
+        'common.name': 'Name', 'common.displayName': 'Display name', 'common.gateway': 'Gateway',
+        'common.settings': 'Details', 'common.ip': 'IP address', 'common.port': 'PORT', 'common.seconds': 'sec',
+        'common.interval': 'Polling interval (sec)', 'common.id': 'ID', 'common.collectNow': 'Collect now',
+        'common.confirmSave': 'Confirm save', 'common.confirmDelete': 'Confirm deletion', 'common.confirmCollect': 'Confirm collection',
+        'common.confirmSaveDescription': 'Save the settings for “{name}”?',
+        'common.confirmDeleteDescription': 'Delete “{name}”? This action cannot be undone.',
+        'common.confirmCollectDescription': 'Collect data from “{name}” now?',
+        'page.gateways': 'Local Gateways', 'page.cloudSync': 'Cloud Sync', 'page.meters': 'Smart Meters',
+        'page.noGateways': 'No local gateways configured. Add one from “Local Gateways” first.',
+        'empty.noGateways': 'No local gateways configured', 'empty.noCloudTargets': 'No cloud targets configured',
+        'gateway.add': 'Add gateway', 'gateway.monitoring': 'Monitoring', 'gateway.meterCount': '{count} smart meters',
+        'gateway.lastSuccess': 'Last success:', 'gateway.idPlaceholder': 'e.g. GW001',
+        'gateway.namePlaceholder': 'e.g. First-floor room', 'gateway.ipPlaceholder': '192.168.1.100',
+        'gateway.portPlaceholder': '10123', 'gateway.intervalPlaceholder': '60', 'gateway.optional': 'Optional',
+        'cloud.runQueue': 'Run queued uploads', 'cloud.running': 'Running...', 'cloud.online': 'Online',
+        'cloud.server': 'Cloud server', 'cloud.secret': 'Cloud server secret', 'cloud.apiBaseUrl': 'API BASE URL',
+        'cloud.uploadInterval': 'Upload interval (sec)', 'cloud.lastUpload': 'Last successful upload',
+        'cloud.pending': 'Pending uploads', 'cloud.notUploaded': 'Not uploaded yet', 'cloud.testConnection': 'Test connection',
+        'cloud.success': 'Connection successful', 'cloud.failure': 'Connection failed', 'cloud.id': 'Cloud server ID',
+        'cloud.namePlaceholder': 'e.g. MMold Cloud (Factory A)', 'cloud.urlPlaceholder': 'https://api.mmold.com',
+        'cloud.add': 'Add cloud server',
+        'meter.add': 'Add smart meter', 'meter.count': '{count}', 'meter.phase': 'Phase type',
+        'meter.singlePhase': 'Single-phase', 'meter.threePhase': 'Three-phase', 'meter.voltage': 'Voltage (V)',
+        'meter.powerFactor': 'Power factor', 'meter.namePlaceholder': 'e.g. Main feed',
+        'meter.macPlaceholder': 'e.g. AA:BB:CC:DD:EE:FF', 'meter.unsaved': '{count} unsaved',
+        'meter.allSaved': 'All changes saved', 'meter.saveAll': 'Save all ({count})',
+        'meter.tableName': 'Smart meter name', 'meter.macId': 'MAC ID', 'meter.status': 'Status',
+        'meter.added': 'Added successfully', 'meter.saved': 'Saved {count}',
+        'meter.partialSaved': 'Succeeded: {success}, failed: {failure}',
+        'meter.confirmSaveAll': 'Confirm save all', 'meter.confirmSaveAllDescription': 'Save {name}?',
+        'login.title': 'Sign in', 'login.subtitle': 'Enter your username and password to continue', 'login.username': 'Username',
+        'login.password': 'Password', 'login.usernamePlaceholder': 'Enter username', 'login.login': 'Sign in',
+        'login.loggingIn': 'Signing in...', 'login.usernameRequired': 'Please enter your username', 'login.passwordRequired': 'Please enter your password',
+        'validation.nameRequired': 'Please enter a name', 'validation.displayNameRequired': 'Please enter a display name',
+        'validation.ipRequired': 'Please enter an IP address', 'validation.portInvalid': 'Please enter a valid port',
+        'validation.intervalInvalid': 'Please enter a valid number of seconds', 'validation.voltageInvalid': 'Please enter a valid voltage',
+        'validation.powerFactorInvalid': 'Enter a power factor between 0 and 1', 'validation.macRequired': 'Please enter a MAC ID',
+        'validation.urlRequired': 'Please enter an API base URL', 'validation.cloudIdRequired': 'Please enter a cloud server ID',
+        'validation.secretRequired': 'Please enter a cloud server secret', 'toast.saveFailed': 'Save failed',
+        'toast.deleteFailed': 'Delete failed', 'toast.collectFailed': 'Collection failed', 'toast.addFailed': 'Add failed',
+        'toast.statusFailed': 'Failed to update status', 'toast.added': 'Added successfully', 'toast.connectionFailed': 'Connection failed',
+        'time.justNow': 'Just now', 'time.secondsAgo': '{count}s ago', 'time.minutesAgo': '{count}m ago',
+        'time.hoursAgo': '{count}h ago', 'time.daysAgo': '{count}d ago',
+    },
+}
+
+type I18nContextValue = {
+    locale: Locale
+    t: (key: string, values?: Record<string, string | number>) => string
+}
+
+const I18nContext = createContext<I18nContextValue | null>(null)
+
+function detectLocale(): Locale {
+    if (typeof navigator === 'undefined') return 'zh-TW'
+    const languages = navigator.languages?.length ? navigator.languages : [navigator.language]
+    return languages.some((language) => language.toLowerCase().startsWith('en')) ? 'en' : 'zh-TW'
+}
+
+export function I18nProvider({ children }: { children: ReactNode }) {
+    const [locale, setLocale] = useState<Locale>('zh-TW')
+
+    useEffect(() => {
+        const detected = detectLocale()
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        setLocale(detected)
+        document.documentElement.lang = detected === 'en' ? 'en' : 'zh-Hant'
+    }, [])
+
+    const value = useMemo<I18nContextValue>(() => ({
+        locale,
+        t: (key, values = {}) => {
+            const template = messages[locale][key] ?? messages['zh-TW'][key] ?? key
+            return template.replace(/\{(\w+)\}/g, (_, name: string) => String(values[name] ?? `{${name}}`))
+        },
+    }), [locale])
+
+    return createElement(I18nContext.Provider, { value }, children)
+}
+
+export function useI18n() {
+    const context = useContext(I18nContext)
+    if (!context) throw new Error('useI18n must be used within I18nProvider')
+    return context
+}

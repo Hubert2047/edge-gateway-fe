@@ -1,6 +1,8 @@
 import { Badge } from '@/components/ui/badge'
+import { useI18n } from '@/lib/i18n'
 
 export function StatusBadge({ enabled, activeLabel }: { enabled: boolean; activeLabel: string }) {
+    const { t } = useI18n()
     return (
         <Badge
             className={
@@ -9,7 +11,7 @@ export function StatusBadge({ enabled, activeLabel }: { enabled: boolean; active
                     : 'bg-rose-100 text-rose-600 border border-rose-200 hover:bg-rose-100'
             }
         >
-            {enabled ? activeLabel : '停用'}
+            {enabled ? activeLabel : t('common.disabled')}
         </Badge>
     )
 }

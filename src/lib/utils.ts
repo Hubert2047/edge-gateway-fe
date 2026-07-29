@@ -1,5 +1,6 @@
 import { clsx, type ClassValue } from "clsx"
 import { twMerge } from "tailwind-merge"
+import type { Locale } from '@/lib/i18n'
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
@@ -19,26 +20,31 @@ function parseAsUtcIfNoTimezone(input: string | Date): Date {
   return new Date(normalized)
 }
 
-export function formatRelativeTime(input: string | Date): string {
+export function formatRelativeTime(input: string | Date, locale: Locale = 'zh-TW'): string {
   const date = parseAsUtcIfNoTimezone(input)
   if (Number.isNaN(date.getTime())) return String(input)
 
   const diffMs = Date.now() - date.getTime()
   const diffSec = Math.floor(diffMs / 1000)
 
-  if (diffSec < 5) return '剛剛'
-  if (diffSec < 60) return `${diffSec} 秒前`
+  if (locale === 'en') {
+    if (diffSec < 5) return 'Just now'
+    if (diffSec < 60) return `${diffSec}s ago`
+  } else {
+    if (diffSec < 5) return '剛剛'
+    if (diffSec < 60) return `${diffSec} 秒前`
+  }
 
   const diffMin = Math.floor(diffSec / 60)
-  if (diffMin < 60) return `${diffMin} 分鐘前`
+  if (diffMin < 60) return locale === 'en' ? `${diffMin}m ago` : `${diffMin} 分鐘前`
 
   const diffHour = Math.floor(diffMin / 60)
-  if (diffHour < 24) return `${diffHour} 小時前`
+  if (diffHour < 24) return locale === 'en' ? `${diffHour}h ago` : `${diffHour} 小時前`
 
   const diffDay = Math.floor(diffHour / 24)
-  if (diffDay < 7) return `${diffDay} 天前`
+  if (diffDay < 7) return locale === 'en' ? `${diffDay}d ago` : `${diffDay} 天前`
 
-  return date.toLocaleDateString('zh-TW', { year: 'numeric', month: '2-digit', day: '2-digit' })
+  return date.toLocaleDateString(locale === 'en' ? 'en-US' : 'zh-TW', { year: 'numeric', month: '2-digit', day: '2-digit' })
 }
 export function getErrorMessage(err: unknown, fallback: string) {
   return err instanceof Error ? err.message : fallback

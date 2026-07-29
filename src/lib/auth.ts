@@ -10,8 +10,8 @@ export const authOptions: NextAuthOptions = {
         CredentialsProvider({
             name: 'Credentials',
             credentials: {
-                username: { label: '帳號', type: 'text' },
-                password: { label: '密碼', type: 'password' },
+                username: { label: 'Username', type: 'text' },
+                password: { label: 'Password', type: 'password' },
             },
             async authorize(credentials) {
                 if (!credentials?.username || !credentials?.password) {

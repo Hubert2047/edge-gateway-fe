@@ -23,11 +23,7 @@ import type { Meter, MeterFormValues, MeterType } from '@/types/meter'
 import { getErrorMessage } from '@/lib/utils'
 import { StatusBadge } from '../status-badge'
 import { useCreateMeter, useDeleteMeter, useMeters, useUpdateMeter, useUpdateMetersBulk } from '@/lib/api/meter'
-
-const phaseLabel: Record<MeterType, string> = {
-    single_phase: '單相',
-    three_phase: '三相',
-}
+import { useI18n } from '@/lib/i18n'
 
 function emptyForm(): MeterFormValues {
     return {
@@ -53,11 +49,11 @@ type FormErrors = Partial<Record<'name' | 'macId' | 'voltage' | 'powerFactor', s
 
 function validateForm(form: MeterFormValues, opts: { isNew: boolean }): FormErrors {
     const errors: FormErrors = {}
-    if (!form.name.trim()) errors.name = '請輸入名稱'
-    if (opts.isNew && !form.macId.trim()) errors.macId = '請輸入 MAC ID'
-    if (!form.voltage || form.voltage <= 0) errors.voltage = '請輸入有效的電壓'
+    if (!form.name.trim()) errors.name = 'validation.nameRequired'
+    if (opts.isNew && !form.macId.trim()) errors.macId = 'validation.macRequired'
+    if (!form.voltage || form.voltage <= 0) errors.voltage = 'validation.voltageInvalid'
     if (!form.powerFactor || form.powerFactor <= 0 || form.powerFactor > 1) {
-        errors.powerFactor = '請輸入 0 ~ 1 之間的功率因數'
+        errors.powerFactor = 'validation.powerFactorInvalid'
     }
     return errors
 }
@@ -71,6 +67,7 @@ type PendingAction =
 type RowFormState = { form: MeterFormValues; errors: FormErrors }
 
 export function MeterList({ hubUid, initialMeters }: { hubUid: string; initialMeters?: Meter[] }) {
+    const { t } = useI18n()
     const { data: meters = initialMeters ?? [], isFetching } = useMeters(hubUid, initialMeters)
     const updateMeterMutation = useUpdateMeter(hubUid)
     const deleteMeterMutation = useDeleteMeter(hubUid)
@@ -139,7 +136,7 @@ export function MeterList({ hubUid, initialMeters }: { hubUid: string; initialMe
                 powerFactor: meter.powerFactor,
                 enabled: checked,
             },
-            { onError: (err) => toast.error(getErrorMessage(err, '更新狀態失敗')) },
+            { onError: (err) => toast.error(getErrorMessage(err, t('toast.statusFailed'))) },
         )
     }
 
@@ -177,7 +174,7 @@ export function MeterList({ hubUid, initialMeters }: { hubUid: string; initialMe
         setPendingAction({
             type: 'saveAll',
             macIds: dirtyMacIds,
-            displayName: `${dirtyMacIds.length} 筆已修改的智慧勾表`,
+            displayName: t('meter.unsaved', { count: dirtyMacIds.length }),
         })
     }
 
@@ -195,7 +192,7 @@ export function MeterList({ hubUid, initialMeters }: { hubUid: string; initialMe
                 { macId: action.macId, ...payload, enabled: meter.enabled },
                 {
                     onSuccess: () => clearRowForm(action.macId),
-                    onError: (err) => toast.error(getErrorMessage(err, '儲存失敗')),
+                    onError: (err) => toast.error(getErrorMessage(err, t('toast.saveFailed'))),
                 },
             )
         }
@@ -204,7 +201,7 @@ export function MeterList({ hubUid, initialMeters }: { hubUid: string; initialMe
             setDeletingMacId(action.macId)
             deleteMeterMutation.mutate(action.macId, {
                 onSettled: () => setDeletingMacId((prev) => (prev === action.macId ? null : prev)),
-                onError: (err) => toast.error(getErrorMessage(err, '刪除失敗')),
+                onError: (err) => toast.error(getErrorMessage(err, t('toast.deleteFailed'))),
             })
         }
 
@@ -221,10 +218,10 @@ export function MeterList({ hubUid, initialMeters }: { hubUid: string; initialMe
             const result = await bulkMutation.mutateAsync(updates)
             if (result.failed.length === 0) {
                 for (const macId of action.macIds) clearRowForm(macId)
-                toast.success(`已儲存 ${result.succeeded.length} 筆`)
+                toast.success(t('meter.saved', { count: result.succeeded.length }))
             } else {
                 for (const macId of result.succeeded) clearRowForm(macId)
-                toast.error(`成功 ${result.succeeded.length} 筆，失敗 ${result.failed.length} 筆`)
+                toast.error(t('meter.partialSaved', { success: result.succeeded.length, failure: result.failed.length }))
             }
         }
     }
@@ -241,17 +238,17 @@ export function MeterList({ hubUid, initialMeters }: { hubUid: string; initialMe
                 onSuccess: () => {
                     setNewForm(emptyForm())
                     setNewErrors({})
-                    toast.success('新增成功')
+                    toast.success(t('toast.added'))
                 },
-                onError: (err) => toast.error(getErrorMessage(err, '新增失敗')),
+                onError: (err) => toast.error(getErrorMessage(err, t('toast.addFailed'))),
             },
         )
     }
 
     const dialogText = {
-        save: { title: '確認儲存', desc: (name: string) => `確定要儲存「${name}」的設定嗎？` },
-        delete: { title: '確認刪除', desc: (name: string) => `確定要刪除「${name}」嗎？此操作無法復原。` },
-        saveAll: { title: '確認全部儲存', desc: (name: string) => `確定要儲存${name}嗎？` },
+        save: { title: t('common.confirmSave'), desc: (name: string) => t('common.confirmSaveDescription', { name }) },
+        delete: { title: t('common.confirmDelete'), desc: (name: string) => t('common.confirmDeleteDescription', { name }) },
+        saveAll: { title: t('meter.confirmSaveAll'), desc: (name: string) => t('meter.confirmSaveAllDescription', { name }) },
     } as const
 
     const dirtyCount = Object.keys(rowFormState).length
@@ -260,41 +257,41 @@ export function MeterList({ hubUid, initialMeters }: { hubUid: string; initialMe
         <div className='flex h-full flex-col gap-4 overflow-hidden max-md:h-auto max-md:overflow-visible'>
             <Card className='shrink-0 px-4 sm:px-6 pt-4 space-y-4'>
                 <div className='flex items-center justify-between mb-0'>
-                    <h2 className='text-lg font-bold'>新增智慧勾表</h2>
+                    <h2 className='text-lg font-bold'>{t('meter.add')}</h2>
                     <span className='text-sm text-muted-foreground flex items-center gap-1.5'>
                         {isFetching && <Loader2 className='h-3 w-3 animate-spin' />}
-                        {meters.length} 個
+                        {t('meter.count', { count: meters.length })}
                     </span>
                 </div>
                 <div className='flex flex-wrap items-start gap-4'>
                     <div className='w-full space-y-1.5 sm:w-52'>
                         <Label htmlFor='new-name' className='text-xs text-muted-foreground'>
-                            名稱
+                            {t('common.name')}
                         </Label>
                         <Input
                             id='new-name'
-                            placeholder='例如：主進線'
+                            placeholder={t('meter.namePlaceholder')}
                             value={newForm.name}
                             onChange={(e) => updateNewForm({ name: e.target.value })}
                             className={newErrors.name ? 'border-destructive' : ''}
                         />
-                        {newErrors.name && <p className='text-xs text-destructive'>{newErrors.name}</p>}
+                        {newErrors.name && <p className='text-xs text-destructive'>{t(newErrors.name)}</p>}
                     </div>
                     <div className='w-full space-y-1.5 sm:w-60'>
                         <Label htmlFor='new-mac' className='text-xs text-muted-foreground'>
-                            MAC ID
+                            {t('meter.macId')}
                         </Label>
                         <Input
                             id='new-mac'
-                            placeholder='例如：AA:BB:CC:DD:EE:FF'
+                            placeholder={t('meter.macPlaceholder')}
                             value={newForm.macId}
                             onChange={(e) => updateNewForm({ macId: e.target.value })}
                             className={newErrors.macId ? 'border-destructive' : ''}
                         />
-                        {newErrors.macId && <p className='text-xs text-destructive'>{newErrors.macId}</p>}
+                        {newErrors.macId && <p className='text-xs text-destructive'>{t(newErrors.macId)}</p>}
                     </div>
                     <div className='w-full space-y-1.5 sm:w-28'>
-                        <Label className='text-xs text-muted-foreground'>相位型態</Label>
+                        <Label className='text-xs text-muted-foreground'>{t('meter.phase')}</Label>
                         <Select
                             value={newForm.measurementType}
                             onValueChange={(v) => {
@@ -302,17 +299,17 @@ export function MeterList({ hubUid, initialMeters }: { hubUid: string; initialMe
                                 updateNewForm({ measurementType: v as MeterType })
                             }}>
                             <SelectTrigger>
-                                <SelectValue>{phaseLabel[newForm.measurementType]}</SelectValue>
+                                <SelectValue>{newForm.measurementType === 'three_phase' ? t('meter.threePhase') : t('meter.singlePhase')}</SelectValue>
                             </SelectTrigger>
                             <SelectContent>
-                                <SelectItem value='three_phase'>三相</SelectItem>
-                                <SelectItem value='single_phase'>單相</SelectItem>
+                                <SelectItem value='three_phase'>{t('meter.threePhase')}</SelectItem>
+                                <SelectItem value='single_phase'>{t('meter.singlePhase')}</SelectItem>
                             </SelectContent>
                         </Select>
                     </div>
                     <div className='w-full space-y-1.5 sm:w-32'>
                         <Label htmlFor='new-voltage' className='text-xs text-muted-foreground'>
-                            設定電壓 (V)
+                            {t('meter.voltage')}
                         </Label>
                         <Input
                             id='new-voltage'
@@ -321,11 +318,11 @@ export function MeterList({ hubUid, initialMeters }: { hubUid: string; initialMe
                             onChange={(e) => updateNewForm({ voltage: Number(e.target.value) })}
                             className={newErrors.voltage ? 'border-destructive' : ''}
                         />
-                        {newErrors.voltage && <p className='text-xs text-destructive'>{newErrors.voltage}</p>}
+                        {newErrors.voltage && <p className='text-xs text-destructive'>{t(newErrors.voltage)}</p>}
                     </div>
                     <div className='w-full space-y-1.5 sm:w-28'>
                         <Label htmlFor='new-pf' className='text-xs text-muted-foreground'>
-                            功率因數
+                            {t('meter.powerFactor')}
                         </Label>
                         <Input
                             id='new-pf'
@@ -335,7 +332,7 @@ export function MeterList({ hubUid, initialMeters }: { hubUid: string; initialMe
                             onChange={(e) => updateNewForm({ powerFactor: Number(e.target.value) })}
                             className={newErrors.powerFactor ? 'border-destructive' : ''}
                         />
-                        {newErrors.powerFactor && <p className='text-xs text-destructive'>{newErrors.powerFactor}</p>}
+                        {newErrors.powerFactor && <p className='text-xs text-destructive'>{t(newErrors.powerFactor)}</p>}
                     </div>
                     <Button
                         disabled={createMeterMutation.isPending}
@@ -346,10 +343,10 @@ export function MeterList({ hubUid, initialMeters }: { hubUid: string; initialMe
                         {createMeterMutation.isPending ? (
                             <>
                                 <Loader2 className='h-4 w-4 animate-spin' />
-                                新增中...
+                                {t('common.adding')}
                             </>
                         ) : (
-                            '新增'
+                            t('common.add')
                         )}
                     </Button>
                 </div>
@@ -357,13 +354,13 @@ export function MeterList({ hubUid, initialMeters }: { hubUid: string; initialMe
             <Card className='flex flex-1 min-h-0 flex-col overflow-hidden border border-border/60 pt-0 max-md:flex-none max-md:overflow-visible'>
                 <div className='flex items-center justify-between border-b px-4 py-3'>
                     <span className='text-sm text-muted-foreground'>
-                        {dirtyCount > 0 ? `${dirtyCount} 筆尚未儲存` : '所有變更已儲存'}
+                        {dirtyCount > 0 ? t('meter.unsaved', { count: dirtyCount }) : t('meter.allSaved')}
                     </span>
                     <Button size='sm' disabled={dirtyCount === 0 || bulkMutation.isPending} onClick={requestSaveAll}>
                         {bulkMutation.isPending ? (
                             <Loader2 className='h-4 w-4 animate-spin' />
                         ) : (
-                            `儲存全部 (${dirtyCount})`
+                            t('meter.saveAll', { count: dirtyCount })
                         )}
                     </Button>
                 </div>
@@ -374,13 +371,13 @@ export function MeterList({ hubUid, initialMeters }: { hubUid: string; initialMe
                     <table className='responsive-table w-full text-sm'>
                         <thead className='bg-muted text-left sticky top-0 z-10'>
                             <tr>
-                                <th className='p-4'>智慧勾表名稱</th>
-                                <th className='p-4'>MAC ID</th>
-                                <th className='p-4'>相位型態</th>
-                                <th className='p-4'>設定電壓 (V)</th>
-                                <th className='p-4'>功率因數</th>
-                                <th className='p-4'>狀態</th>
-                                <th className='p-4'>操作</th>
+                                <th className='p-4'>{t('meter.tableName')}</th>
+                                <th className='p-4'>{t('meter.macId')}</th>
+                                <th className='p-4'>{t('meter.phase')}</th>
+                                <th className='p-4'>{t('meter.voltage')}</th>
+                                <th className='p-4'>{t('meter.powerFactor')}</th>
+                                <th className='p-4'>{t('common.status')}</th>
+                                <th className='p-4'>{t('common.actions')}</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -395,7 +392,7 @@ export function MeterList({ hubUid, initialMeters }: { hubUid: string; initialMe
                                     <tr
                                         key={meter.macId}
                                         className={`border-t align-top transition-colors ${rowBusy ? 'opacity-50 pointer-events-none' : ''}`}>
-                                        <td data-label='名稱' className='p-2'>
+                                        <td data-label={t('common.name')} className='p-2'>
                                             <Input
                                                 value={form.name}
                                                 disabled={rowBusy}
@@ -403,13 +400,13 @@ export function MeterList({ hubUid, initialMeters }: { hubUid: string; initialMe
                                                 className={errors.name ? 'border-destructive' : ''}
                                             />
                                             {errors.name && (
-                                                <p className='text-xs text-destructive mt-1'>{errors.name}</p>
+                                                <p className='text-xs text-destructive mt-1'>{t(errors.name)}</p>
                                             )}
                                         </td>
                                         <td data-label='MAC ID' className='p-2'>
                                             <p className='text-sm font-mono text-foreground/80'>{meter.macId}</p>
                                         </td>
-                                        <td data-label='相位型態' className='p-2'>
+                                        <td data-label={t('meter.phase')} className='p-2'>
                                             <Select
                                                 value={form.measurementType}
                                                 disabled={rowBusy}
@@ -418,15 +415,15 @@ export function MeterList({ hubUid, initialMeters }: { hubUid: string; initialMe
                                                     updateRowForm(meter.macId, { measurementType: v as MeterType })
                                                 }}>
                                                 <SelectTrigger>
-                                                    <SelectValue>{phaseLabel[form.measurementType]}</SelectValue>
+                                                <SelectValue>{form.measurementType === 'three_phase' ? t('meter.threePhase') : t('meter.singlePhase')}</SelectValue>
                                                 </SelectTrigger>
                                                 <SelectContent>
-                                                    <SelectItem value='three_phase'>三相</SelectItem>
-                                                    <SelectItem value='single_phase'>單相</SelectItem>
+                                                    <SelectItem value='three_phase'>{t('meter.threePhase')}</SelectItem>
+                                                    <SelectItem value='single_phase'>{t('meter.singlePhase')}</SelectItem>
                                                 </SelectContent>
                                             </Select>
                                         </td>
-                                        <td data-label='設定電壓' className='p-2'>
+                                        <td data-label={t('meter.voltage')} className='p-2'>
                                             <Input
                                                 type='number'
                                                 value={form.voltage}
@@ -437,10 +434,10 @@ export function MeterList({ hubUid, initialMeters }: { hubUid: string; initialMe
                                                 className={errors.voltage ? 'border-destructive' : ''}
                                             />
                                             {errors.voltage && (
-                                                <p className='text-xs text-destructive mt-1'>{errors.voltage}</p>
+                                                <p className='text-xs text-destructive mt-1'>{t(errors.voltage)}</p>
                                             )}
                                         </td>
-                                        <td data-label='功率因數' className='p-2'>
+                                        <td data-label={t('meter.powerFactor')} className='p-2'>
                                             <Input
                                                 type='number'
                                                 step='0.01'
@@ -452,25 +449,25 @@ export function MeterList({ hubUid, initialMeters }: { hubUid: string; initialMe
                                                 className={errors.powerFactor ? 'border-destructive' : ''}
                                             />
                                             {errors.powerFactor && (
-                                                <p className='text-xs text-destructive mt-1'>{errors.powerFactor}</p>
+                                                <p className='text-xs text-destructive mt-1'>{t(errors.powerFactor)}</p>
                                             )}
                                         </td>
-                                        <td data-label='狀態' className='p-2 space-y-2 flex align-items gap-2'>
+                                        <td data-label={t('common.status')} className='p-2 space-y-2 flex align-items gap-2'>
                                             <Checkbox
                                                 checked={meter.enabled}
                                                 disabled={rowBusy}
                                                 onCheckedChange={(checked) => toggleEnabled(meter, checked === true)}
                                             />
-                                            <StatusBadge enabled={meter.enabled} activeLabel='啟用' />
+                                            <StatusBadge enabled={meter.enabled} activeLabel={t('common.enabled')} />
                                         </td>
-                                        <td data-label='操作' className='p-2'>
+                                        <td data-label={t('common.actions')} data-role='actions' className='p-2'>
                                             <div className='flex items-end gap-1.5'>
                                                 <Button
                                                     size='sm'
                                                     className='w-16'
                                                     disabled={rowBusy}
                                                     onClick={() => requestSave(meter)}>
-                                                    {saving ? <Loader2 className='h-4 w-4 animate-spin' /> : '儲存'}
+                                                    {saving ? <Loader2 className='h-4 w-4 animate-spin' /> : t('common.save')}
                                                 </Button>
                                                 <Button
                                                     size='sm'
@@ -478,7 +475,7 @@ export function MeterList({ hubUid, initialMeters }: { hubUid: string; initialMe
                                                     variant='ghost'
                                                     disabled={rowBusy}
                                                     onClick={() => requestDelete(meter)}>
-                                                    {deleting ? <Loader2 className='h-4 w-4 animate-spin' /> : '刪除'}
+                                                    {deleting ? <Loader2 className='h-4 w-4 animate-spin' /> : t('common.delete')}
                                                 </Button>
                                             </div>
                                         </td>
@@ -499,13 +496,13 @@ export function MeterList({ hubUid, initialMeters }: { hubUid: string; initialMe
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                        <AlertDialogCancel>取消</AlertDialogCancel>
+                        <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
                         <AlertDialogAction
                             onClick={confirmPendingAction}
                             className={
                                 pendingAction?.type === 'delete' ? 'bg-rose-600 text-white hover:bg-rose-700' : ''
                             }>
-                            確認
+                            {t('common.confirm')}
                         </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>

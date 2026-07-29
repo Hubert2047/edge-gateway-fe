@@ -28,6 +28,7 @@ import {
     useTestCloudTargetConnection,
     useUpdateCloudTarget,
 } from '@/lib/api/cloud-target'
+import { useI18n } from '@/lib/i18n'
 
 function emptyForm(): CloudTargetFormValues {
     return {
@@ -58,12 +59,12 @@ type FormErrors = Partial<
 
 function validateForm(form: CloudTargetFormValues): FormErrors {
     const errors: FormErrors = {}
-    if (!form.name.trim()) errors.name = '請輸入顯示名稱'
-    if (!form.apiBaseUrl.trim()) errors.apiBaseUrl = '請輸入 API BASE URL'
-    if (!form.apiKey.trim()) errors.apiKey = '請輸入雲端服務器 ID'
-    if (!form.apiSecret.trim()) errors.cloudServerSecret = '請輸入雲端服務器密鑰'
+    if (!form.name.trim()) errors.name = 'validation.displayNameRequired'
+    if (!form.apiBaseUrl.trim()) errors.apiBaseUrl = 'validation.urlRequired'
+    if (!form.apiKey.trim()) errors.apiKey = 'validation.cloudIdRequired'
+    if (!form.apiSecret.trim()) errors.cloudServerSecret = 'validation.secretRequired'
     if (!form.uploadIntervalSeconds || form.uploadIntervalSeconds <= 0)
-        errors.uploadIntervalSeconds = '請輸入有效的秒數'
+        errors.uploadIntervalSeconds = 'validation.intervalInvalid'
     return errors
 }
 
@@ -72,7 +73,7 @@ type TestResult = { success: boolean; message?: string }
 type RowFormState = { form: CloudTargetFormValues; errors: FormErrors }
 
 export function CloudTargetList({ initialTargets }: { initialTargets: CloudTarget[] }) {
-    console.log(initialTargets)
+    const { t, locale } = useI18n()
     const { data: targets = initialTargets } = useCloudTargets(initialTargets)
     const updateMutation = useUpdateCloudTarget()
     const deleteMutation = useDeleteCloudTarget()
@@ -159,7 +160,7 @@ export function CloudTargetList({ initialTargets }: { initialTargets: CloudTarge
                 { id, form },
                 {
                     onSuccess: () => clearRowForm(id),
-                    onError: (err) => toast.error(getErrorMessage(err, '儲存失敗')),
+                    onError: (err) => toast.error(getErrorMessage(err, t('toast.saveFailed'))),
                 },
             )
         }
@@ -167,7 +168,7 @@ export function CloudTargetList({ initialTargets }: { initialTargets: CloudTarge
             setDeletingId(id)
             deleteMutation.mutate(id, {
                 onSettled: () => setDeletingId((prev) => (prev === id ? null : prev)),
-                onError: (err) => toast.error(getErrorMessage(err, '刪除失敗')),
+                onError: (err) => toast.error(getErrorMessage(err, t('toast.deleteFailed'))),
             })
         }
     }
@@ -180,7 +181,7 @@ export function CloudTargetList({ initialTargets }: { initialTargets: CloudTarge
         })
         testMutation.mutate(id, {
             onSuccess: (result) => setTestResults((prev) => ({ ...prev, [id]: result })),
-            onError: () => setTestResults((prev) => ({ ...prev, [id]: { success: false, message: '連線失敗' } })),
+            onError: () => setTestResults((prev) => ({ ...prev, [id]: { success: false, message: t('cloud.failure') } })),
         })
     }
 
@@ -195,16 +196,16 @@ export function CloudTargetList({ initialTargets }: { initialTargets: CloudTarge
             onSuccess: () => {
                 setNewForm(emptyForm())
                 setNewErrors({})
-                toast.success('新增成功')
+                toast.success(t('toast.added'))
             },
-            onError: (err) => toast.error(getErrorMessage(err, '新增失敗')),
+            onError: (err) => toast.error(getErrorMessage(err, t('toast.addFailed'))),
         })
     }
 
     async function runQueuedUploads() {
         setRunningQueue(true)
         try {
-            // TODO: 尚未有對應 API endpoint，待後端提供後串接
+            // TODO: waiting for the backend queue-upload endpoint
             console.log('execute queued uploads')
         } finally {
             setRunningQueue(false)
@@ -212,22 +213,22 @@ export function CloudTargetList({ initialTargets }: { initialTargets: CloudTarge
     }
 
     const dialogText = {
-        save: { title: '確認儲存', desc: (name: string) => `確定要儲存「${name}」的設定嗎？` },
-        delete: { title: '確認刪除', desc: (name: string) => `確定要刪除「${name}」嗎？此操作無法復原。` },
+        save: { title: t('common.confirmSave'), desc: (name: string) => t('common.confirmSaveDescription', { name }) },
+        delete: { title: t('common.confirmDelete'), desc: (name: string) => t('common.confirmDeleteDescription', { name }) },
     } as const
 
     return (
         <div className='flex h-full flex-col gap-4 overflow-hidden max-md:h-auto max-md:overflow-visible'>
             <div className='flex shrink-0 items-center justify-between gap-3 max-sm:items-start max-sm:flex-col'>
-                <h1 className='text-2xl font-bold'>雲端同步</h1>
+                <h1 className='text-2xl font-bold'>{t('page.cloudSync')}</h1>
                 <Button className='max-sm:w-full' disabled={runningQueue} onClick={runQueuedUploads}>
                     {runningQueue ? (
                         <>
                             <Loader2 className='h-4 w-4 animate-spin' />
-                            執行中...
+                            {t('cloud.running')}
                         </>
                     ) : (
-                        '執行佇列上傳'
+                        t('cloud.runQueue')
                     )}
                 </Button>
             </div>
@@ -243,10 +244,10 @@ export function CloudTargetList({ initialTargets }: { initialTargets: CloudTarge
                         </colgroup>
                         <thead className='bg-muted text-left sticky top-0 z-10'>
                             <tr>
-                                <th className='whitespace-nowrap p-4'>狀態</th>
-                                <th className='whitespace-nowrap p-4'>雲端服務器</th>
-                                <th className='whitespace-nowrap p-4'>細部設定</th>
-                                <th className='whitespace-nowrap p-4'>操作</th>
+                                <th className='whitespace-nowrap p-4'>{t('common.status')}</th>
+                                <th className='whitespace-nowrap p-4'>{t('cloud.server')}</th>
+                                <th className='whitespace-nowrap p-4'>{t('common.settings')}</th>
+                                <th className='whitespace-nowrap p-4'>{t('common.actions')}</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -254,9 +255,9 @@ export function CloudTargetList({ initialTargets }: { initialTargets: CloudTarge
                                 <tr>
                                     <td
                                         colSpan={4}
-                                        data-label='雲端服務器'
+                                        data-label={t('cloud.server')}
                                         className='p-6 text-center text-sm text-muted-foreground'>
-                                        尚未設定任何雲端服務器
+                                        {t('empty.noCloudTargets')}
                                     </td>
                                 </tr>
                             ) : (
@@ -272,7 +273,7 @@ export function CloudTargetList({ initialTargets }: { initialTargets: CloudTarge
                                         <tr
                                             key={target.id}
                                             className={`relative border-t align-top transition-colors ${rowBusy ? 'opacity-60 pointer-events-none' : ''}`}>
-                                            <td data-label='狀態' className='p-4 space-y-2'>
+                                            <td data-label={t('common.status')} className='p-4 space-y-2'>
                                                 <Checkbox
                                                     checked={form.enabled}
                                                     disabled={rowBusy}
@@ -280,14 +281,14 @@ export function CloudTargetList({ initialTargets }: { initialTargets: CloudTarge
                                                         toggleEnabled(target, checked === true)
                                                     }
                                                 />
-                                                <StatusBadge enabled={form.enabled} activeLabel='在線' />
+                                                <StatusBadge enabled={form.enabled} activeLabel={t('cloud.online')} />
                                             </td>
-                                            <td data-label='雲端服務器' className='p-4 space-y-3'>
+                                            <td data-label={t('cloud.server')} className='p-4 space-y-3'>
                                                 <div className='space-y-1.5'>
                                                     <Label
                                                         htmlFor={`name-${target.id}`}
                                                         className='text-xs text-muted-foreground'>
-                                                        顯示名稱
+                                                        {t('common.displayName')}
                                                     </Label>
                                                     <Input
                                                         id={`name-${target.id}`}
@@ -299,14 +300,14 @@ export function CloudTargetList({ initialTargets }: { initialTargets: CloudTarge
                                                         className={errors.name ? 'border-destructive' : ''}
                                                     />
                                                     {errors.name && (
-                                                        <p className='text-xs text-destructive'>{errors.name}</p>
+                                                    <p className='text-xs text-destructive'>{t(errors.name)}</p>
                                                     )}
                                                 </div>
                                                 <div className='space-y-1.5'>
                                                     <Label
                                                         htmlFor={`serverid-${target.id}`}
                                                         className='text-xs text-muted-foreground'>
-                                                        雲端服務器
+                                                        {t('cloud.server')}
                                                     </Label>
                                                     <Input
                                                         id={`serverid-${target.id}`}
@@ -318,14 +319,14 @@ export function CloudTargetList({ initialTargets }: { initialTargets: CloudTarge
                                                         }
                                                     />
                                                     {errors.apiKey && (
-                                                        <p className='text-xs text-destructive'>{errors.apiKey}</p>
+                                                        <p className='text-xs text-destructive'>{t(errors.apiKey)}</p>
                                                     )}
                                                 </div>
                                                 <div className='space-y-1.5'>
                                                     <Label
                                                         htmlFor={`secret-${target.id}`}
                                                         className='text-xs text-muted-foreground'>
-                                                        雲端服務器密鑰
+                                                        {t('cloud.secret')}
                                                     </Label>
                                                     <Input
                                                         id={`secret-${target.id}`}
@@ -340,17 +341,17 @@ export function CloudTargetList({ initialTargets }: { initialTargets: CloudTarge
                                                     />
                                                     {errors.cloudServerSecret && (
                                                         <p className='text-xs text-destructive'>
-                                                            {errors.cloudServerSecret}
+                                                            {t(errors.cloudServerSecret)}
                                                         </p>
                                                     )}
                                                 </div>
                                             </td>
-                                            <td data-label='細部設定' className='p-4 space-y-3'>
+                                            <td data-label={t('common.settings')} className='p-4 space-y-3'>
                                                 <div className='space-y-1.5'>
                                                     <Label
                                                         htmlFor={`url-${target.id}`}
                                                         className='text-xs text-muted-foreground'>
-                                                        API BASE URL
+                                                        {t('cloud.apiBaseUrl')}
                                                     </Label>
                                                     <Input
                                                         id={`url-${target.id}`}
@@ -362,7 +363,7 @@ export function CloudTargetList({ initialTargets }: { initialTargets: CloudTarge
                                                         className={errors.apiBaseUrl ? 'border-destructive' : ''}
                                                     />
                                                     {errors.apiBaseUrl && (
-                                                        <p className='text-xs text-destructive'>{errors.apiBaseUrl}</p>
+                                                        <p className='text-xs text-destructive'>{t(errors.apiBaseUrl)}</p>
                                                     )}
                                                 </div>
                                                 <div className='flex gap-3 flex-col'>
@@ -370,7 +371,7 @@ export function CloudTargetList({ initialTargets }: { initialTargets: CloudTarge
                                                         <Label
                                                             htmlFor={`interval-${target.id}`}
                                                             className='text-xs text-muted-foreground'>
-                                                            上傳頻率
+                                                            {t('cloud.uploadInterval')}
                                                         </Label>
                                                         <div className='flex items-center gap-1.5'>
                                                             <Input
@@ -389,38 +390,38 @@ export function CloudTargetList({ initialTargets }: { initialTargets: CloudTarge
                                                                         : ''
                                                                 }
                                                             />
-                                                            <span className='text-xs text-muted-foreground'>秒</span>
+                                                            <span className='text-xs text-muted-foreground'>{t('common.seconds')}</span>
                                                         </div>
                                                         {errors.uploadIntervalSeconds && (
                                                             <p className='text-xs text-destructive'>
-                                                                {errors.uploadIntervalSeconds}
+                                                                {t(errors.uploadIntervalSeconds)}
                                                             </p>
                                                         )}
                                                     </div>
                                                     <div className='min-w-0 flex-1 pt-4 space-y-1 text-xs text-muted-foreground'>
                                                         <div className='flex gap-4'>
-                                                            <p className='leading-snug'>上次正確上傳時間</p>
+                                                            <p className='leading-snug'>{t('cloud.lastUpload')}</p>
                                                             <p className='font-bold'>
                                                                 {target.lastUploadAt
-                                                                    ? formatRelativeTime(target.lastUploadAt)
-                                                                    : '尚未上傳'}
+                                                                    ? formatRelativeTime(target.lastUploadAt, locale)
+                                                                    : t('cloud.notUploaded')}
                                                             </p>
                                                         </div>
                                                         <div className='flex gap-4'>
-                                                            <p>待續傳</p>
+                                                            <p>{t('cloud.pending')}</p>
                                                             <p className='font-bold'>{target.pendingCount}</p>
                                                         </div>
                                                     </div>
                                                 </div>
                                             </td>
-                                            <td data-label='操作' className='p-4'>
+                                            <td data-label={t('common.actions')} data-role='actions' className='p-4'>
                                                 <div className='flex flex-col items-end gap-1.5'>
                                                     <Button
                                                         size='sm'
                                                         className='w-20'
                                                         disabled={saving || testing}
                                                         onClick={() => requestSave(target)}>
-                                                        {saving ? <Loader2 className='h-4 w-4 animate-spin' /> : '儲存'}
+                                                        {saving ? <Loader2 className='h-4 w-4 animate-spin' /> : t('common.save')}
                                                     </Button>
                                                     <Button
                                                         size='sm'
@@ -435,7 +436,7 @@ export function CloudTargetList({ initialTargets }: { initialTargets: CloudTarge
                                                         {testing ? (
                                                             <Loader2 className='h-4 w-4 animate-spin' />
                                                         ) : (
-                                                            '測試連線'
+                                                            t('cloud.testConnection')
                                                         )}
                                                     </Button>
                                                     <Button
@@ -447,15 +448,15 @@ export function CloudTargetList({ initialTargets }: { initialTargets: CloudTarge
                                                         {deleting ? (
                                                             <Loader2 className='h-4 w-4 animate-spin' />
                                                         ) : (
-                                                            '刪除'
+                                                            t('common.delete')
                                                         )}
                                                     </Button>
                                                     {testResult && (
                                                         <p
                                                             className={`text-xs ${testResult.success ? 'text-emerald-600' : 'text-rose-600'}`}>
                                                             {testResult.success
-                                                                ? '連線成功'
-                                                                : testResult.message || '連線失敗'}
+                                                                ? t('cloud.success')
+                                                                : testResult.message || t('cloud.failure')}
                                                         </p>
                                                     )}
                                                 </div>
@@ -475,41 +476,41 @@ export function CloudTargetList({ initialTargets }: { initialTargets: CloudTarge
                         <Loader2 className='h-5 w-5 animate-spin text-muted-foreground' />
                     </div>
                 )}
-                <h2 className='text-lg font-medium mb-0 font-bold'>新增雲端服務器</h2>
+                <h2 className='text-lg font-medium mb-0 font-bold'>{t('cloud.add')}</h2>
                 <div className='grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 mb-0'>
                     <div className='space-y-1.5'>
                         <Label htmlFor='new-name' className='text-xs text-muted-foreground'>
-                            顯示名稱
+                            {t('common.displayName')}
                         </Label>
                         <Input
                             id='new-name'
-                            placeholder='例如：MMold 雲端（展示工廠A）'
+                            placeholder={t('cloud.namePlaceholder')}
                             value={newForm.name}
                             disabled={createMutation.isPending}
                             onChange={(e) => updateNewForm({ name: e.target.value })}
                             className={newErrors.name ? 'border-destructive' : ''}
                         />
-                        {newErrors.name && <p className='text-xs text-destructive'>{newErrors.name}</p>}
+                        {newErrors.name && <p className='text-xs text-destructive'>{t(newErrors.name)}</p>}
                     </div>
                     <div className='space-y-1.5'>
                         <Label htmlFor='new-url' className='text-xs text-muted-foreground'>
-                            API BASE URL
+                            {t('cloud.apiBaseUrl')}
                         </Label>
                         <Input
                             id='new-url'
-                            placeholder='https://api.mmold.com'
+                            placeholder={t('cloud.urlPlaceholder')}
                             value={newForm.apiBaseUrl}
                             disabled={createMutation.isPending}
                             onChange={(e) => updateNewForm({ apiBaseUrl: e.target.value })}
                             className={newErrors.apiBaseUrl ? 'border-destructive' : ''}
                         />
-                        {newErrors.apiBaseUrl && <p className='text-xs text-destructive'>{newErrors.apiBaseUrl}</p>}
+                        {newErrors.apiBaseUrl && <p className='text-xs text-destructive'>{t(newErrors.apiBaseUrl)}</p>}
                     </div>
                 </div>
                 <div className='grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 mb-0'>
                     <div className='space-y-1.5'>
                         <Label htmlFor='new-serverid' className='text-xs text-muted-foreground'>
-                            雲端服務器 ID
+                            {t('cloud.id')}
                         </Label>
                         <Input
                             id='new-serverid'
@@ -518,11 +519,11 @@ export function CloudTargetList({ initialTargets }: { initialTargets: CloudTarge
                             disabled={createMutation.isPending}
                             onChange={(e) => updateNewForm({ apiKey: e.target.value })}
                         />
-                        {newErrors.apiKey && <p className='text-xs text-destructive'>{newErrors.apiKey}</p>}
+                        {newErrors.apiKey && <p className='text-xs text-destructive'>{t(newErrors.apiKey)}</p>}
                     </div>
                     <div className='space-y-1.5'>
                         <Label htmlFor='new-secret' className='text-xs text-muted-foreground'>
-                            雲端服務器密鑰
+                            {t('cloud.secret')}
                         </Label>
                         <Input
                             id='new-secret'
@@ -533,12 +534,12 @@ export function CloudTargetList({ initialTargets }: { initialTargets: CloudTarge
                             onChange={(e) => updateNewForm({ apiSecret: e.target.value })}
                         />
                         {newErrors.cloudServerSecret && (
-                            <p className='text-xs text-destructive'>{newErrors.cloudServerSecret}</p>
+                            <p className='text-xs text-destructive'>{t(newErrors.cloudServerSecret)}</p>
                         )}
                     </div>
                     <div className='space-y-1.5'>
                         <Label htmlFor='new-interval' className='text-xs text-muted-foreground'>
-                            上傳頻率（秒）
+                            {t('cloud.uploadInterval')}
                         </Label>
                         <Input
                             id='new-interval'
@@ -550,7 +551,7 @@ export function CloudTargetList({ initialTargets }: { initialTargets: CloudTarge
                             className={newErrors.uploadIntervalSeconds ? 'border-destructive' : ''}
                         />
                         {newErrors.uploadIntervalSeconds && (
-                            <p className='text-xs text-destructive'>{newErrors.uploadIntervalSeconds}</p>
+                            <p className='text-xs text-destructive'>{t(newErrors.uploadIntervalSeconds)}</p>
                         )}
                     </div>
                 </div>
@@ -562,10 +563,10 @@ export function CloudTargetList({ initialTargets }: { initialTargets: CloudTarge
                     {createMutation.isPending ? (
                         <>
                             <Loader2 className='h-4 w-4 animate-spin' />
-                            新增中...
+                            {t('common.adding')}
                         </>
                     ) : (
-                        '新增'
+                        t('common.add')
                     )}
                 </Button>
             </Card>
@@ -579,13 +580,13 @@ export function CloudTargetList({ initialTargets }: { initialTargets: CloudTarge
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                        <AlertDialogCancel>取消</AlertDialogCancel>
+                        <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
                         <AlertDialogAction
                             onClick={confirmPendingAction}
                             className={
                                 pendingAction?.type === 'delete' ? 'bg-rose-600 text-white hover:bg-rose-700' : ''
                             }>
-                            確認
+                            {t('common.confirm')}
                         </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>

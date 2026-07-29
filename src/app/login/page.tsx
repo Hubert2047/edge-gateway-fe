@@ -7,25 +7,20 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { User, Lock, AlertCircle } from 'lucide-react'
+import { useI18n } from '@/lib/i18n'
 
-const loginSchema = z.object({
-    username: z.string().min(1, '請輸入帳號'),
-    password: z.string().min(1, '請輸入密碼'),
-})
-
-type LoginFormValues = z.infer<typeof loginSchema>
-
-const meters = [
-    { label: 'CNC 加工機', y: 40 },
-    { label: 'EDM 加工機', y: 90 },
-    { label: '油壓射出機 1', y: 140 },
-    { label: '冰水機', y: 190 },
-]
+type LoginFormValues = { username: string; password: string }
 
 export default function LoginPage() {
     const router = useRouter()
+    const { t } = useI18n()
     const [serverError, setServerError] = useState<string | null>(null)
     const [loading, setLoading] = useState(false)
+
+    const loginSchema = z.object({
+        username: z.string().min(1, t('login.usernameRequired')),
+        password: z.string().min(1, t('login.passwordRequired')),
+    })
 
     const {
         register,
@@ -65,13 +60,13 @@ export default function LoginPage() {
                         <span className='text-lg font-semibold tracking-tight text-[#14231c]'>MMold Edge</span>
                     </div>
 
-                    <h2 className='text-2xl font-semibold tracking-tight text-[#14231c]'>登入帳號</h2>
-                    <p className='mt-1.5 text-sm text-[#6b7a72]'>請輸入您的帳號密碼以繼續</p>
+                    <h2 className='text-2xl font-semibold tracking-tight text-[#14231c]'>{t('login.title')}</h2>
+                    <p className='mt-1.5 text-sm text-[#6b7a72]'>{t('login.subtitle')}</p>
 
                     <form onSubmit={handleSubmit(onSubmit)} className='mt-8 space-y-4'>
                         <div className='space-y-1.5'>
                             <label htmlFor='username' className='text-sm font-medium text-[#14231c]'>
-                                帳號
+                                {t('login.username')}
                             </label>
                             <div className='relative'>
                                 <User className='absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#9aa59d]' />
@@ -80,7 +75,7 @@ export default function LoginPage() {
                                     autoComplete='username'
                                     {...register('username')}
                                     className='w-full rounded-md border border-[#e5e1d8] bg-white py-2.5 pl-9 pr-3 text-sm text-[#14231c] outline-none transition-colors placeholder:text-[#9aa59d] focus:border-[#0f2b22] focus:ring-1 focus:ring-[#0f2b22]'
-                                    placeholder='輸入帳號'
+                                    placeholder={t('login.usernamePlaceholder')}
                                 />
                             </div>
                             {errors.username && <p className='text-xs text-[#c2483b]'>{errors.username.message}</p>}
@@ -88,7 +83,7 @@ export default function LoginPage() {
 
                         <div className='space-y-1.5'>
                             <label htmlFor='password' className='text-sm font-medium text-[#14231c]'>
-                                密碼
+                                {t('login.password')}
                             </label>
                             <div className='relative'>
                                 <Lock className='absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#9aa59d]' />
@@ -115,7 +110,7 @@ export default function LoginPage() {
                             type='submit'
                             disabled={loading}
                             className='w-full rounded-md bg-[#0f2b22] py-2.5 text-sm font-medium text-white transition-colors hover:bg-[#163a2e] disabled:opacity-60'>
-                            {loading ? '登入中...' : '登入'}
+                            {loading ? t('login.loggingIn') : t('login.login')}
                         </button>
                     </form>
                 </div>

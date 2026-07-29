@@ -7,7 +7,6 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Card } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
 import { toast } from 'sonner'
 import {
     AlertDialog,
@@ -20,10 +19,11 @@ import {
     AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
 import type { Hub, HubFormValues } from '@/types/hub'
-import { formatRelativeTime, getErrorMessage } from '@/lib/utils'
+import { getErrorMessage } from '@/lib/utils'
 import { StatusBadge } from '../status-badge'
 import { useCreateHub, useDeleteHub, useHubs, useSyncHubMeters, useUpdateHub } from '@/lib/api/hub'
 import { RelativeTime } from '../RelativeTime'
+import { useI18n } from '@/lib/i18n'
 
 function emptyForm(): HubFormValues {
     return {
@@ -53,10 +53,10 @@ type FormErrors = Partial<Record<'hubName' | 'hubIp' | 'hubPort' | 'pollInterval
 
 function validateForm(form: HubFormValues): FormErrors {
     const errors: FormErrors = {}
-    if (!form.name.trim()) errors.hubName = '請輸入顯示名稱'
-    if (!form.ip.trim()) errors.hubIp = '請輸入 IP'
-    if (!form.port || form.port <= 0) errors.hubPort = '請輸入有效的 PORT'
-    if (!form.pollIntervalSeconds || form.pollIntervalSeconds <= 0) errors.pollIntervalSeconds = '請輸入有效的秒數'
+    if (!form.name.trim()) errors.hubName = 'validation.displayNameRequired'
+    if (!form.ip.trim()) errors.hubIp = 'validation.ipRequired'
+    if (!form.port || form.port <= 0) errors.hubPort = 'validation.portInvalid'
+    if (!form.pollIntervalSeconds || form.pollIntervalSeconds <= 0) errors.pollIntervalSeconds = 'validation.intervalInvalid'
     return errors
 }
 
@@ -64,6 +64,7 @@ type PendingAction = { type: 'save' | 'delete' | 'collect'; uid: string; display
 type RowFormState = { form: HubFormValues; errors: FormErrors }
 
 export function GatewayList({ initialHubs }: { initialHubs: Hub[] }) {
+    const { t } = useI18n()
     const { data: hubs = initialHubs } = useHubs(initialHubs)
     const updateHubMutation = useUpdateHub()
     const deleteHubMutation = useDeleteHub()
@@ -153,7 +154,7 @@ export function GatewayList({ initialHubs }: { initialHubs: Hub[] }) {
                 { uid, form },
                 {
                     onSuccess: () => clearRowForm(uid),
-                    onError: (err) => toast.error(getErrorMessage(err, '儲存失敗')),
+                    onError: (err) => toast.error(getErrorMessage(err, t('toast.saveFailed'))),
                 },
             )
         }
@@ -162,14 +163,14 @@ export function GatewayList({ initialHubs }: { initialHubs: Hub[] }) {
             setDeletingUid(uid)
             deleteHubMutation.mutate(uid, {
                 onSettled: () => setDeletingUid((prev) => (prev === uid ? null : prev)),
-                onError: (err) => toast.error(getErrorMessage(err, '刪除失敗')),
+                onError: (err) => toast.error(getErrorMessage(err, t('toast.deleteFailed'))),
             })
         }
 
         if (type === 'collect') {
             setCollectingUids((prev) => new Set(prev).add(uid))
             syncHubMetersMutation.mutate(uid, {
-                onError: (err) => toast.error(getErrorMessage(err, '收集失敗')),
+                onError: (err) => toast.error(getErrorMessage(err, t('toast.collectFailed'))),
                 onSettled: () => {
                     setCollectingUids((prev) => {
                         const next = new Set(prev)
@@ -192,16 +193,16 @@ export function GatewayList({ initialHubs }: { initialHubs: Hub[] }) {
             onSuccess: () => {
                 setNewForm(emptyForm())
                 setNewErrors({})
-                toast.success('新增成功')
+                toast.success(t('toast.added'))
             },
-            onError: (err) => toast.error(getErrorMessage(err, '新增失敗')),
+                onError: (err) => toast.error(getErrorMessage(err, t('toast.addFailed'))),
         })
     }
 
     const dialogText = {
-        save: { title: '確認儲存', desc: (name: string) => `確定要儲存「${name}」的設定嗎？` },
-        delete: { title: '確認刪除', desc: (name: string) => `確定要刪除「${name}」嗎？此操作無法復原。` },
-        collect: { title: '確認收集', desc: (name: string) => `確定要立即對「${name}」執行收集嗎？` },
+        save: { title: t('common.confirmSave'), desc: (name: string) => t('common.confirmSaveDescription', { name }) },
+        delete: { title: t('common.confirmDelete'), desc: (name: string) => t('common.confirmDeleteDescription', { name }) },
+        collect: { title: t('common.confirmCollect'), desc: (name: string) => t('common.confirmCollectDescription', { name }) },
     } as const
 
     return (
@@ -225,17 +226,17 @@ export function GatewayList({ initialHubs }: { initialHubs: Hub[] }) {
                         </colgroup>
                         <thead className='bg-muted text-left sticky top-0 z-10'>
                             <tr>
-                                <th className='whitespace-nowrap p-4'>狀態</th>
-                                <th className='whitespace-nowrap p-4'>閘道器</th>
-                                <th className='whitespace-nowrap p-4'>細部設定</th>
-                                <th className='whitespace-nowrap p-4'>操作</th>
+                                <th className='whitespace-nowrap p-4'>{t('common.status')}</th>
+                                <th className='whitespace-nowrap p-4'>{t('common.gateway')}</th>
+                                <th className='whitespace-nowrap p-4'>{t('common.settings')}</th>
+                                <th className='whitespace-nowrap p-4'>{t('common.actions')}</th>
                             </tr>
                         </thead>
                         <tbody>
                             {hubs.length === 0 ? (
                                 <tr>
                                     <td colSpan={4} className='p-6 text-center text-sm text-muted-foreground'>
-                                        尚未設定任何本地閘道
+                                        {t('empty.noGateways')}
                                     </td>
                                 </tr>
                             ) : hubs.map((hub) => {
@@ -249,15 +250,15 @@ export function GatewayList({ initialHubs }: { initialHubs: Hub[] }) {
                                     <tr
                                         key={hub.uid}
                                         className={`border-t align-top transition-colors ${rowBusy ? 'opacity-50 pointer-events-none' : ''}`}>
-                                        <td data-label='狀態' className='p-4 space-y-2'>
+                                        <td data-label={t('common.status')} className='p-4 space-y-2'>
                                             <Checkbox
                                                 checked={form.enabled}
                                                 disabled={rowBusy}
                                                 onCheckedChange={(checked) => toggleEnabled(hub, checked === true)}
                                             />
-                                            <StatusBadge enabled={form.enabled} activeLabel='監控中' />
+                                            <StatusBadge enabled={form.enabled} activeLabel={t('gateway.monitoring')} />
                                         </td>
-                                        <td data-label='閘道器' className='p-4 space-y-3'>
+                                        <td data-label={t('common.gateway')} className='p-4 space-y-3'>
                                             <div className='space-y-1.5'>
                                                 <Label className='text-xs text-muted-foreground'>ID</Label>
                                                 <p className='text-sm font-mono text-foreground/80'>{hub.uid}</p>
@@ -266,7 +267,7 @@ export function GatewayList({ initialHubs }: { initialHubs: Hub[] }) {
                                                 <Label
                                                     htmlFor={`name-${hub.uid}`}
                                                     className='text-xs text-muted-foreground'>
-                                                    顯示名稱
+                                                    {t('common.displayName')}
                                                 </Label>
                                                 <Input
                                                     id={`name-${hub.uid}`}
@@ -276,7 +277,7 @@ export function GatewayList({ initialHubs }: { initialHubs: Hub[] }) {
                                                     className={errors.hubName ? 'border-destructive' : ''}
                                                 />
                                                 {errors.hubName && (
-                                                    <p className='text-xs text-destructive'>{errors.hubName}</p>
+                                                    <p className='text-xs text-destructive'>{t(errors.hubName)}</p>
                                                 )}
                                             </div>
                                             <div className='flex gap-2'>
@@ -294,7 +295,7 @@ export function GatewayList({ initialHubs }: { initialHubs: Hub[] }) {
                                                         className={errors.hubIp ? 'border-destructive' : ''}
                                                     />
                                                     {errors.hubIp && (
-                                                        <p className='text-xs text-destructive'>{errors.hubIp}</p>
+                                                        <p className='text-xs text-destructive'>{t(errors.hubIp)}</p>
                                                     )}
                                                 </div>
                                                 <div className='w-28 space-y-1.5'>
@@ -314,7 +315,7 @@ export function GatewayList({ initialHubs }: { initialHubs: Hub[] }) {
                                                         className={errors.hubPort ? 'border-destructive' : ''}
                                                     />
                                                     {errors.hubPort && (
-                                                        <p className='text-xs text-destructive'>{errors.hubPort}</p>
+                                                        <p className='text-xs text-destructive'>{t(errors.hubPort)}</p>
                                                     )}
                                                 </div>
                                             </div>
@@ -322,7 +323,7 @@ export function GatewayList({ initialHubs }: { initialHubs: Hub[] }) {
                                                 <Label
                                                     htmlFor={`poll-${hub.uid}`}
                                                     className='text-xs text-muted-foreground'>
-                                                    採集頻率（秒）
+                                                    {t('common.interval')}
                                                 </Label>
                                                 <Input
                                                     id={`poll-${hub.uid}`}
@@ -338,26 +339,26 @@ export function GatewayList({ initialHubs }: { initialHubs: Hub[] }) {
                                                 />
                                                 {errors.pollIntervalSeconds && (
                                                     <p className='text-xs text-destructive'>
-                                                        {errors.pollIntervalSeconds}
+                                                        {t(errors.pollIntervalSeconds)}
                                                     </p>
                                                 )}
                                             </div>
                                         </td>
-                                        <td data-label='資訊' className='p-4 text-muted-foreground'>
-                                            <p>{hub.meterCount} 智慧勾表數</p>
+                                        <td data-label={t('common.info')} className='p-4 text-muted-foreground'>
+                                            <p>{t('gateway.meterCount', { count: hub.meterCount })}</p>
                                             <p>
-                                                最近成功：
+                                                {t('gateway.lastSuccess')}
                                                 <RelativeTime value={hub.updatedAt} />
                                             </p>
                                         </td>
-                                        <td data-label='操作' className='p-4'>
+                                        <td data-label={t('common.actions')} data-role='actions' className='p-4'>
                                             <div className='flex flex-col items-end gap-1.5'>
                                                 <Button
                                                     size='sm'
                                                     className='w-20'
                                                     disabled={rowBusy}
                                                     onClick={() => requestSave(hub)}>
-                                                    {saving ? <Loader2 className='h-4 w-4 animate-spin' /> : '儲存'}
+                                                    {saving ? <Loader2 className='h-4 w-4 animate-spin' /> : t('common.save')}
                                                 </Button>
                                                 <Button
                                                     size='sm'
@@ -372,7 +373,7 @@ export function GatewayList({ initialHubs }: { initialHubs: Hub[] }) {
                                                     {collecting ? (
                                                         <Loader2 className='h-4 w-4 animate-spin' />
                                                     ) : (
-                                                        '立即收集'
+                                                        t('common.collectNow')
                                                     )}
                                                 </Button>
                                                 <Button
@@ -381,7 +382,7 @@ export function GatewayList({ initialHubs }: { initialHubs: Hub[] }) {
                                                     variant='ghost'
                                                     disabled={rowBusy}
                                                     onClick={() => requestDelete(hub)}>
-                                                    {deleting ? <Loader2 className='h-4 w-4 animate-spin' /> : '刪除'}
+                                                    {deleting ? <Loader2 className='h-4 w-4 animate-spin' /> : t('common.delete')}
                                                 </Button>
                                             </div>
                                         </td>
@@ -394,26 +395,26 @@ export function GatewayList({ initialHubs }: { initialHubs: Hub[] }) {
             </Card>
 
             <Card className='shrink-0 px-4 pt-4 space-y-4 sm:px-6'>
-                <h2 className='text-lg font-medium mb-0 font-bold'>新增閘道器</h2>
+                <h2 className='text-lg font-medium mb-0 font-bold'>{t('gateway.add')}</h2>
                 <div className='grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-0'>
                     <div className='space-y-1.5'>
                         <Label htmlFor='new-id' className='text-xs text-muted-foreground'>
-                            ID
+                            {t('common.id')}
                         </Label>
                         <Input
                             id='new-id'
-                            placeholder='例如：GW001'
+                            placeholder={t('gateway.idPlaceholder')}
                             value={newForm.uid}
                             onChange={(e) => updateNewForm({ uid: e.target.value })}
                         />
                     </div>
                     <div className='space-y-1.5'>
                         <Label htmlFor='new-name' className='text-xs text-muted-foreground'>
-                            顯示名稱
+                            {t('common.displayName')}
                         </Label>
                         <Input
                             id='new-name'
-                            placeholder='例如：一樓機房'
+                            placeholder={t('gateway.namePlaceholder')}
                             value={newForm.name}
                             onChange={(e) => updateNewForm({ name: e.target.value })}
                             className={newErrors.hubName ? 'border-destructive' : ''}
@@ -422,11 +423,11 @@ export function GatewayList({ initialHubs }: { initialHubs: Hub[] }) {
                     </div>
                     <div className='space-y-1.5'>
                         <Label htmlFor='new-ip' className='text-xs text-muted-foreground'>
-                            IP 位址
+                            {t('common.ip')}
                         </Label>
                         <Input
                             id='new-ip'
-                            placeholder='192.168.1.100'
+                            placeholder={t('gateway.ipPlaceholder')}
                             value={newForm.ip}
                             onChange={(e) => updateNewForm({ ip: e.target.value })}
                             className={newErrors.hubIp ? 'border-destructive' : ''}
@@ -435,12 +436,12 @@ export function GatewayList({ initialHubs }: { initialHubs: Hub[] }) {
                     </div>
                     <div className='space-y-1.5'>
                         <Label htmlFor='new-port' className='text-xs text-muted-foreground'>
-                            PORT
+                            {t('common.port')}
                         </Label>
                         <Input
                             id='new-port'
                             type='number'
-                            placeholder='10123'
+                            placeholder={t('gateway.portPlaceholder')}
                             value={newForm.port}
                             onChange={(e) => updateNewForm({ port: Number(e.target.value) })}
                             className={newErrors.hubPort ? 'border-destructive' : ''}
@@ -449,12 +450,12 @@ export function GatewayList({ initialHubs }: { initialHubs: Hub[] }) {
                     </div>
                     <div className='space-y-1.5'>
                         <Label htmlFor='new-poll' className='text-xs text-muted-foreground'>
-                            採集頻率（秒）
+                            {t('common.interval')}
                         </Label>
                         <Input
                             id='new-poll'
                             type='number'
-                            placeholder='60'
+                            placeholder={t('gateway.intervalPlaceholder')}
                             value={newForm.pollIntervalSeconds}
                             onChange={(e) => updateNewForm({ pollIntervalSeconds: Number(e.target.value) })}
                             className={newErrors.pollIntervalSeconds ? 'border-destructive' : ''}
@@ -465,10 +466,10 @@ export function GatewayList({ initialHubs }: { initialHubs: Hub[] }) {
                     </div>
                 </div>
                 {/* <div className="space-y-1.5 mb-0">
-                    <Label htmlFor="new-note" className="text-xs text-muted-foreground">備註</Label>
+                    <Label htmlFor="new-note" className="text-xs text-muted-foreground">{t('common.info')}</Label>
                     <Input
                         id="new-note"
-                        placeholder="選填"
+                        placeholder={t('gateway.optional')}
                         value={newForm.note}
                         onChange={(e) => updateNewForm({ note: e.target.value })}
                     />
@@ -481,10 +482,10 @@ export function GatewayList({ initialHubs }: { initialHubs: Hub[] }) {
                     {createHubMutation.isPending ? (
                         <>
                             <Loader2 className='h-4 w-4 animate-spin' />
-                            新增中...
+                            {t('common.adding')}
                         </>
                     ) : (
-                        '新增'
+                        t('common.add')
                     )}
                 </Button>
             </Card>
@@ -492,19 +493,19 @@ export function GatewayList({ initialHubs }: { initialHubs: Hub[] }) {
             <AlertDialog open={pendingAction !== null} onOpenChange={(open) => !open && setPendingAction(null)}>
                 <AlertDialogContent>
                     <AlertDialogHeader>
-                        <AlertDialogTitle>{pendingAction ? dialogText[pendingAction.type].title : ''}</AlertDialogTitle>
+                                <AlertDialogTitle>{pendingAction ? dialogText[pendingAction.type].title : ''}</AlertDialogTitle>
                         <AlertDialogDescription>
                             {pendingAction ? dialogText[pendingAction.type].desc(pendingAction.displayName) : ''}
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                        <AlertDialogCancel>取消</AlertDialogCancel>
+                        <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
                         <AlertDialogAction
                             onClick={confirmPendingAction}
                             className={
                                 pendingAction?.type === 'delete' ? 'bg-rose-600 text-white hover:bg-rose-700' : ''
                             }>
-                            確認
+                            {t('common.confirm')}
                         </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>

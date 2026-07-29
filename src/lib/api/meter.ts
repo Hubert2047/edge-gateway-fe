@@ -64,7 +64,7 @@ export function useDeleteMeter(hubUid: string) {
 }
 
 /**
- * Bulk save for the "儲存全部" button.
+ * Bulk save for the "Save all" button.
  * Backend has no batch endpoint, so this fires one PUT per dirty row via
  * Promise.allSettled, then reconciles the list with a single invalidate.
  */
@@ -80,7 +80,7 @@ export function useUpdateMetersBulk(hubUID: string) {
                 if (result.status === 'fulfilled') {
                     succeeded.push(macId)
                 } else {
-                    const message = result.reason instanceof Error ? result.reason.message : '儲存失敗'
+                    const message = result.reason instanceof Error ? result.reason.message : 'Save failed'
                     failed.push({ macId, message })
                 }
             })

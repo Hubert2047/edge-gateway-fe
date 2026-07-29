@@ -2,6 +2,7 @@ import { serverApiFetch } from '@/lib/api/server'
 import type { Meter } from '@/types/meter'
 import type { Hub } from '@/types/hub'
 import { MetersClient } from '@/components/meter/meters-client'
+import { LocalizedText } from '@/components/i18n/localized-text'
 
 export default async function MetersPage({ searchParams }: { searchParams: Promise<{ hubUid?: string }> }) {
     const hubs = await serverApiFetch<Hub[]>('/api/hubs')
@@ -9,8 +10,8 @@ export default async function MetersPage({ searchParams }: { searchParams: Promi
     if (hubs.length === 0) {
         return (
             <div className='p-6 h-full'>
-                <h1 className='mb-6 text-2xl font-bold'>智慧勾表</h1>
-                <p className='text-muted-foreground'>尚未設定任何本地閘道，請先至「本地閘道」新增閘道。</p>
+                <h1 className='mb-6 text-2xl font-bold'><LocalizedText messageKey='page.meters' /></h1>
+                <p className='text-muted-foreground'><LocalizedText messageKey='page.noGateways' /></p>
             </div>
         )
     }

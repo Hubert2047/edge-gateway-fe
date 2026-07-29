@@ -5,27 +5,24 @@ import { usePathname } from 'next/navigation'
 import { signOut, useSession } from 'next-auth/react'
 import { Menu, X } from 'lucide-react'
 import { useEffect, useState } from 'react'
+import { useI18n } from '@/lib/i18n'
 
 const navItems = [
-    { label: '總覽', href: '/' },
-    { label: '雲端同步', href: '/cloud-sync' },
-    { label: '本地閘道', href: '/gateways' },
-    { label: '智慧勾表', href: '/meters' },
-    { label: '歷史資料', href: '/history-data' },
-    { label: '歷史事件', href: '/history-events' },
-    { label: '製程管制', href: '/process-control' },
-    { label: '製程規則', href: '/process-rules' },
-    { label: '系統設定', href: '/settings' },
+    { key: 'nav.overview', href: '/' }, { key: 'nav.cloudSync', href: '/cloud-sync' },
+    { key: 'nav.gateways', href: '/gateways' }, { key: 'nav.meters', href: '/meters' },
+    { key: 'nav.historyData', href: '/history-data' }, { key: 'nav.historyEvents', href: '/history-events' },
+    { key: 'nav.processControl', href: '/process-control' }, { key: 'nav.processRules', href: '/process-rules' },
+    { key: 'nav.settings', href: '/settings' },
 ]
 
 const externalLinks = [
-    { label: 'API 文件', href: '#' },
-    { label: 'MMold.com', href: 'https://mmold.com' },
+    { key: 'nav.apiDocs', href: '#' }, { key: 'nav.mmold', href: 'https://mmold.com', fallback: 'MMold.com' },
 ]
 
 export function Sidebar() {
     const pathname = usePathname()
     const { data: session } = useSession()
+    const { t } = useI18n()
     const [mobileOpen, setMobileOpen] = useState(false)
 
     useEffect(() => {
@@ -57,7 +54,7 @@ export function Sidebar() {
                             : 'text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground'
                             }`}
                     >
-                        {item.label}
+                        {t(item.key)}
                     </Link>
                 ))}
             </nav>
@@ -65,7 +62,7 @@ export function Sidebar() {
             <div className="mt-6 flex flex-col gap-1 border-t border-sidebar-border px-3 pt-4">
                 {externalLinks.map((link) => (
                     <a key={link.href} href={link.href} target="_blank" rel="noreferrer" className="rounded-md px-3 py-2 text-sm text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground">
-                        {link.label} ↗
+                        {link.fallback ?? t(link.key)} ↗
                     </a>
                 ))}
             </div>
@@ -80,12 +77,12 @@ export function Sidebar() {
                     <p className="text-xs uppercase text-sidebar-foreground/60">{(session?.user as any)?.role ?? 'ADMIN'}</p>
                 </div>
                 <button onClick={() => signOut({ callbackUrl: '/login' })} className="cursor-pointer bg-sidebar-accent px-3 py-1.5 text-xs hover:bg-sidebar-accent/80">
-                    登出
+                    {t('nav.logout')}
                 </button>
             </div>
             <div className="flex items-center gap-2 px-4 py-4 text-xs text-sidebar-foreground/60">
                 <span className="mt-1 h-2 w-2 rounded-full bg-emerald-400" />
-                <div className="flex flex-col gap-1"><span>Edge service</span><span>連線正常</span></div>
+                <div className="flex flex-col gap-1"><span>{t('nav.edgeService')}</span><span>{t('nav.connected')}</span></div>
             </div>
         </>
     )
@@ -102,7 +99,7 @@ export function Sidebar() {
                 <Link href="/" className="flex items-center gap-2"><span className="flex h-8 w-8 items-center justify-center rounded-lg bg-sidebar-foreground text-sm font-bold text-sidebar">M</span><span className="font-semibold">MMold Edge</span></Link>
                 <button
                     type="button"
-                    aria-label="開啟選單"
+                    aria-label={t('nav.openMenu')}
                     aria-expanded={mobileOpen}
                     onClick={() => setMobileOpen(true)}
                     className="p-2"
@@ -114,7 +111,7 @@ export function Sidebar() {
             <aside className={`fixed inset-y-0 left-0 z-50 flex w-[min(18rem,88vw)] flex-col justify-between bg-sidebar text-sidebar-foreground shadow-xl transition-transform md:hidden ${mobileOpen ? 'translate-x-0' : '-translate-x-full'}`}>
                 <button
                     type="button"
-                    aria-label="關閉選單"
+                    aria-label={t('nav.closeMenu')}
                     onClick={() => setMobileOpen(false)}
                     className="absolute right-3 top-4 p-2"
                 >

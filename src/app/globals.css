@@ -253,7 +253,7 @@
         max-width: 100%;
     }
 
-    .responsive-table td[data-label='操作'] > div {
+    .responsive-table td[data-role='actions'] > div {
         display: flex;
         flex-direction: row;
         flex-wrap: wrap;
@@ -261,13 +261,13 @@
         gap: 0.5rem;
     }
 
-    .responsive-table td[data-label='操作'] button {
+    .responsive-table td[data-role='actions'] button {
         width: auto;
         min-width: 7rem;
         flex: 1 1 7rem;
     }
 
-    .responsive-table td[data-label='操作'] p {
+    .responsive-table td[data-role='actions'] p {
         flex-basis: 100%;
     }
 }
