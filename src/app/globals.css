@@ -125,7 +125,7 @@
     .rounded-full {
         border-radius: 9999px !important;
     }
-    .sidebar-status-dot {
+.sidebar-status-dot {
         display: block;
         width: 0.5rem;
         height: 0.5rem;
@@ -138,6 +138,21 @@
     html {
         @apply font-sans;
     }
+}
+
+.control-input {
+    min-width: 0;
+    height: 2rem;
+    border: 1px solid #c8cfca;
+    background: #fff;
+    padding: 0 0.625rem;
+    font-size: 0.875rem;
+    color: #1b2822;
+}
+
+.control-input:focus {
+    outline: 2px solid #e4a600;
+    outline-offset: -2px;
 }
 
 @media (max-width: 767px) {

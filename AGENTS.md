@@ -157,6 +157,8 @@ src/
                   # dropdown-menu, input, label, select, separator, switch, table
     overview/
       overview-dashboard.tsx # operations overview UI; real-time reading fields are placeholders until backend APIs exist
+    process-control/
+      process-control-analysis.tsx # process control filters, summary cards and history chart
   lib/
     api/
       auth.ts             # TODO: describe purpose
@@ -210,3 +212,9 @@ src/
   health and latest-reading endpoints) containing gateway online/last-seen, cloud upload totals,
   meter phase currents, and latest sample timestamps. Then add the corresponding Next.js proxy
   route and server/client API layer before replacing the placeholders.
+
+## Process control API gaps
+- `/process-control` currently uses existing gateway and meter metadata for its selectors.
+- The chart and summary values remain empty until the backend exposes a process-history query
+  endpoint with the selected time range, meter, metric, and control limits, plus aggregated
+  latest/average/minimum/maximum/exceeded values.
