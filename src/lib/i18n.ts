@@ -79,6 +79,13 @@ const messages: Record<Locale, Messages> = {
         'processControl.latest': '最新值', 'processControl.average': '平均值', 'processControl.minimum': '最小值',
         'processControl.maximum': '最大值', 'processControl.exceeded': '超出管制', 'processControl.sampleCount': '樣本數',
         'processControl.dataUnavailable': '尚未提供製程歷史資料 API',
+        'historyData.title': '歷史數據', 'historyData.records': '筆記錄', 'historyData.timeRange': '時間軸',
+        'historyData.hourly': '每時（00–60 分）', 'historyData.daily': '每天', 'historyData.weekly': '每週',
+        'historyData.date': '指定時間', 'historyData.gateway': '閘道器', 'historyData.meter': '智慧勾表',
+        'historyData.metric': '分析指標', 'historyData.averageCurrent': '平均電流', 'historyData.selectGateway': '請選擇閘道器',
+        'historyData.selectMeter': '請選擇智慧勾表', 'historyData.showThreePhase': '顯示三相電流', 'historyData.query': '查詢',
+        'historyData.samples': '樣本數', 'historyData.dataUnavailable': '尚未提供歷史資料 API', 'historyData.noData': '查無歷史資料',
+        'historyData.time': '時間', 'historyData.voltage': '電壓', 'historyData.activePower': '有效功率', 'historyData.status': '狀態',
     },
     en: {
         'nav.overview': 'Overview', 'nav.cloudSync': 'Cloud Sync', 'nav.gateways': 'Local Gateways',
@@ -151,6 +158,13 @@ const messages: Record<Locale, Messages> = {
         'processControl.latest': 'Latest', 'processControl.average': 'Average', 'processControl.minimum': 'Minimum',
         'processControl.maximum': 'Maximum', 'processControl.exceeded': 'Exceeded control', 'processControl.sampleCount': 'Samples',
         'processControl.dataUnavailable': 'Process history API is not available yet',
+        'historyData.title': 'Historical data', 'historyData.records': 'records', 'historyData.timeRange': 'Time range',
+        'historyData.hourly': 'Hourly (00–60 min)', 'historyData.daily': 'Daily', 'historyData.weekly': 'Weekly',
+        'historyData.date': 'Date', 'historyData.gateway': 'Gateway', 'historyData.meter': 'Smart meter',
+        'historyData.metric': 'Metric', 'historyData.averageCurrent': 'Average current', 'historyData.selectGateway': 'Select gateway',
+        'historyData.selectMeter': 'Select smart meter', 'historyData.showThreePhase': 'Show three-phase current', 'historyData.query': 'Query',
+        'historyData.samples': 'samples', 'historyData.dataUnavailable': 'Historical data API is not available yet', 'historyData.noData': 'No historical data',
+        'historyData.time': 'Time', 'historyData.voltage': 'Voltage', 'historyData.activePower': 'Active power', 'historyData.status': 'Status',
     },
 }
 

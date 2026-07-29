@@ -159,6 +159,8 @@ src/
       overview-dashboard.tsx # operations overview UI; real-time reading fields are placeholders until backend APIs exist
     process-control/
       process-control-analysis.tsx # process control filters, summary cards and history chart
+    history-data/
+      history-data-view.tsx # historical data filters, bar chart and result table
   lib/
     api/
       auth.ts             # TODO: describe purpose
@@ -218,3 +220,8 @@ src/
 - The chart and summary values remain empty until the backend exposes a process-history query
   endpoint with the selected time range, meter, metric, and control limits, plus aggregated
   latest/average/minimum/maximum/exceeded values.
+
+## History data API gaps
+- `/history-data` currently uses existing gateway and meter metadata for its selectors.
+- The chart and table remain empty until the backend exposes a historical samples query
+  endpoint returning timestamp, gateway, meter, voltage, current, active power, and status.
