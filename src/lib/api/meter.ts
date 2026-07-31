@@ -5,38 +5,38 @@ import type { Meter, MeterBulkSaveResult, MeterCreateValues, MeterFormValues, Me
 
 export const meterKeys = {
     all: ['meters'] as const,
-    list: (hubUid: string) => [...meterKeys.all, 'list', hubUid] as const,
+    list: (gatewayUid: string) => [...meterKeys.all, 'list', gatewayUid] as const,
 }
 
-export function useMeters(hubUid: string, initialData?: Meter[]) {
+export function useMeters(gatewayUid: string, initialData?: Meter[]) {
     return useQuery({
-        queryKey: meterKeys.list(hubUid),
-        queryFn: () => getMeters(hubUid),
+        queryKey: meterKeys.list(gatewayUid),
+        queryFn: () => getMeters(gatewayUid),
         initialData,
         placeholderData: keepPreviousData,
     })
 }
 
-export function useCreateMeter(hubUid: string) {
+export function useCreateMeter(gatewayUid: string) {
     const queryClient = useQueryClient()
     return useMutation({
-        mutationFn: (values: MeterCreateValues) => createMeter(hubUid, values),
+        mutationFn: (values: MeterCreateValues) => createMeter(gatewayUid, values),
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: meterKeys.list(hubUid) })
+            queryClient.invalidateQueries({ queryKey: meterKeys.list(gatewayUid) })
         },
     })
 }
 
-export function useUpdateMeter(hubUID: string) {
+export function useUpdateMeter(gatewayUID: string) {
     const queryClient = useQueryClient()
     return useMutation({
         mutationFn: (values: MeterUpdateValues) => updateMeter(values),
         onMutate: async (values) => {
-            await queryClient.cancelQueries({ queryKey: meterKeys.list(hubUID) })
-            const previous = queryClient.getQueryData<Meter[]>(meterKeys.list(hubUID))
+            await queryClient.cancelQueries({ queryKey: meterKeys.list(gatewayUID) })
+            const previous = queryClient.getQueryData<Meter[]>(meterKeys.list(gatewayUID))
             if (previous) {
                 queryClient.setQueryData<Meter[]>(
-                    meterKeys.list(hubUID),
+                    meterKeys.list(gatewayUID),
                     previous.map((m) => (m.macId === values.macId ? { ...m, ...values } : m)),
                 )
             }
@@ -44,21 +44,21 @@ export function useUpdateMeter(hubUID: string) {
         },
         onError: (_err, _values, context) => {
             if (context?.previous) {
-                queryClient.setQueryData(meterKeys.list(hubUID), context.previous)
+                queryClient.setQueryData(meterKeys.list(gatewayUID), context.previous)
             }
         },
         onSettled: () => {
-            queryClient.invalidateQueries({ queryKey: meterKeys.list(hubUID) })
+            queryClient.invalidateQueries({ queryKey: meterKeys.list(gatewayUID) })
         },
     })
 }
 
-export function useDeleteMeter(hubUid: string) {
+export function useDeleteMeter(gatewayUid: string) {
     const queryClient = useQueryClient()
     return useMutation({
         mutationFn: (macId: string) => deleteMeter(macId),
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: meterKeys.list(hubUid) })
+            queryClient.invalidateQueries({ queryKey: meterKeys.list(gatewayUid) })
         },
     })
 }
@@ -68,7 +68,7 @@ export function useDeleteMeter(hubUid: string) {
  * Backend has no batch endpoint, so this fires one PUT per dirty row via
  * Promise.allSettled, then reconciles the list with a single invalidate.
  */
-export function useUpdateMetersBulk(hubUID: string) {
+export function useUpdateMetersBulk(gatewayUID: string) {
     const queryClient = useQueryClient()
     return useMutation({
         mutationFn: async (updates: MeterUpdateValues[]): Promise<MeterBulkSaveResult> => {
@@ -87,17 +87,17 @@ export function useUpdateMetersBulk(hubUID: string) {
             return { succeeded, failed }
         },
         onSettled: () => {
-            queryClient.invalidateQueries({ queryKey: meterKeys.list(hubUID) })
+            queryClient.invalidateQueries({ queryKey: meterKeys.list(gatewayUID) })
         },
     })
 }
 
-async function getMeters(hubUid: string): Promise<Meter[]> {
-    return apiFetch<Meter[]>(`/api/hubs/${encodeURIComponent(hubUid)}/meters`)
+async function getMeters(gatewayUid: string): Promise<Meter[]> {
+    return apiFetch<Meter[]>(GATEWAY_ENPOINT.getMeters(gatewayUid))
 }
 
-async function createMeter(hubUid: string, values: MeterCreateValues): Promise<Meter> {
-    return apiFetch<Meter>(`/api/hubs/${encodeURIComponent(hubUid)}/meters`, {
+async function createMeter(gatewayUid: string, values: MeterCreateValues): Promise<Meter> {
+    return apiFetch<Meter>(`/api/hubs/${encodeURIComponent(gatewayUid)}/meters`, {
         method: 'POST',
         body: JSON.stringify(values),
     })
@@ -105,14 +105,14 @@ async function createMeter(hubUid: string, values: MeterCreateValues): Promise<M
 
 async function updateMeter(values: MeterUpdateValues): Promise<Meter> {
     const { macId, ...rest } = values
-    return apiFetch<Meter>(`/api/meters/${encodeURIComponent(macId)}`, {
+    return apiFetch<Meter>(`${METER_ENPOINT.base}/${encodeURIComponent(macId)}`, {
         method: 'PUT',
         body: JSON.stringify(rest),
     })
 }
 
 async function deleteMeter(macId: string): Promise<void> {
-    return apiFetch<void>(`/api/meters/${encodeURIComponent(macId)}`, {
+    return apiFetch<void>(`${METER_ENPOINT.base}/${encodeURIComponent(macId)}`, {
         method: 'DELETE',
     })
 }

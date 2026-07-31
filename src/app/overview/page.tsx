@@ -4,7 +4,7 @@ import { authOptions } from '@/lib/auth'
 import { normalizeRole } from '@/lib/roles'
 import { getServerSession } from 'next-auth'
 import type { CloudTarget } from '@/types/cloud-target'
-import type { Hub } from '@/types/hub'
+import type { Gateway } from '@/types/gateway'
 import type { Meter } from '@/types/meter'
 
 export default async function OverviewPage() {
@@ -12,11 +12,13 @@ export default async function OverviewPage() {
     const isAdmin = normalizeRole(session?.user?.role) === 'admin'
     const [hubs, cloudTargets] = isAdmin
         ? await Promise.all([
-            serverApiFetch<Hub[]>('/api/hubs'),
-            serverApiFetch<CloudTarget[]>('/api/cloud-targets'),
-        ])
-        : [await safeFetch<Hub[]>('/api/hubs', []), []]
-    const meterResults = await Promise.all(hubs.map((hub) => safeFetch<Meter[]>(`/api/hubs/${encodeURIComponent(hub.uid)}/meters`, [])))
+              serverApiFetch<Gateway[]>('/api/hubs'),
+              serverApiFetch<CloudTarget[]>('/api/cloud-targets'),
+          ])
+        : [await safeFetch<Gateway[]>('/api/hubs', []), []]
+    const meterResults = await Promise.all(
+        hubs.map((hub) => safeFetch<Meter[]>(`/api/hubs/${encodeURIComponent(hub.uid)}/meters`, [])),
+    )
 
     return <OverviewDashboard hubs={hubs} cloudTargets={cloudTargets} meters={meterResults.flat()} />
 }

@@ -5,5 +5,7 @@ import { NextRequest } from 'next/server'
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ uid: string }> }) {
     const { uid } = await params
-    return handleRoute(() => serverApiFetch<Meter[]>(`/api/hubs/${uid}/meters`, undefined, { skipAuthRedirect: true }))
+    return handleRoute(() =>
+        serverApiFetch<Meter[]>(GATEWAY_ENPOINT.getMeters(uid), undefined, { skipAuthRedirect: true }),
+    )
 }

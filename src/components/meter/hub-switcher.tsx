@@ -1,14 +1,14 @@
 'use client'
 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import type { Hub } from '@/types/hub'
+import type { Gateway } from '@/types/gateway'
 
 export function HubSwitcher({
     hubs,
     currentHubUid,
     onHubChange,
 }: {
-    hubs: Hub[]
+    hubs: Gateway[]
     currentHubUid: string
     onHubChange: (hubUid: string) => void
 }) {

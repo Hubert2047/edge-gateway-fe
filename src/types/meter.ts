@@ -4,7 +4,7 @@ export interface MeterCreateValues extends MeterFormValues {
 }
 export interface Meter {
     macId: string
-    hubUID: string
+    gatewayUID: string
     name: string | null
     meterType: MeterType
     measurementType: MeterType

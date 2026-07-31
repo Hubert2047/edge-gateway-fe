@@ -65,21 +65,21 @@ export function useTestCloudTargetConnection() {
     })
 }
 function getCloudTargets() {
-    return apiFetch<CloudTarget[]>('/api/cloud-targets')
+    return apiFetch<CloudTarget[]>(CLOUD_TARGET_ENPOINT.base)
 }
 
 function createCloudTarget(form: CloudTargetFormValues) {
-    return apiFetch<CloudTarget>('/api/cloud-targets', { method: 'POST', body: JSON.stringify(form) })
+    return apiFetch<CloudTarget>(CLOUD_TARGET_ENPOINT.base, { method: 'POST', body: JSON.stringify(form) })
 }
 
 function updateCloudTarget(id: string, form: CloudTargetFormValues) {
-    return apiFetch<CloudTarget>(`/api/cloud-targets/${id}`, { method: 'PUT', body: JSON.stringify(form) })
+    return apiFetch<CloudTarget>(`${CLOUD_TARGET_ENPOINT.base}/${id}`, { method: 'PUT', body: JSON.stringify(form) })
 }
 
 function deleteCloudTarget(id: string) {
-    return apiFetch<void>(`/api/cloud-targets/${id}`, { method: 'DELETE' })
+    return apiFetch<void>(`${CLOUD_TARGET_ENPOINT.base}/${id}`, { method: 'DELETE' })
 }
 
 function testCloudTargetConnection(id: string) {
-    return apiFetch<TestConnectionResult>(`/api/cloud-targets/${id}/test`, { method: 'POST' })
+    return apiFetch<TestConnectionResult>(CLOUD_TARGET_ENPOINT.test(id), { method: 'POST' })
 }

@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { HubSwitcher } from './hub-switcher'
 import { MeterList } from './meter-list'
-import type { Hub } from '@/types/hub'
+import type { Gateway } from '@/types/gateway'
 import type { Meter } from '@/types/meter'
 import { useI18n } from '@/lib/i18n'
 
@@ -12,7 +12,7 @@ export function MetersClient({
     initialHubUid,
     initialMeters,
 }: {
-    hubs: Hub[]
+    hubs: Gateway[]
     initialHubUid: string
     initialMeters: Meter[]
 }) {

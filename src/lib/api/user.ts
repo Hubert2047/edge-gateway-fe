@@ -54,23 +54,32 @@ export function useResetUserPassword() {
 }
 
 async function getUsers() {
-    return apiFetch<AppUser[]>('/api/users')
+    return apiFetch<AppUser[]>(USER_ENPOINT.base)
 }
 
 async function createUser(values: CreateUserValues) {
-    return apiFetch<AppUser>('/api/users', { method: 'POST', body: JSON.stringify({ ...values, role: toBackendRole(values.role) }) })
+    return apiFetch<AppUser>(USER_ENPOINT.base, {
+        method: 'POST',
+        body: JSON.stringify({ ...values, role: toBackendRole(values.role) }),
+    })
 }
 
 async function setUserEnabled(id: string, enabled: boolean) {
-    return apiFetch<AppUser>(`/api/users/${encodeURIComponent(id)}/enabled`, { method: 'PUT', body: JSON.stringify({ enabled }) })
+    return apiFetch<AppUser>(`/api/users/${encodeURIComponent(id)}/enabled`, {
+        method: 'PUT',
+        body: JSON.stringify({ enabled }),
+    })
 }
 
 async function updateUserRole(id: string, role: UserRole) {
-    return apiFetch<AppUser>(`/api/users/${encodeURIComponent(id)}/role`, { method: 'PUT', body: JSON.stringify({ role: toBackendRole(role) }) })
+    return apiFetch<AppUser>(`/api/users/${encodeURIComponent(id)}/role`, {
+        method: 'PUT',
+        body: JSON.stringify({ role: toBackendRole(role) }),
+    })
 }
 
 async function deleteUser(id: string) {
-    return apiFetch<void>(`/api/users/${encodeURIComponent(id)}`, { method: 'DELETE' })
+    return apiFetch<void>(`${USER_ENPOINT.base}/${encodeURIComponent(id)}`, { method: 'DELETE' })
 }
 
 async function resetUserPassword(id: string, password: string) {

@@ -18,14 +18,20 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
-import type { Hub, HubFormValues } from '@/types/hub'
+import type { Gateway, GatewayFormValues } from '@/types/gateway'
 import { getErrorMessage } from '@/lib/utils'
 import { StatusBadge } from '../status-badge'
-import { useCreateHub, useDeleteHub, useHubs, useSyncHubMeters, useUpdateHub } from '@/lib/api/hub'
+import {
+    useCreateGateway,
+    useDeleteGateway,
+    useGateways,
+    useSyncGatewayMeters,
+    useUpdateGateway,
+} from '@/lib/api/gateway'
 import { RelativeTime } from '../RelativeTime'
 import { useI18n } from '@/lib/i18n'
 
-function emptyForm(): HubFormValues {
+function emptyForm(): GatewayFormValues {
     return {
         uid: '',
         name: '',
@@ -37,49 +43,50 @@ function emptyForm(): HubFormValues {
     }
 }
 
-function hubToForm(hub: Hub): HubFormValues {
+function gatewayToForm(gateway: Gateway): GatewayFormValues {
     return {
-        uid: hub.uid,
-        name: hub.name,
-        ip: hub.ip,
-        port: hub.port,
-        enabled: hub.enabled,
-        pollIntervalSeconds: hub.pollIntervalSeconds,
-        note: hub.note,
+        uid: gateway.uid,
+        name: gateway.name,
+        ip: gateway.ip,
+        port: gateway.port,
+        enabled: gateway.enabled,
+        pollIntervalSeconds: gateway.pollIntervalSeconds,
+        note: gateway.note,
     }
 }
 
-type FormErrors = Partial<Record<'hubName' | 'hubIp' | 'hubPort' | 'pollIntervalSeconds', string>>
+type FormErrors = Partial<Record<'name' | 'ip' | 'port' | 'pollIntervalSeconds', string>>
 
-function validateForm(form: HubFormValues): FormErrors {
+function validateForm(form: GatewayFormValues): FormErrors {
     const errors: FormErrors = {}
-    if (!form.name.trim()) errors.hubName = 'validation.displayNameRequired'
-    if (!form.ip.trim()) errors.hubIp = 'validation.ipRequired'
-    if (!form.port || form.port <= 0) errors.hubPort = 'validation.portInvalid'
-    if (!form.pollIntervalSeconds || form.pollIntervalSeconds <= 0) errors.pollIntervalSeconds = 'validation.intervalInvalid'
+    if (!form.name.trim()) errors.name = 'validation.displayNameRequired'
+    if (!form.ip.trim()) errors.ip = 'validation.ipRequired'
+    if (!form.port || form.port <= 0) errors.port = 'validation.portInvalid'
+    if (!form.pollIntervalSeconds || form.pollIntervalSeconds <= 0)
+        errors.pollIntervalSeconds = 'validation.intervalInvalid'
     return errors
 }
 
 type PendingAction = { type: 'save' | 'delete' | 'collect'; uid: string; displayName: string } | null
-type RowFormState = { form: HubFormValues; errors: FormErrors }
+type RowFormState = { form: GatewayFormValues; errors: FormErrors }
 
-export function GatewayList({ initialHubs }: { initialHubs: Hub[] }) {
+export function GatewayList({ initialGateways: initialGateways }: { initialGateways: Gateway[] }) {
     const { t } = useI18n()
-    const { data: hubs = initialHubs } = useHubs(initialHubs)
-    const updateHubMutation = useUpdateHub()
-    const deleteHubMutation = useDeleteHub()
-    const createHubMutation = useCreateHub()
-    const syncHubMetersMutation = useSyncHubMeters()
+    const { data: gateways = initialGateways } = useGateways(initialGateways)
+    const updateGatewayMutation = useUpdateGateway()
+    const deleteGatewayMutation = useDeleteGateway()
+    const createGatewayMutation = useCreateGateway()
+    const syncGatewayMetersMutation = useSyncGatewayMeters()
     const [rowFormState, setRowFormState] = useState<Record<string, RowFormState>>({})
     const [collectingUids, setCollectingUids] = useState<Set<string>>(new Set())
 
-    function getRowForm(hub: Hub): RowFormState {
-        return rowFormState[hub.uid] ?? { form: hubToForm(hub), errors: {} }
+    function getRowForm(gateway: Gateway): RowFormState {
+        return rowFormState[gateway.uid] ?? { form: gatewayToForm(gateway), errors: {} }
     }
 
-    function updateRowForm(uid: string, patch: Partial<HubFormValues>) {
+    function updateRowForm(uid: string, patch: Partial<GatewayFormValues>) {
         setRowFormState((prev) => {
-            const current = prev[uid]?.form ?? hubToForm(hubs.find((h) => h.uid === uid)!)
+            const current = prev[uid]?.form ?? gatewayToForm(gateways.find((h) => h.uid === uid)!)
             const prevErrors = prev[uid]?.errors ?? {}
             const nextErrors = { ...prevErrors }
             for (const key of Object.keys(patch)) {
@@ -100,7 +107,7 @@ export function GatewayList({ initialHubs }: { initialHubs: Hub[] }) {
     const [newForm, setNewForm] = useState(emptyForm())
     const [newErrors, setNewErrors] = useState<FormErrors>({})
 
-    function updateNewForm(patch: Partial<HubFormValues>) {
+    function updateNewForm(patch: Partial<GatewayFormValues>) {
         setNewForm((f) => ({ ...f, ...patch }))
         setNewErrors((prev) => {
             const next = { ...prev }
@@ -114,43 +121,43 @@ export function GatewayList({ initialHubs }: { initialHubs: Hub[] }) {
     const [pendingAction, setPendingAction] = useState<PendingAction>(null)
     const [deletingUid, setDeletingUid] = useState<string | null>(null)
 
-    function toggleEnabled(hub: Hub, checked: boolean) {
-        const { form } = getRowForm(hub)
-        updateHubMutation.mutate({ uid: hub.uid, form: { ...form, enabled: checked } })
-        clearRowForm(hub.uid)
+    function toggleEnabled(gateway: Gateway, checked: boolean) {
+        const { form } = getRowForm(gateway)
+        updateGatewayMutation.mutate({ uid: gateway.uid, form: { ...form, enabled: checked } })
+        clearRowForm(gateway.uid)
     }
 
-    function requestSave(hub: Hub) {
-        const { form } = getRowForm(hub)
+    function requestSave(gateway: Gateway) {
+        const { form } = getRowForm(gateway)
         const errors = validateForm(form)
         if (Object.keys(errors).length > 0) {
-            setRowFormState((prev) => ({ ...prev, [hub.uid]: { form, errors } }))
+            setRowFormState((prev) => ({ ...prev, [gateway.uid]: { form, errors } }))
             return
         }
 
-        setPendingAction({ type: 'save', uid: hub.uid, displayName: form.name || hub.uid })
+        setPendingAction({ type: 'save', uid: gateway.uid, displayName: form.name || gateway.uid })
     }
 
-    function requestDelete(hub: Hub) {
-        const { form } = getRowForm(hub)
-        setPendingAction({ type: 'delete', uid: hub.uid, displayName: form.name || hub.uid })
+    function requestDelete(gateway: Gateway) {
+        const { form } = getRowForm(gateway)
+        setPendingAction({ type: 'delete', uid: gateway.uid, displayName: form.name || gateway.uid })
     }
 
-    function requestCollect(hub: Hub) {
-        const { form } = getRowForm(hub)
-        setPendingAction({ type: 'collect', uid: hub.uid, displayName: form.name || hub.uid })
+    function requestCollect(gateway: Gateway) {
+        const { form } = getRowForm(gateway)
+        setPendingAction({ type: 'collect', uid: gateway.uid, displayName: form.name || gateway.uid })
     }
 
     async function confirmPendingAction() {
         if (!pendingAction) return
         const { type, uid } = pendingAction
         setPendingAction(null)
-        const hub = hubs.find((h) => h.uid === uid)
-        if (!hub) return
+        const gateway = gateways.find((h) => h.uid === uid)
+        if (!gateway) return
 
         if (type === 'save') {
-            const { form } = getRowForm(hub)
-            updateHubMutation.mutate(
+            const { form } = getRowForm(gateway)
+            updateGatewayMutation.mutate(
                 { uid, form },
                 {
                     onSuccess: () => clearRowForm(uid),
@@ -161,7 +168,7 @@ export function GatewayList({ initialHubs }: { initialHubs: Hub[] }) {
 
         if (type === 'delete') {
             setDeletingUid(uid)
-            deleteHubMutation.mutate(uid, {
+            deleteGatewayMutation.mutate(uid, {
                 onSettled: () => setDeletingUid((prev) => (prev === uid ? null : prev)),
                 onError: (err) => toast.error(getErrorMessage(err, t('toast.deleteFailed'))),
             })
@@ -169,7 +176,7 @@ export function GatewayList({ initialHubs }: { initialHubs: Hub[] }) {
 
         if (type === 'collect') {
             setCollectingUids((prev) => new Set(prev).add(uid))
-            syncHubMetersMutation.mutate(uid, {
+            syncGatewayMetersMutation.mutate(uid, {
                 onError: (err) => toast.error(getErrorMessage(err, t('toast.collectFailed'))),
                 onSettled: () => {
                     setCollectingUids((prev) => {
@@ -182,27 +189,33 @@ export function GatewayList({ initialHubs }: { initialHubs: Hub[] }) {
         }
     }
 
-    function createHub() {
+    function createGateway() {
         const errors = validateForm(newForm)
         if (Object.keys(errors).length > 0) {
             setNewErrors(errors)
             return
         }
 
-        createHubMutation.mutate(newForm, {
+        createGatewayMutation.mutate(newForm, {
             onSuccess: () => {
                 setNewForm(emptyForm())
                 setNewErrors({})
                 toast.success(t('toast.added'))
             },
-                onError: (err) => toast.error(getErrorMessage(err, t('toast.addFailed'))),
+            onError: (err) => toast.error(getErrorMessage(err, t('toast.addFailed'))),
         })
     }
 
     const dialogText = {
         save: { title: t('common.confirmSave'), desc: (name: string) => t('common.confirmSaveDescription', { name }) },
-        delete: { title: t('common.confirmDelete'), desc: (name: string) => t('common.confirmDeleteDescription', { name }) },
-        collect: { title: t('common.confirmCollect'), desc: (name: string) => t('common.confirmCollectDescription', { name }) },
+        delete: {
+            title: t('common.confirmDelete'),
+            desc: (name: string) => t('common.confirmDeleteDescription', { name }),
+        },
+        collect: {
+            title: t('common.confirmCollect'),
+            desc: (name: string) => t('common.confirmCollectDescription', { name }),
+        },
     } as const
 
     return (
@@ -210,14 +223,12 @@ export function GatewayList({ initialHubs }: { initialHubs: Hub[] }) {
             <Card className='flex flex-1 min-h-0 flex-col overflow-hidden border border-border/60 pt-0 max-md:flex-none max-md:overflow-visible'>
                 <div
                     className={`flex-1 min-h-0 overflow-y-auto ${
-                        hubs.length === 0 ? 'max-md:overflow-x-auto' : 'max-md:overflow-visible'
-                    }`}
-                >
+                        gateways.length === 0 ? 'max-md:overflow-x-auto' : 'max-md:overflow-visible'
+                    }`}>
                     <table
                         className={`responsive-table w-full text-sm ${
-                            hubs.length === 0 ? 'responsive-table-empty min-w-[36rem]' : ''
-                        }`}
-                    >
+                            gateways.length === 0 ? 'responsive-table-empty min-w-[36rem]' : ''
+                        }`}>
                         <colgroup>
                             <col className='w-28' />
                             <col className='min-w-72' />
@@ -233,162 +244,188 @@ export function GatewayList({ initialHubs }: { initialHubs: Hub[] }) {
                             </tr>
                         </thead>
                         <tbody>
-                            {hubs.length === 0 ? (
+                            {gateways.length === 0 ? (
                                 <tr>
                                     <td colSpan={4} className='p-6 text-center text-sm text-muted-foreground'>
                                         {t('empty.noGateways')}
                                     </td>
                                 </tr>
-                            ) : hubs.map((hub) => {
-                                const { form, errors } = getRowForm(hub)
-                                const saving =
-                                    updateHubMutation.isPending && updateHubMutation.variables?.uid === hub.uid
-                                const collecting = collectingUids.has(hub.uid)
-                                const deleting = deletingUid === hub.uid
-                                const rowBusy = saving || collecting || deleting
-                                return (
-                                    <tr
-                                        key={hub.uid}
-                                        className={`border-t align-top transition-colors ${rowBusy ? 'opacity-50 pointer-events-none' : ''}`}>
-                                        <td data-label={t('common.status')} className='p-4 space-y-2'>
-                                            <Checkbox
-                                                checked={form.enabled}
-                                                disabled={rowBusy}
-                                                onCheckedChange={(checked) => toggleEnabled(hub, checked === true)}
-                                            />
-                                            <StatusBadge enabled={form.enabled} activeLabel={t('gateway.monitoring')} />
-                                        </td>
-                                        <td data-label={t('common.gateway')} className='p-4 space-y-3'>
-                                            <div className='space-y-1.5'>
-                                                <Label className='text-xs text-muted-foreground'>ID</Label>
-                                                <p className='text-sm font-mono text-foreground/80'>{hub.uid}</p>
-                                            </div>
-                                            <div className='space-y-1.5'>
-                                                <Label
-                                                    htmlFor={`name-${hub.uid}`}
-                                                    className='text-xs text-muted-foreground'>
-                                                    {t('common.displayName')}
-                                                </Label>
-                                                <Input
-                                                    id={`name-${hub.uid}`}
-                                                    value={form.name}
+                            ) : (
+                                gateways.map((gateway) => {
+                                    const { form, errors } = getRowForm(gateway)
+                                    const saving =
+                                        updateGatewayMutation.isPending &&
+                                        updateGatewayMutation.variables?.uid === gateway.uid
+                                    const collecting = collectingUids.has(gateway.uid)
+                                    const deleting = deletingUid === gateway.uid
+                                    const rowBusy = saving || collecting || deleting
+                                    return (
+                                        <tr
+                                            key={gateway.uid}
+                                            className={`border-t align-top transition-colors ${rowBusy ? 'opacity-50 pointer-events-none' : ''}`}>
+                                            <td data-label={t('common.status')} className='p-4 space-y-2'>
+                                                <Checkbox
+                                                    checked={form.enabled}
                                                     disabled={rowBusy}
-                                                    onChange={(e) => updateRowForm(hub.uid, { name: e.target.value })}
-                                                    className={errors.hubName ? 'border-destructive' : ''}
+                                                    onCheckedChange={(checked) =>
+                                                        toggleEnabled(gateway, checked === true)
+                                                    }
                                                 />
-                                                {errors.hubName && (
-                                                    <p className='text-xs text-destructive'>{t(errors.hubName)}</p>
-                                                )}
-                                            </div>
-                                            <div className='flex gap-2'>
-                                                <div className='flex-1 space-y-1.5'>
-                                                    <Label
-                                                        htmlFor={`ip-${hub.uid}`}
-                                                        className='text-xs text-muted-foreground'>
-                                                        IP
-                                                    </Label>
-                                                    <Input
-                                                        id={`ip-${hub.uid}`}
-                                                        value={form.ip}
-                                                        disabled={rowBusy}
-                                                        onChange={(e) => updateRowForm(hub.uid, { ip: e.target.value })}
-                                                        className={errors.hubIp ? 'border-destructive' : ''}
-                                                    />
-                                                    {errors.hubIp && (
-                                                        <p className='text-xs text-destructive'>{t(errors.hubIp)}</p>
-                                                    )}
+                                                <StatusBadge
+                                                    enabled={form.enabled}
+                                                    activeLabel={t('gateway.monitoring')}
+                                                />
+                                            </td>
+                                            <td data-label={t('common.gateway')} className='p-4 space-y-3'>
+                                                <div className='space-y-1.5'>
+                                                    <Label className='text-xs text-muted-foreground'>ID</Label>
+                                                    <p className='text-sm font-mono text-foreground/80'>
+                                                        {gateway.uid}
+                                                    </p>
                                                 </div>
-                                                <div className='w-28 space-y-1.5'>
+                                                <div className='space-y-1.5'>
                                                     <Label
-                                                        htmlFor={`port-${hub.uid}`}
+                                                        htmlFor={`name-${gateway.uid}`}
                                                         className='text-xs text-muted-foreground'>
-                                                        PORT
+                                                        {t('common.displayName')}
                                                     </Label>
                                                     <Input
-                                                        id={`port-${hub.uid}`}
-                                                        type='number'
-                                                        value={form.port}
+                                                        id={`name-${gateway.uid}`}
+                                                        value={form.name}
                                                         disabled={rowBusy}
                                                         onChange={(e) =>
-                                                            updateRowForm(hub.uid, { port: Number(e.target.value) })
+                                                            updateRowForm(gateway.uid, { name: e.target.value })
                                                         }
-                                                        className={errors.hubPort ? 'border-destructive' : ''}
+                                                        className={errors.name ? 'border-destructive' : ''}
                                                     />
-                                                    {errors.hubPort && (
-                                                        <p className='text-xs text-destructive'>{t(errors.hubPort)}</p>
+                                                    {errors.name && (
+                                                        <p className='text-xs text-destructive'>{t(errors.name)}</p>
                                                     )}
                                                 </div>
-                                            </div>
-                                            <div className='space-y-1.5'>
-                                                <Label
-                                                    htmlFor={`poll-${hub.uid}`}
-                                                    className='text-xs text-muted-foreground'>
-                                                    {t('common.interval')}
-                                                </Label>
-                                                <Input
-                                                    id={`poll-${hub.uid}`}
-                                                    type='number'
-                                                    value={form.pollIntervalSeconds}
-                                                    disabled={rowBusy}
-                                                    onChange={(e) =>
-                                                        updateRowForm(hub.uid, {
-                                                            pollIntervalSeconds: Number(e.target.value),
-                                                        })
-                                                    }
-                                                    className={errors.pollIntervalSeconds ? 'border-destructive' : ''}
-                                                />
-                                                {errors.pollIntervalSeconds && (
-                                                    <p className='text-xs text-destructive'>
-                                                        {t(errors.pollIntervalSeconds)}
-                                                    </p>
-                                                )}
-                                            </div>
-                                        </td>
-                                        <td data-label={t('common.info')} className='p-4 text-muted-foreground'>
-                                            <p>{t('gateway.meterCount', { count: hub.meterCount })}</p>
-                                            <p>
-                                                {t('gateway.lastSuccess')}
-                                                <RelativeTime value={hub.updatedAt} />
-                                            </p>
-                                        </td>
-                                        <td data-label={t('common.actions')} data-role='actions' className='p-4'>
-                                            <div className='flex flex-col items-end gap-1.5'>
-                                                <Button
-                                                    size='sm'
-                                                    className='w-20'
-                                                    disabled={rowBusy}
-                                                    onClick={() => requestSave(hub)}>
-                                                    {saving ? <Loader2 className='h-4 w-4 animate-spin' /> : t('common.save')}
-                                                </Button>
-                                                <Button
-                                                    size='sm'
-                                                    variant='secondary'
-                                                    disabled={!form.enabled || rowBusy}
-                                                    onClick={() => requestCollect(hub)}
-                                                    className={
-                                                        form.enabled
-                                                            ? 'w-20 border text-emerald-700'
-                                                            : 'w-20 border text-muted-foreground'
-                                                    }>
-                                                    {collecting ? (
-                                                        <Loader2 className='h-4 w-4 animate-spin' />
-                                                    ) : (
-                                                        t('common.collectNow')
+                                                <div className='flex gap-2'>
+                                                    <div className='flex-1 space-y-1.5'>
+                                                        <Label
+                                                            htmlFor={`ip-${gateway.uid}`}
+                                                            className='text-xs text-muted-foreground'>
+                                                            IP
+                                                        </Label>
+                                                        <Input
+                                                            id={`ip-${gateway.uid}`}
+                                                            value={form.ip}
+                                                            disabled={rowBusy}
+                                                            onChange={(e) =>
+                                                                updateRowForm(gateway.uid, { ip: e.target.value })
+                                                            }
+                                                            className={errors.ip ? 'border-destructive' : ''}
+                                                        />
+                                                        {errors.ip && (
+                                                            <p className='text-xs text-destructive'>{t(errors.ip)}</p>
+                                                        )}
+                                                    </div>
+                                                    <div className='w-28 space-y-1.5'>
+                                                        <Label
+                                                            htmlFor={`port-${gateway.uid}`}
+                                                            className='text-xs text-muted-foreground'>
+                                                            PORT
+                                                        </Label>
+                                                        <Input
+                                                            id={`port-${gateway.uid}`}
+                                                            type='number'
+                                                            value={form.port}
+                                                            disabled={rowBusy}
+                                                            onChange={(e) =>
+                                                                updateRowForm(gateway.uid, {
+                                                                    port: Number(e.target.value),
+                                                                })
+                                                            }
+                                                            className={errors.port ? 'border-destructive' : ''}
+                                                        />
+                                                        {errors.port && (
+                                                            <p className='text-xs text-destructive'>{t(errors.port)}</p>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                                <div className='space-y-1.5'>
+                                                    <Label
+                                                        htmlFor={`poll-${gateway.uid}`}
+                                                        className='text-xs text-muted-foreground'>
+                                                        {t('common.interval')}
+                                                    </Label>
+                                                    <Input
+                                                        id={`poll-${gateway.uid}`}
+                                                        type='number'
+                                                        value={form.pollIntervalSeconds}
+                                                        disabled={rowBusy}
+                                                        onChange={(e) =>
+                                                            updateRowForm(gateway.uid, {
+                                                                pollIntervalSeconds: Number(e.target.value),
+                                                            })
+                                                        }
+                                                        className={
+                                                            errors.pollIntervalSeconds ? 'border-destructive' : ''
+                                                        }
+                                                    />
+                                                    {errors.pollIntervalSeconds && (
+                                                        <p className='text-xs text-destructive'>
+                                                            {t(errors.pollIntervalSeconds)}
+                                                        </p>
                                                     )}
-                                                </Button>
-                                                <Button
-                                                    size='sm'
-                                                    className='w-20 bg-rose-50 text-rose-600 hover:bg-rose-100 border border-rose-200'
-                                                    variant='ghost'
-                                                    disabled={rowBusy}
-                                                    onClick={() => requestDelete(hub)}>
-                                                    {deleting ? <Loader2 className='h-4 w-4 animate-spin' /> : t('common.delete')}
-                                                </Button>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                )
-                            })}
+                                                </div>
+                                            </td>
+                                            <td data-label={t('common.info')} className='p-4 text-muted-foreground'>
+                                                <p>{t('gateway.meterCount', { count: gateway.meterCount })}</p>
+                                                <p>
+                                                    {t('gateway.lastSuccess')}
+                                                    <RelativeTime value={gateway.updatedAt} />
+                                                </p>
+                                            </td>
+                                            <td data-label={t('common.actions')} data-role='actions' className='p-4'>
+                                                <div className='flex flex-col items-end gap-1.5'>
+                                                    <Button
+                                                        size='sm'
+                                                        className='w-20'
+                                                        disabled={rowBusy}
+                                                        onClick={() => requestSave(gateway)}>
+                                                        {saving ? (
+                                                            <Loader2 className='h-4 w-4 animate-spin' />
+                                                        ) : (
+                                                            t('common.save')
+                                                        )}
+                                                    </Button>
+                                                    <Button
+                                                        size='sm'
+                                                        variant='secondary'
+                                                        disabled={!form.enabled || rowBusy}
+                                                        onClick={() => requestCollect(gateway)}
+                                                        className={
+                                                            form.enabled
+                                                                ? 'w-20 border text-emerald-700'
+                                                                : 'w-20 border text-muted-foreground'
+                                                        }>
+                                                        {collecting ? (
+                                                            <Loader2 className='h-4 w-4 animate-spin' />
+                                                        ) : (
+                                                            t('common.collectNow')
+                                                        )}
+                                                    </Button>
+                                                    <Button
+                                                        size='sm'
+                                                        className='w-20 bg-rose-50 text-rose-600 hover:bg-rose-100 border border-rose-200'
+                                                        variant='ghost'
+                                                        disabled={rowBusy}
+                                                        onClick={() => requestDelete(gateway)}>
+                                                        {deleting ? (
+                                                            <Loader2 className='h-4 w-4 animate-spin' />
+                                                        ) : (
+                                                            t('common.delete')
+                                                        )}
+                                                    </Button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    )
+                                })
+                            )}
                         </tbody>
                     </table>
                 </div>
@@ -417,9 +454,9 @@ export function GatewayList({ initialHubs }: { initialHubs: Hub[] }) {
                             placeholder={t('gateway.namePlaceholder')}
                             value={newForm.name}
                             onChange={(e) => updateNewForm({ name: e.target.value })}
-                            className={newErrors.hubName ? 'border-destructive' : ''}
+                            className={newErrors.name ? 'border-destructive' : ''}
                         />
-                        {newErrors.hubName && <p className='text-xs text-destructive'>{newErrors.hubName}</p>}
+                        {newErrors.name && <p className='text-xs text-destructive'>{newErrors.name}</p>}
                     </div>
                     <div className='space-y-1.5'>
                         <Label htmlFor='new-ip' className='text-xs text-muted-foreground'>
@@ -430,9 +467,9 @@ export function GatewayList({ initialHubs }: { initialHubs: Hub[] }) {
                             placeholder={t('gateway.ipPlaceholder')}
                             value={newForm.ip}
                             onChange={(e) => updateNewForm({ ip: e.target.value })}
-                            className={newErrors.hubIp ? 'border-destructive' : ''}
+                            className={newErrors.ip ? 'border-destructive' : ''}
                         />
-                        {newErrors.hubIp && <p className='text-xs text-destructive'>{newErrors.hubIp}</p>}
+                        {newErrors.ip && <p className='text-xs text-destructive'>{newErrors.ip}</p>}
                     </div>
                     <div className='space-y-1.5'>
                         <Label htmlFor='new-port' className='text-xs text-muted-foreground'>
@@ -444,9 +481,9 @@ export function GatewayList({ initialHubs }: { initialHubs: Hub[] }) {
                             placeholder={t('gateway.portPlaceholder')}
                             value={newForm.port}
                             onChange={(e) => updateNewForm({ port: Number(e.target.value) })}
-                            className={newErrors.hubPort ? 'border-destructive' : ''}
+                            className={newErrors.port ? 'border-destructive' : ''}
                         />
-                        {newErrors.hubPort && <p className='text-xs text-destructive'>{newErrors.hubPort}</p>}
+                        {newErrors.port && <p className='text-xs text-destructive'>{newErrors.port}</p>}
                     </div>
                     <div className='space-y-1.5'>
                         <Label htmlFor='new-poll' className='text-xs text-muted-foreground'>
@@ -475,11 +512,11 @@ export function GatewayList({ initialHubs }: { initialHubs: Hub[] }) {
                     />
                 </div> */}
                 <Button
-                    disabled={createHubMutation.isPending}
-                    onClick={createHub}
+                    disabled={createGatewayMutation.isPending}
+                    onClick={createGateway}
                     size='lg'
                     className='w-full sm:w-max'>
-                    {createHubMutation.isPending ? (
+                    {createGatewayMutation.isPending ? (
                         <>
                             <Loader2 className='h-4 w-4 animate-spin' />
                             {t('common.adding')}
@@ -493,7 +530,7 @@ export function GatewayList({ initialHubs }: { initialHubs: Hub[] }) {
             <AlertDialog open={pendingAction !== null} onOpenChange={(open) => !open && setPendingAction(null)}>
                 <AlertDialogContent>
                     <AlertDialogHeader>
-                                <AlertDialogTitle>{pendingAction ? dialogText[pendingAction.type].title : ''}</AlertDialogTitle>
+                        <AlertDialogTitle>{pendingAction ? dialogText[pendingAction.type].title : ''}</AlertDialogTitle>
                         <AlertDialogDescription>
                             {pendingAction ? dialogText[pendingAction.type].desc(pendingAction.displayName) : ''}
                         </AlertDialogDescription>

@@ -1,19 +1,23 @@
 import { serverApiFetch } from '@/lib/api/server'
 import type { Meter } from '@/types/meter'
-import type { Hub } from '@/types/hub'
+import type { Gateway } from '@/types/gateway'
 import { MetersClient } from '@/components/meter/meters-client'
 import { LocalizedText } from '@/components/i18n/localized-text'
 import { requireAdmin } from '@/lib/auth-guard'
 
 export default async function MetersPage({ searchParams }: { searchParams: Promise<{ hubUid?: string }> }) {
     await requireAdmin()
-    const hubs = await serverApiFetch<Hub[]>('/api/hubs')
+    const hubs = await serverApiFetch<Gateway[]>('/api/hubs')
 
     if (hubs.length === 0) {
         return (
             <div className='p-6 h-full'>
-                <h1 className='mb-6 text-2xl font-bold'><LocalizedText messageKey='page.meters' /></h1>
-                <p className='text-muted-foreground'><LocalizedText messageKey='page.noGateways' /></p>
+                <h1 className='mb-6 text-2xl font-bold'>
+                    <LocalizedText messageKey='page.meters' />
+                </h1>
+                <p className='text-muted-foreground'>
+                    <LocalizedText messageKey='page.noGateways' />
+                </p>
             </div>
         )
     }

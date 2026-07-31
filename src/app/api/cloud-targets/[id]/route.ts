@@ -6,7 +6,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     const { id } = await params
     return handleRoute(async () => {
         const form = await req.json()
-        const raw = await serverApiFetch<any>(`/api/cloud-targets/${id}`, {
+        const raw = await serverApiFetch<any>(`${CLOUD_TARGET_ENPOINT.base}/${id}`, {
             method: 'PUT',
             body: JSON.stringify(form),
         })
@@ -17,7 +17,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
 export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
     const { id } = await params
     return handleRoute(async () => {
-        await serverApiFetch<void>(`/api/cloud-targets/${id}`, { method: 'DELETE' })
+        await serverApiFetch<void>(`${CLOUD_TARGET_ENPOINT.base}/${id}`, { method: 'DELETE' })
         return undefined
     }, 204)
 }

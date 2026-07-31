@@ -1,4 +1,4 @@
-export interface Hub {
+export interface Gateway {
     uid: string
     name: string
     ip: string
@@ -10,7 +10,7 @@ export interface Hub {
     updatedAt: string
 }
 
-export interface HubFormValues {
+export interface GatewayFormValues {
     uid?: string
     name: string
     ip: string
