@@ -1,15 +1,22 @@
-const GATEWAY_ENPOINT = {
+export const GATEWAY_ENDPOINT = {
     base: '/api/v1/gateways',
-    syncMeter: (uid: string) => `${GATEWAY_ENPOINT.base}/${uid}/meters`,
-    getMeters: (uid: string) => `${GATEWAY_ENPOINT.base}/${uid}/sync-meters`,
+    syncMeter: (uid: string) => `${GATEWAY_ENDPOINT.base}/${uid}/meters`,
+    getMeters: (uid: string) => `${GATEWAY_ENDPOINT.base}/${uid}/sync-meters`,
 }
-const METER_ENPOINT = {
+export const METER_ENDPOINT = {
     base: '/api/v1/meters',
 }
-const CLOUD_TARGET_ENPOINT = {
+export const CLOUD_TARGET_ENDPOINT = {
     base: '/api/v1/cloud-targets',
-    test: (id: string) => `/api/v1/cloud-targets/${id}/test`,
+    test: (id: string) => `${CLOUD_TARGET_ENDPOINT.base}/${id}/test`,
 }
-const USER_ENPOINT = {
+export const USER_ENDPOINT = {
     base: '/api/v1/users',
+    resetPass: (id: string) => `${USER_ENDPOINT.base}/${encodeURIComponent(id)}/password`,
+    changeName: (id: string) => `${USER_ENDPOINT.base}/${encodeURIComponent(id)}/username`,
+    changeRole: (id: string) => `${USER_ENDPOINT.base}/${encodeURIComponent(id)}/role`,
+    enable: (id: string) => `${USER_ENDPOINT.base}/${encodeURIComponent(id)}/enabled`,
+}
+export const AUTH_ENDPOINT = {
+    login: '/api/v1/login',
 }

@@ -10,7 +10,7 @@ import type { Gateway } from '@/types/gateway'
 import type { Meter } from '@/types/meter'
 
 type OverviewDashboardProps = {
-    hubs: Gateway[]
+    gateways: Gateway[]
     cloudTargets: CloudTarget[]
     meters: Meter[]
 }
@@ -27,10 +27,10 @@ function formatValue(value: number | null, suffix = '') {
     return value === null ? '—' : `${value.toFixed(2)}${suffix}`
 }
 
-export function OverviewDashboard({ hubs, cloudTargets, meters }: OverviewDashboardProps) {
+export function OverviewDashboard({ gateways, cloudTargets, meters }: OverviewDashboardProps) {
     const { t } = useI18n()
     const router = useRouter()
-    const enabledHubs = hubs.filter((hub) => hub.enabled).length
+    const enabledGateways = gateways.filter((gateway) => gateway.enabled).length
     const enabledCloudTargets = cloudTargets.filter((target) => target.enabled).length
     const pendingUploads = cloudTargets.reduce((sum, target) => sum + (target.pendingCount ?? 0), 0)
 
@@ -48,7 +48,7 @@ export function OverviewDashboard({ hubs, cloudTargets, meters }: OverviewDashbo
             </div>
 
             <section className='grid grid-cols-2 border border-[#D8DDD9] bg-white md:grid-cols-5'>
-                <Summary label={t('overview.gatewayOnline')} value={enabledHubs} suffix={`/ ${hubs.length}`} />
+                <Summary label={t('overview.gatewayOnline')} value={enabledGateways} suffix={`/ ${gateways.length}`} />
                 <Summary
                     label={t('overview.cloudOnline')}
                     value={enabledCloudTargets}
@@ -65,20 +65,20 @@ export function OverviewDashboard({ hubs, cloudTargets, meters }: OverviewDashbo
             <div className='grid gap-8 lg:grid-cols-2'>
                 <OverviewSection title={t('overview.gatewayStatus')} href='/gateways' action={t('common.settings')}>
                     <div className='divide-y divide-[#D8DDD9] border border-[#D8DDD9] bg-white'>
-                        {hubs.length === 0 ? (
+                        {gateways.length === 0 ? (
                             <EmptyState text={t('overview.noGateways')} />
                         ) : (
-                            hubs.map((hub) => (
-                                <div key={hub.uid} className='flex items-center gap-4 px-5 py-5'>
-                                    <StatusDot active={hub.enabled} />
+                            gateways.map((gateway) => (
+                                <div key={gateway.uid} className='flex items-center gap-4 px-5 py-5'>
+                                    <StatusDot active={gateway.enabled} />
                                     <div className='min-w-0 flex-1'>
-                                        <p className='font-semibold'>{hub.name}</p>
+                                        <p className='font-semibold'>{gateway.name}</p>
                                         <p className='text-sm text-[#7B8580]'>
-                                            {hub.meterCount} {t('overview.meters')}
+                                            {gateway.meterCount} {t('overview.meters')}
                                         </p>
                                     </div>
                                     <span className='text-sm text-[#7B8580]'>
-                                        {hub.enabled ? t('overview.monitoring') : t('common.disabled')}
+                                        {gateway.enabled ? t('overview.monitoring') : t('common.disabled')}
                                     </span>
                                 </div>
                             ))

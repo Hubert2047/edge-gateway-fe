@@ -3,6 +3,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { apiFetch } from './client'
 import type { AppUser, CreateUserValues, UserRole } from '@/types/user'
+import { USER_ENDPOINT } from '@/constances/url'
 
 export const userKeys = {
     all: ['users'] as const,
@@ -54,36 +55,36 @@ export function useResetUserPassword() {
 }
 
 async function getUsers() {
-    return apiFetch<AppUser[]>(USER_ENPOINT.base)
+    return apiFetch<AppUser[]>(USER_ENDPOINT.base)
 }
 
 async function createUser(values: CreateUserValues) {
-    return apiFetch<AppUser>(USER_ENPOINT.base, {
+    return apiFetch<AppUser>(USER_ENDPOINT.base, {
         method: 'POST',
         body: JSON.stringify({ ...values, role: toBackendRole(values.role) }),
     })
 }
 
 async function setUserEnabled(id: string, enabled: boolean) {
-    return apiFetch<AppUser>(`/api/users/${encodeURIComponent(id)}/enabled`, {
+    return apiFetch<AppUser>(USER_ENDPOINT.enable(id), {
         method: 'PUT',
         body: JSON.stringify({ enabled }),
     })
 }
 
 async function updateUserRole(id: string, role: UserRole) {
-    return apiFetch<AppUser>(`/api/users/${encodeURIComponent(id)}/role`, {
+    return apiFetch<AppUser>(USER_ENDPOINT.changeRole(id), {
         method: 'PUT',
         body: JSON.stringify({ role: toBackendRole(role) }),
     })
 }
 
 async function deleteUser(id: string) {
-    return apiFetch<void>(`${USER_ENPOINT.base}/${encodeURIComponent(id)}`, { method: 'DELETE' })
+    return apiFetch<void>(`${USER_ENDPOINT.base}/${encodeURIComponent(id)}`, { method: 'DELETE' })
 }
 
 async function resetUserPassword(id: string, password: string) {
-    return apiFetch<void>(`/api/users/${encodeURIComponent(id)}/password`, {
+    return apiFetch<void>(USER_ENDPOINT.resetPass(id), {
         method: 'PUT',
         body: JSON.stringify({ password }),
     })
@@ -98,7 +99,7 @@ export function useUpdateUserUsername() {
 }
 
 async function updateUserUsername(id: string, username: string) {
-    return apiFetch<AppUser>(`/api/users/${encodeURIComponent(id)}/username`, {
+    return apiFetch<AppUser>(USER_ENDPOINT.changeName(id), {
         method: 'PUT',
         body: JSON.stringify({ username }),
     })

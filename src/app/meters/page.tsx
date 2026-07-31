@@ -4,10 +4,11 @@ import type { Gateway } from '@/types/gateway'
 import { MetersClient } from '@/components/meter/meters-client'
 import { LocalizedText } from '@/components/i18n/localized-text'
 import { requireAdmin } from '@/lib/auth-guard'
+import { GATEWAY_ENDPOINT } from '@/constances/url'
 
 export default async function MetersPage({ searchParams }: { searchParams: Promise<{ hubUid?: string }> }) {
     await requireAdmin()
-    const hubs = await serverApiFetch<Gateway[]>('/api/hubs')
+    const hubs = await serverApiFetch<Gateway[]>(GATEWAY_ENDPOINT.base)
 
     if (hubs.length === 0) {
         return (
@@ -25,7 +26,7 @@ export default async function MetersPage({ searchParams }: { searchParams: Promi
     const { hubUid: requestedUid } = await searchParams
     const uid = requestedUid && hubs.some((h) => h.uid === requestedUid) ? requestedUid : hubs[0].uid
 
-    const initialMeters = await serverApiFetch<Meter[]>(`/api/hubs/${encodeURIComponent(uid)}/meters`)
+    const initialMeters = await serverApiFetch<Meter[]>(GATEWAY_ENDPOINT.getMeters(uid))
 
     return (
         <div className='h-full flex flex-col gap-6'>

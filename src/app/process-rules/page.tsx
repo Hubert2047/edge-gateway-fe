@@ -3,13 +3,14 @@ import { serverApiFetch } from '@/lib/api/server'
 import type { Gateway } from '@/types/gateway'
 import type { Meter } from '@/types/meter'
 import { requireAdmin } from '@/lib/auth-guard'
+import { GATEWAY_ENDPOINT } from '@/constances/url'
 
 export default async function ProcessRulesPage() {
     await requireAdmin()
-    const hubs = await serverApiFetch<Gateway[]>('/api/hubs')
+    const gateways = await serverApiFetch<Gateway[]>(GATEWAY_ENDPOINT.base)
     const meterResults = await Promise.all(
-        hubs.map((hub) => serverApiFetch<Meter[]>(`/api/hubs/${encodeURIComponent(hub.uid)}/meters`)),
+        gateways.map((gateway) => serverApiFetch<Meter[]>(GATEWAY_ENDPOINT.getMeters(gateway.uid))),
     )
 
-    return <ProcessRulesView hubs={hubs} meters={meterResults.flat()} />
+    return <ProcessRulesView gateways={gateways} meters={meterResults.flat()} />
 }

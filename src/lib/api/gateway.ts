@@ -3,6 +3,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { apiFetch } from './client'
 import type { Gateway, GatewayFormValues } from '@/types/gateway'
+import { GATEWAY_ENDPOINT } from '@/constances/url'
 
 export const gatewayKeys = {
     all: ['gateways'] as const,
@@ -68,20 +69,20 @@ export function useSyncGatewayMeters() {
     })
 }
 function getGateways() {
-    return apiFetch<Gateway[]>(GATEWAY_ENPOINT.base)
+    return apiFetch<Gateway[]>(GATEWAY_ENDPOINT.base)
 }
 
 function createGateway(form: GatewayFormValues) {
-    return apiFetch<Gateway>(GATEWAY_ENPOINT.base, { method: 'POST', body: JSON.stringify(form) })
+    return apiFetch<Gateway>(GATEWAY_ENDPOINT.base, { method: 'POST', body: JSON.stringify(form) })
 }
 
 function updateGateway(uid: string, form: GatewayFormValues) {
-    return apiFetch<Gateway>(`${GATEWAY_ENPOINT.base}/${uid}`, { method: 'PUT', body: JSON.stringify(form) })
+    return apiFetch<Gateway>(`${GATEWAY_ENDPOINT.base}/${uid}`, { method: 'PUT', body: JSON.stringify(form) })
 }
 
 function deleteGateway(uid: string) {
-    return apiFetch<void>(`${GATEWAY_ENPOINT.base}/${uid}`, { method: 'DELETE' })
+    return apiFetch<void>(`${GATEWAY_ENDPOINT.base}/${uid}`, { method: 'DELETE' })
 }
 async function syncGatewayMeters(uid: string): Promise<void> {
-    return apiFetch(GATEWAY_ENPOINT.syncMeter(uid), { method: 'PUT' })
+    return apiFetch(GATEWAY_ENDPOINT.syncMeter(uid), { method: 'PUT' })
 }

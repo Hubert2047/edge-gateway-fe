@@ -3,6 +3,7 @@
 import { CloudTarget, CloudTargetFormValues, TestConnectionResult } from '@/types/cloud-target'
 import { apiFetch } from './client'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { CLOUD_TARGET_ENDPOINT } from '@/constances/url'
 
 export const cloudTargetKeys = {
     all: ['cloud-targets'] as const,
@@ -65,21 +66,21 @@ export function useTestCloudTargetConnection() {
     })
 }
 function getCloudTargets() {
-    return apiFetch<CloudTarget[]>(CLOUD_TARGET_ENPOINT.base)
+    return apiFetch<CloudTarget[]>(CLOUD_TARGET_ENDPOINT.base)
 }
 
 function createCloudTarget(form: CloudTargetFormValues) {
-    return apiFetch<CloudTarget>(CLOUD_TARGET_ENPOINT.base, { method: 'POST', body: JSON.stringify(form) })
+    return apiFetch<CloudTarget>(CLOUD_TARGET_ENDPOINT.base, { method: 'POST', body: JSON.stringify(form) })
 }
 
 function updateCloudTarget(id: string, form: CloudTargetFormValues) {
-    return apiFetch<CloudTarget>(`${CLOUD_TARGET_ENPOINT.base}/${id}`, { method: 'PUT', body: JSON.stringify(form) })
+    return apiFetch<CloudTarget>(`${CLOUD_TARGET_ENDPOINT.base}/${id}`, { method: 'PUT', body: JSON.stringify(form) })
 }
 
 function deleteCloudTarget(id: string) {
-    return apiFetch<void>(`${CLOUD_TARGET_ENPOINT.base}/${id}`, { method: 'DELETE' })
+    return apiFetch<void>(`${CLOUD_TARGET_ENDPOINT.base}/${id}`, { method: 'DELETE' })
 }
 
 function testCloudTargetConnection(id: string) {
-    return apiFetch<TestConnectionResult>(CLOUD_TARGET_ENPOINT.test(id), { method: 'POST' })
+    return apiFetch<TestConnectionResult>(CLOUD_TARGET_ENDPOINT.test(id), { method: 'POST' })
 }

@@ -1,13 +1,14 @@
 import { HistoryDataView } from '@/components/history-data/history-data-view'
+import { GATEWAY_ENDPOINT } from '@/constances/url'
 import { serverApiFetch } from '@/lib/api/server'
 import type { Gateway } from '@/types/gateway'
 import type { Meter } from '@/types/meter'
 
 export default async function HistoryDataPage() {
-    const hubs = await serverApiFetch<Gateway[]>('/api/hubs')
+    const gateways = await serverApiFetch<Gateway[]>(GATEWAY_ENDPOINT.base)
     const meterResults = await Promise.all(
-        hubs.map((hub) => serverApiFetch<Meter[]>(`/api/hubs/${encodeURIComponent(hub.uid)}/meters`)),
+        gateways.map((hub) => serverApiFetch<Meter[]>(GATEWAY_ENDPOINT.getMeters(hub.uid))),
     )
 
-    return <HistoryDataView hubs={hubs} meters={meterResults.flat()} />
+    return <HistoryDataView gateways={gateways} meters={meterResults.flat()} />
 }

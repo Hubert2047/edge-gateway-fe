@@ -5,11 +5,11 @@ import type { Gateway } from '@/types/gateway'
 import type { Meter } from '@/types/meter'
 import { useI18n } from '@/lib/i18n'
 
-type Props = { hubs: Gateway[]; meters: Meter[] }
+type Props = { gateways: Gateway[]; meters: Meter[] }
 type ProcessRule = {
     id: string
     name: string
-    hubUid: string
+    gatewayUid: string
     meterId: string
     metric: string
     lower: string
@@ -17,12 +17,12 @@ type ProcessRule = {
     enabled: boolean
 }
 
-export function ProcessRulesView({ hubs, meters }: Props) {
+export function ProcessRulesView({ gateways, meters }: Props) {
     const { t } = useI18n()
     const [rules, setRules] = useState<ProcessRule[]>([])
     const [newRule, setNewRule] = useState<Omit<ProcessRule, 'id' | 'enabled'>>({
         name: '',
-        hubUid: hubs[0]?.uid ?? '',
+        gatewayUid: gateways[0]?.uid ?? '',
         meterId: '',
         metric: 'active-power',
         lower: '',
@@ -30,8 +30,8 @@ export function ProcessRulesView({ hubs, meters }: Props) {
     })
 
     const availableMeters = useMemo(
-        () => meters.filter((meter) => !newRule.hubUid || meter.gatewayUID === newRule.hubUid),
-        [meters, newRule.hubUid],
+        () => meters.filter((meter) => !newRule.gatewayUid || meter.gatewayUID === newRule.gatewayUid),
+        [meters, newRule.gatewayUid],
     )
 
     function updateRule(id: string, patch: Partial<ProcessRule>) {
@@ -106,12 +106,12 @@ export function ProcessRulesView({ hubs, meters }: Props) {
                                     <td className='space-y-3 px-4 py-4'>
                                         <Field label={t('processRules.gateway')}>
                                             <select
-                                                value={rule.hubUid}
+                                                value={rule.gatewayUid}
                                                 onChange={(event) =>
-                                                    updateRule(rule.id, { hubUid: event.target.value })
+                                                    updateRule(rule.id, { gatewayUid: event.target.value })
                                                 }
                                                 className='control-input'>
-                                                {hubs.map((hub) => (
+                                                {gateways.map((hub) => (
                                                     <option key={hub.uid} value={hub.uid}>
                                                         {hub.name}
                                                     </option>
@@ -141,7 +141,7 @@ export function ProcessRulesView({ hubs, meters }: Props) {
                                                 className='control-input'>
                                                 <option value=''>{t('processRules.allMeters')}</option>
                                                 {meters
-                                                    .filter((meter) => meter.gatewayUID === rule.hubUid)
+                                                    .filter((meter) => meter.gatewayUID === rule.gatewayUid)
                                                     .map((meter) => (
                                                         <option key={meter.macId} value={meter.macId}>
                                                             {meter.name || meter.macId}
@@ -203,11 +203,13 @@ export function ProcessRulesView({ hubs, meters }: Props) {
                     </Field>
                     <Field label={t('processRules.gateway')}>
                         <select
-                            value={newRule.hubUid}
-                            onChange={(event) => setNewRule({ ...newRule, hubUid: event.target.value, meterId: '' })}
+                            value={newRule.gatewayUid}
+                            onChange={(event) =>
+                                setNewRule({ ...newRule, gatewayUid: event.target.value, meterId: '' })
+                            }
                             className='control-input'>
                             <option value=''>{t('processRules.selectGateway')}</option>
-                            {hubs.map((hub) => (
+                            {gateways.map((hub) => (
                                 <option key={hub.uid} value={hub.uid}>
                                     {hub.name}
                                 </option>

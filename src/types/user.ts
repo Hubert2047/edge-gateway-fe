@@ -6,6 +6,7 @@ export interface AppUser {
     role: UserRole
     enabled: boolean
     createdAt?: string
+    updatedAt?: string
 }
 
 export interface CreateUserValues {

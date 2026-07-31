@@ -3,10 +3,11 @@ import { serverApiFetch } from '@/lib/api/server'
 import { Gateway } from '@/types/gateway'
 import { LocalizedText } from '@/components/i18n/localized-text'
 import { requireAdmin } from '@/lib/auth-guard'
+import { GATEWAY_ENDPOINT } from '@/constances/url'
 
 export default async function GatewaysPage() {
     await requireAdmin()
-    const gateways = await serverApiFetch<Gateway[]>(GATEWAY_ENPOINT.base)
+    const gateways = await serverApiFetch<Gateway[]>(GATEWAY_ENDPOINT.base)
 
     return (
         <div className='flex h-full flex-col gap-4'>

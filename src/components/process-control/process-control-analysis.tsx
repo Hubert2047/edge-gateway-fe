@@ -8,13 +8,13 @@ import { useI18n } from '@/lib/i18n'
 import type { Gateway } from '@/types/gateway'
 import type { Meter } from '@/types/meter'
 
-type Props = { hubs: Gateway[]; meters: Meter[] }
+type Props = { gateways: Gateway[]; meters: Meter[] }
 
 const emptyChartData = Array.from({ length: 13 }, (_, index) => ({ time: `${index * 2}:00`, value: null }))
 
-export function ProcessControlAnalysis({ hubs, meters }: Props) {
+export function ProcessControlAnalysis({ gateways, meters }: Props) {
     const { t } = useI18n()
-    const [hubUid, setHubUid] = useState(hubs[0]?.uid ?? '')
+    const [gatewayUid, setGatewayUid] = useState(gateways[0]?.uid ?? '')
     const [meterId, setMeterId] = useState(meters[0]?.macId ?? '')
     const [metric, setMetric] = useState('active-power')
     const [range, setRange] = useState('daily')
@@ -23,12 +23,12 @@ export function ProcessControlAnalysis({ hubs, meters }: Props) {
     const [upperLimit, setUpperLimit] = useState('647.21')
 
     const availableMeters = useMemo(
-        () => meters.filter((meter) => !hubUid || meter.gatewayUID === hubUid),
-        [hubUid, meters],
+        () => meters.filter((meter) => !gatewayUid || meter.gatewayUID === gatewayUid),
+        [gatewayUid, meters],
     )
 
     function handleHubChange(value: string) {
-        setHubUid(value)
+        setGatewayUid(value)
         const firstMeter = meters.find((meter) => meter.gatewayUID === value)
         setMeterId(firstMeter?.macId ?? '')
     }
@@ -64,11 +64,11 @@ export function ProcessControlAnalysis({ hubs, meters }: Props) {
                     </Field>
                     <Field label={t('processControl.gateway')}>
                         <select
-                            value={hubUid}
+                            value={gatewayUid}
                             onChange={(event) => handleHubChange(event.target.value)}
                             className='control-input'>
                             <option value=''>{t('processControl.selectGateway')}</option>
-                            {hubs.map((hub) => (
+                            {gateways.map((hub) => (
                                 <option key={hub.uid} value={hub.uid}>
                                     {hub.name}
                                 </option>

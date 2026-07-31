@@ -2,6 +2,7 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { apiFetch } from './client'
 import type { Meter, MeterBulkSaveResult, MeterCreateValues, MeterFormValues, MeterUpdateValues } from '@/types/meter'
+import { GATEWAY_ENDPOINT, METER_ENDPOINT } from '@/constances/url'
 
 export const meterKeys = {
     all: ['meters'] as const,
@@ -93,7 +94,7 @@ export function useUpdateMetersBulk(gatewayUID: string) {
 }
 
 async function getMeters(gatewayUid: string): Promise<Meter[]> {
-    return apiFetch<Meter[]>(GATEWAY_ENPOINT.getMeters(gatewayUid))
+    return apiFetch<Meter[]>(GATEWAY_ENDPOINT.getMeters(gatewayUid))
 }
 
 async function createMeter(gatewayUid: string, values: MeterCreateValues): Promise<Meter> {
@@ -105,14 +106,14 @@ async function createMeter(gatewayUid: string, values: MeterCreateValues): Promi
 
 async function updateMeter(values: MeterUpdateValues): Promise<Meter> {
     const { macId, ...rest } = values
-    return apiFetch<Meter>(`${METER_ENPOINT.base}/${encodeURIComponent(macId)}`, {
+    return apiFetch<Meter>(`${METER_ENDPOINT.base}/${encodeURIComponent(macId)}`, {
         method: 'PUT',
         body: JSON.stringify(rest),
     })
 }
 
 async function deleteMeter(macId: string): Promise<void> {
-    return apiFetch<void>(`${METER_ENPOINT.base}/${encodeURIComponent(macId)}`, {
+    return apiFetch<void>(`${METER_ENDPOINT.base}/${encodeURIComponent(macId)}`, {
         method: 'DELETE',
     })
 }

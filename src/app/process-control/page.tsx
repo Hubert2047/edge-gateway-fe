@@ -1,13 +1,14 @@
 import { ProcessControlAnalysis } from '@/components/process-control/process-control-analysis'
+import { GATEWAY_ENDPOINT } from '@/constances/url'
 import { serverApiFetch } from '@/lib/api/server'
 import type { Gateway } from '@/types/gateway'
 import type { Meter } from '@/types/meter'
 
 export default async function ProcessControlPage() {
-    const hubs = await serverApiFetch<Gateway[]>('/api/hubs')
+    const gateways = await serverApiFetch<Gateway[]>(GATEWAY_ENDPOINT.base)
     const meterResults = await Promise.all(
-        hubs.map((hub) => serverApiFetch<Meter[]>(`/api/hubs/${encodeURIComponent(hub.uid)}/meters`)),
+        gateways.map((gateway) => serverApiFetch<Meter[]>(GATEWAY_ENDPOINT.getMeters(gateway.uid))),
     )
 
-    return <ProcessControlAnalysis hubs={hubs} meters={meterResults.flat()} />
+    return <ProcessControlAnalysis gateways={gateways} meters={meterResults.flat()} />
 }

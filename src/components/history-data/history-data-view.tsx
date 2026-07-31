@@ -7,10 +7,10 @@ import { useI18n } from '@/lib/i18n'
 import type { Gateway } from '@/types/gateway'
 import type { Meter } from '@/types/meter'
 
-type Props = { hubs: Gateway[]; meters: Meter[] }
+type Props = { gateways: Gateway[]; meters: Meter[] }
 type HistoryRow = {
     time: string
-    hub: string
+    gateway: string
     meter: string
     voltage: number
     current: number
@@ -18,23 +18,23 @@ type HistoryRow = {
     status: string
 }
 
-export function HistoryDataView({ hubs, meters }: Props) {
+export function HistoryDataView({ gateways, meters }: Props) {
     const { t } = useI18n()
     const [range, setRange] = useState('hourly')
     const [date, setDate] = useState('2026-07-23T19:00')
-    const [hubUid, setHubUid] = useState(hubs[0]?.uid ?? '')
+    const [gatewayUid, setGatewayUid] = useState(gateways[0]?.uid ?? '')
     const [meterId, setMeterId] = useState(meters[0]?.macId ?? '')
     const [metric, setMetric] = useState('average-current')
     const [threePhase, setThreePhase] = useState(false)
     const [rows, setRows] = useState<HistoryRow[]>([])
 
     const availableMeters = useMemo(
-        () => meters.filter((meter) => !hubUid || meter.gatewayUID === hubUid),
-        [hubUid, meters],
+        () => meters.filter((meter) => !gatewayUid || meter.gatewayUID === gatewayUid),
+        [gatewayUid, meters],
     )
 
-    function handleHubChange(value: string) {
-        setHubUid(value)
+    function handleGatewayChange(value: string) {
+        setGatewayUid(value)
         const nextMeter = meters.find((meter) => meter.gatewayUID === value)
         setMeterId(nextMeter?.macId ?? '')
     }
@@ -79,13 +79,13 @@ export function HistoryDataView({ hubs, meters }: Props) {
                     </Field>
                     <Field label={t('historyData.gateway')}>
                         <select
-                            value={hubUid}
-                            onChange={(event) => handleHubChange(event.target.value)}
+                            value={gatewayUid}
+                            onChange={(event) => handleGatewayChange(event.target.value)}
                             className='control-input'>
                             <option value=''>{t('historyData.selectGateway')}</option>
-                            {hubs.map((hub) => (
-                                <option key={hub.uid} value={hub.uid}>
-                                    {hub.name}
+                            {gateways.map((gateway) => (
+                                <option key={gateway.uid} value={gateway.uid}>
+                                    {gateway.name}
                                 </option>
                             ))}
                         </select>
@@ -185,7 +185,7 @@ export function HistoryDataView({ hubs, meters }: Props) {
                             rows.map((row) => (
                                 <tr key={row.time} className='border-t border-[#E1E5E2]'>
                                     <td className='px-4 py-3'>{row.time}</td>
-                                    <td className='px-4 py-3'>{row.hub}</td>
+                                    <td className='px-4 py-3'>{row.gateway}</td>
                                     <td className='px-4 py-3'>{row.meter}</td>
                                     <td className='px-4 py-3'>{row.voltage}</td>
                                     <td className='px-4 py-3'>{row.current}</td>

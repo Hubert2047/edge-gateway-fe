@@ -5,7 +5,7 @@ import type { Gateway } from '@/types/gateway'
 import type { Meter } from '@/types/meter'
 import { useI18n } from '@/lib/i18n'
 
-type Props = { hubs: Gateway[]; meters: Meter[] }
+type Props = { gateways: Gateway[]; meters: Meter[] }
 type EventRow = {
     time: string
     rule: string
@@ -17,11 +17,11 @@ type EventRow = {
     reason: string
 }
 
-export function HistoryEventsView({ hubs, meters }: Props) {
+export function HistoryEventsView({ gateways, meters }: Props) {
     const { t } = useI18n()
     const [range, setRange] = useState('daily')
     const [date, setDate] = useState('2026-07-23')
-    const [hubUid, setHubUid] = useState('')
+    const [hubUid, setGatewayUid] = useState('')
     const [meterId, setMeterId] = useState('')
     const [rule, setRule] = useState('')
     const [rows, setRows] = useState<EventRow[]>([])
@@ -31,8 +31,8 @@ export function HistoryEventsView({ hubs, meters }: Props) {
         [hubUid, meters],
     )
 
-    function handleHubChange(value: string) {
-        setHubUid(value)
+    function handleGatewayChange(value: string) {
+        setGatewayUid(value)
         setMeterId('')
     }
 
@@ -68,10 +68,10 @@ export function HistoryEventsView({ hubs, meters }: Props) {
                     <Field label={t('historyEvents.gateway')}>
                         <select
                             value={hubUid}
-                            onChange={(event) => handleHubChange(event.target.value)}
+                            onChange={(event) => handleGatewayChange(event.target.value)}
                             className='control-input'>
                             <option value=''>{t('historyEvents.allGateways')}</option>
-                            {hubs.map((hub) => (
+                            {gateways.map((hub) => (
                                 <option key={hub.uid} value={hub.uid}>
                                     {hub.name}
                                 </option>
