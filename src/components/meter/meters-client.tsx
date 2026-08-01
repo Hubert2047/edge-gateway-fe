@@ -39,7 +39,7 @@ export function MetersClient({
     return (
         <>
             <div className='flex items-center justify-between gap-3 max-sm:items-start max-sm:flex-col'>
-                <h1 className='text-xl font-bold sm:text-2xl'>{t('page.meters')}</h1>
+                <h1 className='text-xl font-bold sm:text-3xl'>{t('page.meters')}</h1>
                 <HubSwitcher hubs={hubs} currentHubUid={hubUid} onHubChange={handleHubChange} />
             </div>
             <div className='flex-1 min-h-0'>

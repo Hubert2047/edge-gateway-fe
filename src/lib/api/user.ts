@@ -21,23 +21,13 @@ export function useCreateUser() {
         onSuccess: () => queryClient.invalidateQueries({ queryKey: userKeys.list() }),
     })
 }
-
-export function useSetUserEnabled() {
+export function useUpdateUser() {
     const queryClient = useQueryClient()
     return useMutation({
-        mutationFn: ({ id, enabled }: { id: string; enabled: boolean }) => setUserEnabled(id, enabled),
+        mutationFn: ({ id, username, role, enabled }: { id: string; username: string, role: UserRole, enabled: boolean }) => updateUser(id, username, role, enabled),
         onSuccess: () => queryClient.invalidateQueries({ queryKey: userKeys.list() }),
     })
 }
-
-export function useUpdateUserRole() {
-    const queryClient = useQueryClient()
-    return useMutation({
-        mutationFn: ({ id, role }: { id: string; role: UserRole }) => updateUserRole(id, role),
-        onSuccess: () => queryClient.invalidateQueries({ queryKey: userKeys.list() }),
-    })
-}
-
 export function useDeleteUser() {
     const queryClient = useQueryClient()
     return useMutation({
@@ -65,20 +55,6 @@ async function createUser(values: CreateUserValues) {
     })
 }
 
-async function setUserEnabled(id: string, enabled: boolean) {
-    return apiFetch<AppUser>(USER_ENDPOINT.enable(id), {
-        method: 'PUT',
-        body: JSON.stringify({ enabled }),
-    })
-}
-
-async function updateUserRole(id: string, role: UserRole) {
-    return apiFetch<AppUser>(USER_ENDPOINT.changeRole(id), {
-        method: 'PUT',
-        body: JSON.stringify({ role: toBackendRole(role) }),
-    })
-}
-
 async function deleteUser(id: string) {
     return apiFetch<void>(`${USER_ENDPOINT.base}/${encodeURIComponent(id)}`, { method: 'DELETE' })
 }
@@ -90,18 +66,10 @@ async function resetUserPassword(id: string, password: string) {
     })
 }
 
-export function useUpdateUserUsername() {
-    const queryClient = useQueryClient()
-    return useMutation({
-        mutationFn: ({ id, username }: { id: string; username: string }) => updateUserUsername(id, username),
-        onSuccess: () => queryClient.invalidateQueries({ queryKey: userKeys.list() }),
-    })
-}
-
-async function updateUserUsername(id: string, username: string) {
-    return apiFetch<AppUser>(USER_ENDPOINT.changeName(id), {
+async function updateUser(id: string, username: string, role: UserRole, enabled: boolean) {
+    return apiFetch<AppUser>(`${USER_ENDPOINT.base}/${id}`, {
         method: 'PUT',
-        body: JSON.stringify({ username }),
+        body: JSON.stringify({ username, role, enabled }),
     })
 }
 

@@ -28,10 +28,8 @@ export const authOptions: NextAuthOptions = {
                         role: result.data.user.role,
                         accessToken: result.data.token,
                     }
-            
-                } catch (err) {
-                    console.log("AUTH ERROR:", err)
-                    return null
+                } catch (err: any) {
+                    throw new Error(err.data.message ?? "Login failed")
                 }
             }
         }),

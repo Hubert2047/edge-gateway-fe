@@ -23,11 +23,10 @@ export default function Settings() {
 
     return (
         <div className='flex h-full flex-col gap-6 max-md:h-auto'>
-            <h1 className='text-2xl font-bold'>{t('settings.title')}</h1>
-
-            <Card className='max-w-2xl border border-border/60 p-4'>
+            <h1 className='text-3xl font-bold'>{t('settings.title')}</h1>
+            <Card className='p-4'>
                 <div className='flex flex-wrap items-end gap-4'>
-                    <div className='w-full max-w-sm space-y-2'>
+                    <div className='w-full max-w-42 space-y-4'>
                         <Label htmlFor='language'>{t('settings.languageLabel')}</Label>
                         <Select
                             value={locale}

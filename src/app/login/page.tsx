@@ -7,7 +7,8 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { User, Lock, AlertCircle } from 'lucide-react'
-import { useI18n } from '@/lib/i18n'
+import { mapAuthErrorKey, useI18n } from '@/lib/i18n'
+import { ROUTES } from '@/constances/route'
 
 type LoginFormValues = { username: string; password: string }
 
@@ -41,11 +42,11 @@ export default function LoginPage() {
         setLoading(false)
 
         if (result?.error) {
-            setServerError(result.error)
+            setServerError(t(mapAuthErrorKey(result.error)))
             return
         }
 
-        router.push('/gateways')
+        router.push(ROUTES.overview)
         router.refresh()
     }
 

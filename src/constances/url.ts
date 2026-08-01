@@ -1,7 +1,7 @@
 export const GATEWAY_ENDPOINT = {
     base: '/api/v1/gateways',
-    syncMeter: (uid: string) => `${GATEWAY_ENDPOINT.base}/${uid}/meters`,
-    getMeters: (uid: string) => `${GATEWAY_ENDPOINT.base}/${uid}/sync-meters`,
+    syncMeter: (uid: string) => `${GATEWAY_ENDPOINT.base}/${uid}/sync-meters`,
+    getMeters: (uid: string) => `${GATEWAY_ENDPOINT.base}/${uid}/meters`,
 }
 export const METER_ENDPOINT = {
     base: '/api/v1/meters',

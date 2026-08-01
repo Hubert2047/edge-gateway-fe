@@ -1,17 +1,18 @@
 import { NextRequest } from 'next/server'
 import { serverApiFetch } from '@/lib/api/server'
 import { handleRoute } from '@/lib/api/route-handler'
+import { CLOUD_TARGET_ENDPOINT } from '@/constances/url'
 
 export async function GET() {
     return handleRoute(async () => {
-        return serverApiFetch<any[]>(CLOUD_TARGET_ENPOINT.base)
+        return serverApiFetch<any[]>(CLOUD_TARGET_ENDPOINT.base)
     })
 }
 
 export async function POST(req: NextRequest) {
     return handleRoute(async () => {
         const form = await req.json()
-        const raw = await serverApiFetch<any>(CLOUD_TARGET_ENPOINT.base, {
+        const raw = await serverApiFetch<any>(CLOUD_TARGET_ENDPOINT.base, {
             method: 'POST',
             body: JSON.stringify(form),
         })

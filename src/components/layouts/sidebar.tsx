@@ -7,21 +7,21 @@ import { Menu, X } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useI18n } from '@/lib/i18n'
 import { normalizeRole } from '@/lib/roles'
+import { ROUTES } from '@/constances/route'
 
-const publicNavItems = [
-    { key: 'nav.overview', href: '/overview' },
-    { key: 'nav.historyData', href: '/history-data' },
-    { key: 'nav.historyEvents', href: '/history-events' },
-    { key: 'nav.processControl', href: '/process-control' },
-]
+type NavItem = { key: string; href: string; adminOnly?: boolean }
 
-const adminNavItems = [
-    { key: 'nav.cloudSync', href: '/cloud-sync' },
-    { key: 'nav.gateways', href: '/gateways' },
-    { key: 'nav.meters', href: '/meters' },
-    { key: 'nav.processRules', href: '/process-rules' },
-    { key: 'nav.users', href: '/users' },
-    { key: 'nav.settings', href: '/settings' },
+const NAV_ITEMS: NavItem[] = [
+    { key: 'nav.overview', href: ROUTES.overview },
+    { key: 'nav.cloudSync', href: ROUTES.cloudSync, adminOnly: true },
+    { key: 'nav.gateways', href: ROUTES.gateways, adminOnly: true },
+    { key: 'nav.meters', href: ROUTES.meters, adminOnly: true },
+    { key: 'nav.historyData', href: ROUTES.historyData },
+    { key: 'nav.historyEvents', href: ROUTES.historyEvents },
+    { key: 'nav.processControl', href: ROUTES.processControl },
+    { key: 'nav.processRules', href: ROUTES.processRules, adminOnly: true },
+    { key: 'nav.users', href: ROUTES.users, adminOnly: true },
+    { key: 'nav.settings', href: ROUTES.settings, adminOnly: true },
 ]
 
 const externalLinks = [
@@ -35,7 +35,7 @@ export function Sidebar() {
     const { t } = useI18n()
     const [mobileOpen, setMobileOpen] = useState(false)
     const isAdmin = normalizeRole(session?.user?.role) === 'admin'
-    const navItems = isAdmin ? [...publicNavItems, ...adminNavItems] : publicNavItems
+    const navItems = NAV_ITEMS.filter((item) => !item.adminOnly || isAdmin)
 
     useEffect(() => {
         // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -62,11 +62,10 @@ export function Sidebar() {
                         key={item.href}
                         href={item.href}
                         onClick={() => setMobileOpen(false)}
-                        className={`rounded-md px-3 py-2 text-sm transition-colors ${
-                            isActive(item.href)
-                                ? 'border-l-2 border-sidebar-primary-foreground bg-sidebar-accent font-medium text-sidebar-accent-foreground'
-                                : 'text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground'
-                        }`}>
+                        className={`rounded-md px-3 py-2 text-sm transition-colors ${isActive(item.href)
+                            ? 'border-l-2 border-sidebar-primary-foreground bg-sidebar-accent font-medium text-sidebar-accent-foreground'
+                            : 'text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground'
+                            }`}>
                         {t(item.key)}
                     </Link>
                 ))}

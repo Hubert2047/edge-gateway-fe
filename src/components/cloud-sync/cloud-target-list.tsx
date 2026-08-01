@@ -220,7 +220,7 @@ export function CloudTargetList({ initialTargets }: { initialTargets: CloudTarge
     return (
         <div className='flex h-full flex-col gap-4 overflow-hidden max-md:h-auto max-md:overflow-visible'>
             <div className='flex shrink-0 items-center justify-between gap-3 max-sm:items-start max-sm:flex-col'>
-                <h1 className='text-2xl font-bold'>{t('page.cloudSync')}</h1>
+                <h1 className='md:text-3xl font-bold'>{t('page.cloudSync')}</h1>
                 <Button className='max-sm:w-full' disabled={runningQueue} onClick={runQueuedUploads}>
                     {runningQueue ? (
                         <>

@@ -3,25 +3,35 @@
 import { useState, type ReactNode } from 'react'
 import { Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
-import { useCreateUser, useDeleteUser, useResetUserPassword, useSetUserEnabled, useUpdateUserRole, useUpdateUserUsername, useUsers } from '@/lib/api/user'
+import { useCreateUser, useDeleteUser, useResetUserPassword, useUpdateUser, useUsers } from '@/lib/api/user'
 import { useI18n } from '@/lib/i18n'
 import { getErrorMessage } from '@/lib/utils'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog'
 import type { AppUser, CreateUserValues, UserRole } from '@/types/user'
+
+type UserDraft = { username: string; role: UserRole; enabled: boolean }
+type PendingAction = { type: 'delete'; user: AppUser; displayName: string }
 
 export function UserManagement({ initialUsers }: { initialUsers: AppUser[] }) {
     const { t } = useI18n()
     const { data: users = initialUsers } = useUsers(initialUsers)
     const createMutation = useCreateUser()
-    const enabledMutation = useSetUserEnabled()
-    const roleMutation = useUpdateUserRole()
+    const updateMutation = useUpdateUser()
     const deleteMutation = useDeleteUser()
     const resetPasswordMutation = useResetUserPassword()
-    const usernameMutation = useUpdateUserUsername()
     const [form, setForm] = useState<CreateUserValues>({ username: '', password: '', role: 'viewer' })
     const [resetUser, setResetUser] = useState<AppUser | null>(null)
     const [resetPassword, setResetPassword] = useState('')
-    const [usernameDrafts, setUsernameDrafts] = useState<Record<string, string>>({})
+    const [drafts, setDrafts] = useState<Record<string, UserDraft>>({})
+    const [pendingAction, setPendingAction] = useState<PendingAction | null>(null)
+
+    const dialogText = {
+        delete: {
+            title: t('users.confirmDeleteTitle'),
+            desc: (name: string) => t('users.confirmDelete', { username: name }),
+        },
+    }
 
     function createUser() {
         if (!form.username.trim() || !form.password) {
@@ -37,24 +47,54 @@ export function UserManagement({ initialUsers }: { initialUsers: AppUser[] }) {
         })
     }
 
-    function setEnabled(user: AppUser, enabled: boolean) {
-        enabledMutation.mutate({ id: user.id, enabled }, {
-            onError: (error) => toast.error(getErrorMessage(error, t('users.updateFailed'))),
+    function updateDraft(user: AppUser, userId: string, patch: Partial<UserDraft>) {
+        setDrafts((current) => {
+            const existing = current[userId] ?? { username: user.username, role: user.role, enabled: user.enabled }
+            return { ...current, [userId]: { ...existing, ...patch } }
         })
     }
 
-    function setRole(user: AppUser, role: UserRole) {
-        roleMutation.mutate({ id: user.id, role }, {
-            onError: (error) => toast.error(getErrorMessage(error, t('users.updateFailed'))),
+    function saveUser(userId: string) {
+        const draft = drafts[userId]
+        if (!draft) return
+        const username = draft.username.trim()
+        if (!username) {
+            toast.error(t('users.required'))
+            return
+        }
+        updateMutation.mutate({ id: userId, username, role: draft.role, enabled: draft.enabled }, {
+            onSuccess: () => {
+                setDrafts((current) => {
+                    const next = { ...current }
+                    delete next[userId]
+                    return next
+                })
+                toast.success(t('users.updated'))
+            },
+            onError: (error) => {
+                toast.error(getErrorMessage(error, t('users.updateFailed')))
+            },
         })
     }
 
-    function deleteUser(user: AppUser) {
-        if (!window.confirm(t('users.confirmDelete', { username: user.username }))) return
-        deleteMutation.mutate(user.id, {
-            onSuccess: () => toast.success(t('users.deleted')),
-            onError: (error) => toast.error(getErrorMessage(error, t('users.deleteFailed'))),
-        })
+    function requestDeleteUser(user: AppUser) {
+        setPendingAction({ type: 'delete', user, displayName: user.username })
+    }
+
+    function confirmPendingAction() {
+        if (!pendingAction) return
+        if (pendingAction.type === 'delete') {
+            deleteMutation.mutate(pendingAction.user.id, {
+                onSuccess: () => {
+                    toast.success(t('users.deleted'))
+                    setPendingAction(null)
+                },
+                onError: (error) => {
+                    toast.error(getErrorMessage(error, t('users.deleteFailed')))
+                    setPendingAction(null)
+                },
+            })
+        }
     }
 
     function submitResetPassword() {
@@ -72,54 +112,69 @@ export function UserManagement({ initialUsers }: { initialUsers: AppUser[] }) {
         })
     }
 
-    function saveUsername(user: AppUser, userId: string) {
-        const username = usernameDrafts[userId]?.trim()
-        if (!username || username === user.username) return
-        usernameMutation.mutate({ id: userId, username }, {
-            onSuccess: () => {
-                setUsernameDrafts((current) => {
-                    const next = { ...current }
-                    delete next[userId]
-                    return next
-                })
-                toast.success(t('users.usernameUpdated'))
-            },
-            onError: (error) => toast.error(getErrorMessage(error, t('users.updateFailed'))),
-        })
-    }
-
     return (
-        <div className='flex min-h-full flex-col gap-7 pb-8'>
+        <div className='flex h-full min-h-0 flex-col gap-7 overflow-y-auto pb-8'>
             <div className='flex items-center justify-between border-b border-[#D8DDD9] pb-5'>
                 <h1 className='text-3xl font-bold tracking-tight'>{t('users.title')}</h1>
                 <span className='border border-[#BFC8C2] px-4 py-2 text-sm text-[#357A59]'>{users.length} {t('users.count')}</span>
             </div>
-
-            <section className='overflow-x-auto border border-[#D8DDD9] bg-white'>
+            <section className='border border-[#D8DDD9] bg-white p-2'>
+                <h2 className='mb-2 text-lg font-bold'>{t('users.addTitle')}</h2>
+                <div className='flex flex-wrap items-end gap-3 bg-[#F7F8F5] p-3'>
+                    <Field label={t('users.username')}><input value={form.username} onChange={(event) => setForm({ ...form, username: event.target.value })} className='w-52 control-input' autoComplete='off' /></Field>
+                    <Field label={t('users.password')}><input type='password' value={form.password} onChange={(event) => setForm({ ...form, password: event.target.value })} className='w-52 control-input' autoComplete='new-password' /></Field>
+                    <Field label={t('users.role')}><select value={form.role} onChange={(event) => setForm({ ...form, role: event.target.value as UserRole })} className='w-42 control-input'><option value='admin'>{t('users.admin')}</option><option value='viewer'>{t('users.viewer')}</option></select></Field>
+                    <button type='button' onClick={createUser} disabled={createMutation.isPending} className='h-8 bg-[#153F31] px-4 text-sm font-medium text-white hover:bg-[#1B503D] disabled:opacity-50'>{createMutation.isPending ? <Loader2 className='mx-auto h-4 w-4 animate-spin' /> : t('common.add')}</button>
+                </div>
+            </section>
+            <section className='max-h-[600px] overflow-x-auto overflow-y-auto border border-[#D8DDD9] bg-white'>
                 <table className='w-full min-w-[700px] text-sm'>
-                    <thead className='bg-[#F1F2EF] text-left text-[#4F5A54]'><tr><th className='px-4 py-3 font-medium'>{t('users.username')}</th><th className='px-4 py-3 font-medium'>{t('users.role')}</th><th className='px-4 py-3 font-medium'>{t('users.status')}</th><th className='px-4 py-3 font-medium'>{t('common.actions')}</th></tr></thead>
+                    <thead className='sticky top-0 z-10 bg-[#F1F2EF] text-left text-[#4F5A54]'>
+                        <tr>
+                            <th className='px-4 py-3 font-medium'>{t('users.username')}</th>
+                            <th className='px-4 py-3 font-medium'>{t('users.role')}</th>
+                            <th className='px-4 py-3 font-medium'>{t('users.status')}</th>
+                            <th className='px-4 py-3 font-medium'>{t('common.actions')}</th>
+                        </tr>
+                    </thead>
                     <tbody>
                         {users.length === 0 ? <tr><td colSpan={4} className='px-4 py-10 text-center text-muted-foreground'>{t('users.empty')}</td></tr> : users.map((user, index) => {
                             const userId = user.id || user.username || `user-${index}`
-                            const busy = enabledMutation.isPending || roleMutation.isPending || deleteMutation.isPending || resetPasswordMutation.isPending || usernameMutation.isPending
+                            const busy = updateMutation.isPending || deleteMutation.isPending || resetPasswordMutation.isPending
                             const protectedAdmin = user.username === 'admin'
-                            const username = usernameDrafts[userId] ?? user.username
-                            const usernameChanged = !protectedAdmin && username !== user.username
-                            return <tr key={`${userId}-${index}`} className='border-t border-[#E1E5E2]'><td className='px-4 py-3'><input value={username} disabled={protectedAdmin || busy} onChange={(event) => setUsernameDrafts((current) => ({ ...current, [userId]: event.target.value }))} className='control-input font-medium' /></td><td className='px-4 py-3'><select value={user.role} disabled={busy || protectedAdmin} onChange={(event) => setRole({ ...user, id: userId }, event.target.value as UserRole)} className='control-input w-32'><option value='admin'>{t('users.admin')}</option><option value='viewer'>{t('users.viewer')}</option></select></td><td className='px-4 py-3'>{protectedAdmin ? <span className='text-sm text-muted-foreground'>{t('users.protected')}</span> : <label className='flex items-center gap-2'><input type='checkbox' checked={user.enabled} disabled={busy} onChange={(event) => setEnabled({ ...user, id: userId }, event.target.checked)} className='h-4 w-4 accent-[#153F31]' /><span>{user.enabled ? t('common.enabled') : t('common.disabled')}</span></label>}</td><td className='px-4 py-3'><div className='flex flex-row items-center gap-2 whitespace-nowrap'>{usernameChanged && <button type='button' disabled={busy} onClick={() => saveUsername({ ...user, id: userId }, userId)} className='h-8 border border-[#BFC8C2] bg-white px-3 text-sm text-[#357A59] disabled:opacity-50'>{usernameMutation.isPending && usernameMutation.variables?.id === userId ? <Loader2 className='h-4 w-4 animate-spin' /> : t('common.save')}</button>}<button type='button' disabled={busy} onClick={() => { setResetUser({ ...user, id: userId }); setResetPassword('') }} className='h-8 border border-[#BFC8C2] bg-white px-3 text-sm text-[#357A59] disabled:opacity-50'>{t('users.resetPassword')}</button><button type='button' disabled={busy} onClick={() => deleteUser({ ...user, id: userId })} className='h-8 border border-[#E6B7B0] bg-[#FAE1DD] px-3 text-sm text-[#B54E45] disabled:opacity-50'>{deleteMutation.isPending && deleteMutation.variables === userId ? <Loader2 className='h-4 w-4 animate-spin' /> : t('common.delete')}</button></div></td></tr>
+                            const draft = drafts[userId] ?? { username: user.username, role: user.role, enabled: user.enabled }
+                            const changed = !protectedAdmin && (draft.username !== user.username || draft.role !== user.role || draft.enabled !== user.enabled)
+                            const rowSaving = updateMutation.isPending && updateMutation.variables?.id === userId
+                            const rowDeleting = deleteMutation.isPending && deleteMutation.variables === userId
+                            return <tr key={`${userId}-${index}`} className='border-t border-[#E1E5E2]'>
+                                <td className='px-4 py-3'>
+                                    <input value={draft.username} disabled={protectedAdmin || busy} onChange={(event) => updateDraft(user, userId, { username: event.target.value })} className='control-input font-medium' />
+                                </td>
+                                <td className='px-4 py-3'><select value={draft.role} disabled={protectedAdmin || busy} onChange={(event) => updateDraft(user, userId, { role: event.target.value as UserRole })} className='control-input w-32'><option value='admin'>{t('users.admin')}</option>
+                                    <option value='viewer'>{t('users.viewer')}</option>
+                                </select>
+                                </td>
+                                <td className='px-4 py-3'>{protectedAdmin ?
+                                    <span className='text-sm text-muted-foreground'>{t('users.protected')}
+                                    </span> :
+                                    <label className='flex items-center gap-2'>
+                                        <input type='checkbox' checked={draft.enabled} disabled={busy} onChange={(event) => updateDraft(user, userId, { enabled: event.target.checked })} className='h-4 w-4 accent-[#153F31]' />
+                                        <span>{draft.enabled ? t('common.enabled') : t('common.disabled')}</span>
+                                    </label>}</td>
+                                <td className='px-4 py-3'>
+                                    <div className='flex flex-row items-center gap-2 whitespace-nowrap'>
+                                        {!protectedAdmin &&
+                                            <button type='button' disabled={busy || !changed} onClick={() => saveUser(userId)} className='min-w-14 h-8 border border-[#BFC8C2] bg-white px-3 text-sm text-[#357A59] disabled:opacity-50'>{rowSaving ? <Loader2 className='h-4 w-4 animate-spin' /> : t('common.save')}
+                                            </button>
+                                        }
+                                        <button type='button' disabled={busy} onClick={() => { setResetUser({ ...user, id: userId }); setResetPassword('') }} className='h-8 border border-[#BFC8C2] bg-white px-3 text-sm text-[#357A59] disabled:opacity-50'>{t('users.resetPassword')}</button>
+                                        <button type='button' disabled={busy} onClick={() => requestDeleteUser({ ...user, id: userId })} className='h-8 border border-[#E6B7B0] bg-[#FAE1DD] px-3 text-sm text-[#B54E45] disabled:opacity-50'>{rowDeleting ? <Loader2 className='h-4 w-4 animate-spin' /> : t('common.delete')}</button>
+                                    </div>
+                                </td>
+                            </tr>
                         })}
                     </tbody>
                 </table>
-            </section>
-
-            <section className='border border-[#D8DDD9] bg-white p-7'>
-                <h2 className='mb-6 text-2xl font-bold'>{t('users.addTitle')}</h2>
-                <div className='grid gap-3 bg-[#F7F8F5] p-3 md:grid-cols-4'>
-                    <Field label={t('users.username')}><input value={form.username} onChange={(event) => setForm({ ...form, username: event.target.value })} className='control-input' autoComplete='off' /></Field>
-                    <Field label={t('users.password')}><input type='password' value={form.password} onChange={(event) => setForm({ ...form, password: event.target.value })} className='control-input' autoComplete='new-password' /></Field>
-                    <Field label={t('users.role')}><select value={form.role} onChange={(event) => setForm({ ...form, role: event.target.value as UserRole })} className='control-input'><option value='admin'>{t('users.admin')}</option><option value='viewer'>{t('users.viewer')}</option></select></Field>
-                    <button type='button' onClick={createUser} disabled={createMutation.isPending} className='h-8 self-end bg-[#153F31] text-sm font-medium text-white hover:bg-[#1B503D] disabled:opacity-50'>{createMutation.isPending ? <Loader2 className='mx-auto h-4 w-4 animate-spin' /> : t('common.add')}</button>
-                </div>
-                <p className='mt-4 text-sm text-muted-foreground'>{t('users.passwordApiNote')}</p>
             </section>
 
             <Dialog open={resetUser !== null} onOpenChange={(open) => !open && setResetUser(null)}>
@@ -135,10 +190,30 @@ export function UserManagement({ initialUsers }: { initialUsers: AppUser[] }) {
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
+
+            <AlertDialog open={pendingAction !== null} onOpenChange={(open) => !open && setPendingAction(null)}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>{pendingAction ? dialogText[pendingAction.type].title : ''}</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            {pendingAction ? dialogText[pendingAction.type].desc(pendingAction.displayName) : ''}
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel disabled={deleteMutation.isPending}>{t('common.cancel')}</AlertDialogCancel>
+                        <AlertDialogAction
+                            onClick={confirmPendingAction}
+                            disabled={deleteMutation.isPending}
+                            className='bg-rose-600 text-white hover:bg-rose-700'>
+                            {deleteMutation.isPending ? <Loader2 className='h-4 w-4 animate-spin' /> : t('common.confirm')}
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </div>
     )
 }
 
 function Field({ label, children }: { label: string; children: ReactNode }) {
     return <label className='flex min-w-0 flex-col gap-1.5 text-sm text-[#5F6964]'><span>{label}</span>{children}</label>
-}
+}   

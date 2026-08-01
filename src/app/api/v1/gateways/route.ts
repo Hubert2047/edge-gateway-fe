@@ -1,10 +1,10 @@
+import { GATEWAY_ENDPOINT } from '@/constances/url'
 import { handleRoute } from '@/lib/api/route-handler'
 import { serverApiFetch } from '@/lib/api/server'
 import { Gateway } from '@/types/gateway'
 import { NextRequest } from 'next/server'
-
 export async function GET() {
-    return handleRoute(() => serverApiFetch<Gateway[]>(GATEWAY_ENPOINT.base, undefined, { skipAuthRedirect: true }))
+    return handleRoute(() => serverApiFetch<Gateway[]>(GATEWAY_ENDPOINT.base, undefined, { skipAuthRedirect: true }))
 }
 
 export async function POST(req: NextRequest) {
@@ -12,7 +12,7 @@ export async function POST(req: NextRequest) {
     return handleRoute(
         () =>
             serverApiFetch<Gateway>(
-                GATEWAY_ENPOINT.base,
+                GATEWAY_ENDPOINT.base,
                 { method: 'POST', body: JSON.stringify(body) },
                 { skipAuthRedirect: true },
             ),

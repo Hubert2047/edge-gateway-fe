@@ -7,6 +7,5 @@ import type { AppUser } from '@/types/user'
 export default async function UsersPage() {
     await requireAdmin()
     const users = await serverApiFetch<AppUser[]>(USER_ENDPOINT.base)
-
     return <UserManagement initialUsers={users} />
 }
