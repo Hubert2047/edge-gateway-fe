@@ -32,7 +32,7 @@ export function OverviewDashboard({ gateways, cloudTargets, meters }: OverviewDa
     const router = useRouter()
     const enabledGateways = gateways.filter((gateway) => gateway.enabled).length
     const enabledCloudTargets = cloudTargets.filter((target) => target.enabled).length
-    const pendingUploads = cloudTargets.reduce((sum, target) => sum + (target.pendingCount ?? 0), 0)
+    const pendingUploads = cloudTargets.reduce((sum, target) => sum + (target.pendingReadings ?? 0), 0)
 
     return (
         <div className='flex min-h-full flex-col gap-8 pb-8'>
@@ -104,7 +104,7 @@ export function OverviewDashboard({ gateways, cloudTargets, meters }: OverviewDa
                                             {target.enabled ? t('overview.online') : t('common.disabled')}
                                         </span>
                                         <p className='mt-2 text-xs text-[#7B8580]'>
-                                            {t('overview.pending')}: {target.pendingCount ?? 0}
+                                            {t('overview.pending')}: {target.pendingReadings ?? 0}
                                         </p>
                                     </div>
                                 </div>

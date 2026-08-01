@@ -222,7 +222,7 @@ src/
 - Cloud-sync "執行佇列上傳" (run queued uploads) button — no backend endpoint yet
   (depends on an offline-buffer/upload-worker module planned backend-side). Currently
   a no-op placeholder in `cloud-target-list.tsx`.
-- `pendingCount` / queue count on `CloudTarget` — backend field not implemented yet either
+- `pendingReadings` / queue count on `CloudTarget` — backend field not implemented yet either
   (see backend AGENTS.md poller/cloud-target notes).
 
 ## Operations overview API gaps

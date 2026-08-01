@@ -15,7 +15,7 @@ export function useCloudTargets(initialData: CloudTarget[]) {
         queryKey: cloudTargetKeys.list(),
         queryFn: getCloudTargets,
         initialData,
-        refetchInterval: 30_000,
+        refetchInterval: 60_000,
     })
 }
 

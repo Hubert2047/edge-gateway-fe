@@ -81,6 +81,7 @@ const zhTW: MessageTree = {
         portPlaceholder: '10123',
         intervalPlaceholder: '60',
         optional: '選填',
+        unableToReach: '無法連線到閘道器',
     },
 
     cloud: {
@@ -101,6 +102,7 @@ const zhTW: MessageTree = {
         namePlaceholder: '例如：MMold 雲端（展示工廠A）',
         urlPlaceholder: 'https://api.mmold.com',
         add: '新增雲端服務器',
+
     },
 
     meter: {
@@ -146,6 +148,7 @@ const zhTW: MessageTree = {
         ipRequired: '請輸入 IP',
         portInvalid: '請輸入有效的 PORT',
         intervalInvalid: '請輸入有效的秒數',
+        idRequired: '請輸入 ID',
         voltageInvalid: '請輸入有效的電壓',
         powerFactorInvalid: '請輸入 0 ~ 1 之間的功率因數',
         macRequired: '請輸入 MAC ID',
@@ -406,6 +409,7 @@ const en: MessageTree = {
         portPlaceholder: '10123',
         intervalPlaceholder: '60',
         optional: 'Optional',
+        unableToReach: 'Unable to reach gateway',
     },
 
     cloud: {
@@ -426,6 +430,7 @@ const en: MessageTree = {
         namePlaceholder: 'e.g. MMold Cloud (Factory A)',
         urlPlaceholder: 'https://api.mmold.com',
         add: 'Add cloud server',
+
     },
 
     meter: {
@@ -471,6 +476,7 @@ const en: MessageTree = {
         ipRequired: 'Please enter an IP address',
         portInvalid: 'Please enter a valid port',
         intervalInvalid: 'Please enter a valid number of seconds',
+        idRequired: 'Please enter an ID',
         voltageInvalid: 'Please enter a valid voltage',
         powerFactorInvalid: 'Enter a power factor between 0 and 1',
         macRequired: 'Please enter a MAC ID',
@@ -734,11 +740,12 @@ export function useI18n() {
     return context
 }
 
-const AUTH_ERROR_KEYS: Record<string, string> = {
+const ERROR_KEYS: Record<string, string> = {
     'invalid username or password': 'login.invalidCredentials',
+    'unable to reach gateway': 'gateway.unableToReach',
 }
 
-export function mapAuthErrorKey(message?: string | null): string {
+export function mapErrorKey(message?: string | null): string {
     if (!message) return 'login.errorGeneric'
-    return AUTH_ERROR_KEYS[message.trim().toLowerCase()] ?? 'login.errorGeneric'
+    return ERROR_KEYS[message.trim().toLowerCase()] ?? 'login.errorGeneric'
 }

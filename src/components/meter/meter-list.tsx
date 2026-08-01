@@ -32,6 +32,7 @@ function emptyForm(): MeterFormValues {
         measurementType: 'three_phase',
         voltage: 220,
         powerFactor: 0.9,
+        enabled: true,
     }
 }
 
@@ -42,6 +43,7 @@ function meterToForm(meter: Meter): MeterFormValues {
         measurementType: meter.measurementType,
         voltage: meter.voltage,
         powerFactor: meter.powerFactor,
+        enabled: meter.enabled,
     }
 }
 
@@ -50,7 +52,7 @@ type FormErrors = Partial<Record<'name' | 'macId' | 'voltage' | 'powerFactor', s
 function validateForm(form: MeterFormValues, opts: { isNew: boolean }): FormErrors {
     const errors: FormErrors = {}
     if (!form.name.trim()) errors.name = 'validation.nameRequired'
-    if (opts.isNew && !form.macId.trim()) errors.macId = 'validation.macRequired'
+    if (!form.macId.trim()) errors.macId = 'validation.macRequired'
     if (!form.voltage || form.voltage <= 0) errors.voltage = 'validation.voltageInvalid'
     if (!form.powerFactor || form.powerFactor <= 0 || form.powerFactor > 1) {
         errors.powerFactor = 'validation.powerFactorInvalid'
@@ -126,20 +128,6 @@ export function MeterList({ hubUid, initialMeters }: { hubUid: string; initialMe
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [hubUid])
 
-    function toggleEnabled(meter: Meter, checked: boolean) {
-        updateMeterMutation.mutate(
-            {
-                macId: meter.macId,
-                name: meter.name ?? '',
-                measurementType: meter.measurementType,
-                voltage: meter.voltage,
-                powerFactor: meter.powerFactor,
-                enabled: checked,
-            },
-            { onError: (err) => toast.error(getErrorMessage(err, t('toast.statusFailed'))) },
-        )
-    }
-
     function requestSave(meter: Meter) {
         const { form } = getRowForm(meter)
         const errors = validateForm(form, { isNew: false })
@@ -187,9 +175,8 @@ export function MeterList({ hubUid, initialMeters }: { hubUid: string; initialMe
             const meter = meters.find((m) => m.macId === action.macId)
             if (!meter) return
             const { form } = getRowForm(meter)
-            const { macId, ...payload } = form
             updateMeterMutation.mutate(
-                { macId: action.macId, ...payload, enabled: meter.enabled },
+                { ...form, macId: action.macId },
                 {
                     onSuccess: () => clearRowForm(action.macId),
                     onError: (err) => toast.error(getErrorMessage(err, t('toast.saveFailed'))),
@@ -210,8 +197,8 @@ export function MeterList({ hubUid, initialMeters }: { hubUid: string; initialMe
                 .map((macId) => {
                     const meter = meters.find((m) => m.macId === macId)
                     if (!meter) return null
-                    const { macId: _, ...form } = rowFormState[macId].form
-                    return { macId, ...form, enabled: meter.enabled }
+                    const form = rowFormState[macId].form
+                    return { ...form, macId }
                 })
                 .filter((u): u is NonNullable<typeof u> => u !== null)
 
@@ -365,19 +352,18 @@ export function MeterList({ hubUid, initialMeters }: { hubUid: string; initialMe
                     </Button>
                 </div>
                 <div
-                    className={`flex-1 min-h-0 overflow-y-auto transition-opacity duration-200 ${
-                        isFetching ? 'opacity-60' : 'opacity-100'
-                    } max-md:overflow-visible`}>
+                    className={`flex-1 min-h-0 overflow-y-auto transition-opacity duration-200 ${isFetching ? 'opacity-60' : 'opacity-100'
+                        } max-md:overflow-visible`}>
                     <table className='responsive-table w-full text-sm'>
                         <thead className='bg-muted text-left sticky top-0 z-10'>
                             <tr>
-                                <th className='p-4'>{t('meter.tableName')}</th>
-                                <th className='p-4'>{t('meter.macId')}</th>
-                                <th className='p-4'>{t('meter.phase')}</th>
-                                <th className='p-4'>{t('meter.voltage')}</th>
-                                <th className='p-4'>{t('meter.powerFactor')}</th>
-                                <th className='p-4'>{t('common.status')}</th>
-                                <th className='p-4'>{t('common.actions')}</th>
+                                <th className='p-3 whitespace-nowrap'>{t('meter.tableName')}</th>
+                                <th className='p-3 whitespace-nowrap'>{t('meter.macId')}</th>
+                                <th className='p-3 whitespace-nowrap'>{t('meter.phase')}</th>
+                                <th className='p-3 whitespace-nowrap'>{t('meter.voltage')}</th>
+                                <th className='p-3 whitespace-nowrap'>{t('meter.powerFactor')}</th>
+                                <th className='p-3 whitespace-nowrap'>{t('common.status')}</th>
+                                <th className='p-3 whitespace-nowrap'>{t('common.actions')}</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -404,7 +390,17 @@ export function MeterList({ hubUid, initialMeters }: { hubUid: string; initialMe
                                             )}
                                         </td>
                                         <td data-label='MAC ID' className='p-2'>
-                                            <p className='text-sm font-mono text-foreground/80'>{meter.macId}</p>
+                                            {/* TODO: MAC ID is editable for now. If the backend/hardware ends up
+                                                not supporting MAC ID changes, add `disabled` here instead. */}
+                                            <Input
+                                                value={form.macId}
+                                                disabled={rowBusy}
+                                                onChange={(e) => updateRowForm(meter.macId, { macId: e.target.value })}
+                                                className={`font-mono ${errors.macId ? 'border-destructive' : ''}`}
+                                            />
+                                            {errors.macId && (
+                                                <p className='text-xs text-destructive mt-1'>{t(errors.macId)}</p>
+                                            )}
                                         </td>
                                         <td data-label={t('meter.phase')} className='p-2'>
                                             <Select
@@ -415,7 +411,7 @@ export function MeterList({ hubUid, initialMeters }: { hubUid: string; initialMe
                                                     updateRowForm(meter.macId, { measurementType: v as MeterType })
                                                 }}>
                                                 <SelectTrigger>
-                                                <SelectValue>{form.measurementType === 'three_phase' ? t('meter.threePhase') : t('meter.singlePhase')}</SelectValue>
+                                                    <SelectValue>{form.measurementType === 'three_phase' ? t('meter.threePhase') : t('meter.singlePhase')}</SelectValue>
                                                 </SelectTrigger>
                                                 <SelectContent>
                                                     <SelectItem value='three_phase'>{t('meter.threePhase')}</SelectItem>
@@ -452,13 +448,16 @@ export function MeterList({ hubUid, initialMeters }: { hubUid: string; initialMe
                                                 <p className='text-xs text-destructive mt-1'>{t(errors.powerFactor)}</p>
                                             )}
                                         </td>
-                                        <td data-label={t('common.status')} className='p-2 space-y-2 flex align-items gap-2'>
+                                        <td data-label={t('common.status')} className='pt-3 px-2 space-y-2 flex align-items gap-2'>
                                             <Checkbox
-                                                checked={meter.enabled}
+                                                className='mb-0'
+                                                checked={form.enabled}
                                                 disabled={rowBusy}
-                                                onCheckedChange={(checked) => toggleEnabled(meter, checked === true)}
+                                                onCheckedChange={(checked) =>
+                                                    updateRowForm(meter.macId, { enabled: checked === true })
+                                                }
                                             />
-                                            <StatusBadge enabled={meter.enabled} activeLabel={t('common.enabled')} />
+                                            <StatusBadge enabled={form.enabled} activeLabel={t('common.enabled')} />
                                         </td>
                                         <td data-label={t('common.actions')} data-role='actions' className='p-2'>
                                             <div className='flex items-end gap-1.5'>

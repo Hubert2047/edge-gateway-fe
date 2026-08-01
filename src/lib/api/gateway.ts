@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { apiFetch } from './client'
 import type { Gateway, GatewayFormValues } from '@/types/gateway'
 import { GATEWAY_ENDPOINT } from '@/constances/url'
+import { meterKeys } from './meter'
 
 export const gatewayKeys = {
     all: ['gateways'] as const,
@@ -63,8 +64,9 @@ export function useSyncGatewayMeters() {
     const queryClient = useQueryClient()
     return useMutation({
         mutationFn: (uid: string) => syncGatewayMeters(uid),
-        onSuccess: () => {
+        onSuccess: (_data, uid) => {
             queryClient.invalidateQueries({ queryKey: gatewayKeys.list() })
+            queryClient.invalidateQueries({ queryKey: meterKeys.list(uid) })
         },
     })
 }

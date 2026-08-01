@@ -12,8 +12,8 @@ export default async function MetersPage({ searchParams }: { searchParams: Promi
 
     if (hubs.length === 0) {
         return (
-            <div className='p-6 h-full'>
-                <h1 className='mb-6 text-2xl font-bold'>
+            <div className='h-full'>
+                <h1 className='mb-6 text-3xl font-bold'>
                     <LocalizedText messageKey='page.meters' />
                 </h1>
                 <p className='text-muted-foreground'>

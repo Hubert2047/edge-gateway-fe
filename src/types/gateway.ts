@@ -11,7 +11,7 @@ export interface Gateway {
 }
 
 export interface GatewayFormValues {
-    uid?: string
+    uid: string
     name: string
     ip: string
     port: number

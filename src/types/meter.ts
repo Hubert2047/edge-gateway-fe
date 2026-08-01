@@ -17,12 +17,13 @@ export interface Meter {
     updatedAt: string
 }
 
-export interface MeterFormValues {
+export type MeterFormValues  = {
     macId: string
     name: string
     measurementType: MeterType
     voltage: number
     powerFactor: number
+    enabled: boolean   
 }
 
 export interface MeterUpdateValues {

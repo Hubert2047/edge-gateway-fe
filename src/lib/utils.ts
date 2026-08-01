@@ -1,6 +1,6 @@
 import { clsx, type ClassValue } from "clsx"
 import { twMerge } from "tailwind-merge"
-import type { Locale } from '@/lib/i18n'
+import { mapErrorKey, type Locale } from '@/lib/i18n'
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
@@ -47,5 +47,5 @@ export function formatRelativeTime(input: string | Date, locale: Locale = 'zh-TW
   return date.toLocaleDateString(locale === 'en' ? 'en-US' : 'zh-TW', { year: 'numeric', month: '2-digit', day: '2-digit' })
 }
 export function getErrorMessage(err: unknown, fallback: string) {
-  return err instanceof Error ? err.message : fallback
+  return err instanceof Error ? mapErrorKey(err.message): fallback
 }

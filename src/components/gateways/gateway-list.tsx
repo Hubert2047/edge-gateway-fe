@@ -55,11 +55,12 @@ function gatewayToForm(gateway: Gateway): GatewayFormValues {
     }
 }
 
-type FormErrors = Partial<Record<'name' | 'ip' | 'port' | 'pollIntervalSeconds', string>>
+type FormErrors = Partial<Record<'uid' | 'name' | 'ip' | 'port' | 'pollIntervalSeconds', string>>
 
 function validateForm(form: GatewayFormValues): FormErrors {
     const errors: FormErrors = {}
     if (!form.name.trim()) errors.name = 'validation.displayNameRequired'
+    if (!form.uid.trim()) errors.uid = 'validation.idRequired'
     if (!form.ip.trim()) errors.ip = 'validation.ipRequired'
     if (!form.port || form.port <= 0) errors.port = 'validation.portInvalid'
     if (!form.pollIntervalSeconds || form.pollIntervalSeconds <= 0)
@@ -202,7 +203,7 @@ export function GatewayList({ initialGateways: initialGateways }: { initialGatew
                 setNewErrors({})
                 toast.success(t('toast.added'))
             },
-            onError: (err) => toast.error(getErrorMessage(err, t('toast.addFailed'))),
+            onError: (err) => toast.error(t(getErrorMessage(err, 'toast.addFailed'))),
         })
     }
 
@@ -443,7 +444,9 @@ export function GatewayList({ initialGateways: initialGateways }: { initialGatew
                             placeholder={t('gateway.idPlaceholder')}
                             value={newForm.uid}
                             onChange={(e) => updateNewForm({ uid: e.target.value })}
+                            className={newErrors.uid ? 'border-destructive' : ''}
                         />
+                         {newErrors.uid && <p className='text-xs text-destructive'>{t(newErrors.uid)}</p>}
                     </div>
                     <div className='space-y-1.5'>
                         <Label htmlFor='new-name' className='text-xs text-muted-foreground'>
@@ -456,7 +459,7 @@ export function GatewayList({ initialGateways: initialGateways }: { initialGatew
                             onChange={(e) => updateNewForm({ name: e.target.value })}
                             className={newErrors.name ? 'border-destructive' : ''}
                         />
-                        {newErrors.name && <p className='text-xs text-destructive'>{newErrors.name}</p>}
+                        {newErrors.name && <p className='text-xs text-destructive'>{t(newErrors.name)}</p>}
                     </div>
                     <div className='space-y-1.5'>
                         <Label htmlFor='new-ip' className='text-xs text-muted-foreground'>

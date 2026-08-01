@@ -4,10 +4,11 @@ export interface CloudTarget {
     apiBaseUrl: string
     apiKey: string
     apiSecretMasked: string
-    uploadIntervalSeconds: number
+    uploadIntervalSec: number
     enabled: boolean
     lastUploadAt: string | null
-    pendingCount: number
+    pendingReadings: number
+    remainingRounds: number
 }
 
 export interface CloudTargetFormValues {
@@ -16,7 +17,7 @@ export interface CloudTargetFormValues {
     apiBaseUrl: string
     apiKey: string
     apiSecret: string
-    uploadIntervalSeconds: number
+    uploadIntervalSec: number
     enabled: boolean
 }
 

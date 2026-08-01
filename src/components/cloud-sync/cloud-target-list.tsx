@@ -36,7 +36,7 @@ function emptyForm(): CloudTargetFormValues {
         apiBaseUrl: 'https://api.mmold.com',
         apiKey: '',
         apiSecret: '',
-        uploadIntervalSeconds: 60,
+        uploadIntervalSec: 60,
         enabled: true,
     }
 }
@@ -48,13 +48,13 @@ function targetToForm(target: CloudTarget): CloudTargetFormValues {
         apiBaseUrl: target.apiBaseUrl ?? '',
         apiKey: target.apiKey ?? '',
         apiSecret: target.apiSecretMasked ?? '',
-        uploadIntervalSeconds: target.uploadIntervalSeconds ?? 0,
+        uploadIntervalSec: target.uploadIntervalSec ?? 0,
         enabled: target.enabled ?? true,
     }
 }
 
 type FormErrors = Partial<
-    Record<'name' | 'apiBaseUrl' | 'apiKey' | 'cloudServerSecret' | 'uploadIntervalSeconds', string>
+    Record<'name' | 'apiBaseUrl' | 'apiKey' | 'cloudServerSecret' | 'uploadIntervalSec', string>
 >
 
 function validateForm(form: CloudTargetFormValues): FormErrors {
@@ -63,8 +63,8 @@ function validateForm(form: CloudTargetFormValues): FormErrors {
     if (!form.apiBaseUrl.trim()) errors.apiBaseUrl = 'validation.urlRequired'
     if (!form.apiKey.trim()) errors.apiKey = 'validation.cloudIdRequired'
     if (!form.apiSecret.trim()) errors.cloudServerSecret = 'validation.secretRequired'
-    if (!form.uploadIntervalSeconds || form.uploadIntervalSeconds <= 0)
-        errors.uploadIntervalSeconds = 'validation.intervalInvalid'
+    if (!form.uploadIntervalSec || form.uploadIntervalSec <= 0)
+        errors.uploadIntervalSec = 'validation.intervalInvalid'
     return errors
 }
 
@@ -300,7 +300,7 @@ export function CloudTargetList({ initialTargets }: { initialTargets: CloudTarge
                                                         className={errors.name ? 'border-destructive' : ''}
                                                     />
                                                     {errors.name && (
-                                                    <p className='text-xs text-destructive'>{t(errors.name)}</p>
+                                                        <p className='text-xs text-destructive'>{t(errors.name)}</p>
                                                     )}
                                                 </div>
                                                 <div className='space-y-1.5'>
@@ -377,24 +377,24 @@ export function CloudTargetList({ initialTargets }: { initialTargets: CloudTarge
                                                             <Input
                                                                 id={`interval-${target.id}`}
                                                                 type='number'
-                                                                value={form.uploadIntervalSeconds}
+                                                                value={form.uploadIntervalSec}
                                                                 disabled={rowBusy}
                                                                 onChange={(e) =>
                                                                     updateRowForm(target.id, {
-                                                                        uploadIntervalSeconds: Number(e.target.value),
+                                                                        uploadIntervalSec: Number(e.target.value),
                                                                     })
                                                                 }
                                                                 className={
-                                                                    errors.uploadIntervalSeconds
+                                                                    errors.uploadIntervalSec
                                                                         ? 'border-destructive'
                                                                         : ''
                                                                 }
                                                             />
                                                             <span className='text-xs text-muted-foreground'>{t('common.seconds')}</span>
                                                         </div>
-                                                        {errors.uploadIntervalSeconds && (
+                                                        {errors.uploadIntervalSec && (
                                                             <p className='text-xs text-destructive'>
-                                                                {t(errors.uploadIntervalSeconds)}
+                                                                {t(errors.uploadIntervalSec)}
                                                             </p>
                                                         )}
                                                     </div>
@@ -409,13 +409,13 @@ export function CloudTargetList({ initialTargets }: { initialTargets: CloudTarge
                                                         </div>
                                                         <div className='flex gap-4'>
                                                             <p>{t('cloud.pending')}</p>
-                                                            <p className='font-bold'>{target.pendingCount}</p>
+                                                            <p className='font-bold'>{target.pendingReadings}</p>
                                                         </div>
                                                     </div>
                                                 </div>
                                             </td>
                                             <td data-label={t('common.actions')} data-role='actions' className='p-4'>
-                                                <div className='flex flex-col items-end gap-1.5'>
+                                                <div className='flex flex-col items-center gap-1.5'>
                                                     <Button
                                                         size='sm'
                                                         className='w-20'
@@ -456,7 +456,7 @@ export function CloudTargetList({ initialTargets }: { initialTargets: CloudTarge
                                                             className={`text-xs ${testResult.success ? 'text-emerald-600' : 'text-rose-600'}`}>
                                                             {testResult.success
                                                                 ? t('cloud.success')
-                                                                : testResult.message || t('cloud.failure')}
+                                                                : t('cloud.failure')}
                                                         </p>
                                                     )}
                                                 </div>
@@ -545,13 +545,13 @@ export function CloudTargetList({ initialTargets }: { initialTargets: CloudTarge
                             id='new-interval'
                             type='number'
                             placeholder='60'
-                            value={newForm.uploadIntervalSeconds}
+                            value={newForm.uploadIntervalSec}
                             disabled={createMutation.isPending}
-                            onChange={(e) => updateNewForm({ uploadIntervalSeconds: Number(e.target.value) })}
-                            className={newErrors.uploadIntervalSeconds ? 'border-destructive' : ''}
+                            onChange={(e) => updateNewForm({ uploadIntervalSec: Number(e.target.value) })}
+                            className={newErrors.uploadIntervalSec ? 'border-destructive' : ''}
                         />
-                        {newErrors.uploadIntervalSeconds && (
-                            <p className='text-xs text-destructive'>{t(newErrors.uploadIntervalSeconds)}</p>
+                        {newErrors.uploadIntervalSec && (
+                            <p className='text-xs text-destructive'>{t(newErrors.uploadIntervalSec)}</p>
                         )}
                     </div>
                 </div>
