@@ -436,6 +436,7 @@ export function GatewayList({ initialGateways: initialGateways }: { initialGatew
                         </Label>
                         <Input
                             id='new-name'
+                            disabled={createGatewayMutation.isPending}
                             placeholder={t('gateway.namePlaceholder')}
                             value={newForm.name}
                             onChange={(e) => updateNewForm({ name: e.target.value })}
@@ -449,6 +450,7 @@ export function GatewayList({ initialGateways: initialGateways }: { initialGatew
                         </Label>
                         <Input
                             id='new-ip'
+                            disabled={createGatewayMutation.isPending}
                             placeholder={t('gateway.ipPlaceholder')}
                             value={newForm.ip}
                             onChange={(e) => updateNewForm({ ip: e.target.value })}
@@ -462,6 +464,7 @@ export function GatewayList({ initialGateways: initialGateways }: { initialGatew
                         </Label>
                         <Input
                             id='new-port'
+                            disabled={createGatewayMutation.isPending}
                             type='number'
                             placeholder={t('gateway.portPlaceholder')}
                             value={newForm.port}
@@ -476,6 +479,7 @@ export function GatewayList({ initialGateways: initialGateways }: { initialGatew
                         </Label>
                         <Input
                             id='new-poll'
+                            disabled={createGatewayMutation.isPending}
                             type='number'
                             placeholder={t('gateway.intervalPlaceholder')}
                             value={newForm.pollIntervalSeconds}

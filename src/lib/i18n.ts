@@ -95,6 +95,7 @@ const zhTW: MessageTree = {
         optional: '選填',
         unableToReach: '無法連線到閘道器',
         resetManually: '閘道器管理員帳號密碼不符，請手動重置',
+        alreadyRegistered: '此 IP 已註冊到另一個閘道器',
     },
 
     cloud: {
@@ -433,6 +434,7 @@ const en: MessageTree = {
         optional: 'Optional',
         unableToReach: 'Unable to reach gateway',
         resetManually: 'Gateway admin credentials do not match, please reset manually',
+        alreadyRegistered: 'This IP is already registered to another gateway',
     },
 
     cloud: {
@@ -779,9 +781,10 @@ const ERROR_KEYS: Record<string, string> = {
     'invalid username or password': 'login.invalidCredentials',
     'unable to reach gateway': 'gateway.unableToReach',
     'gateway admin login do not match, reset it manually': 'gateway.resetManually',
+    'this IP is already registered to another gateway': 'gateway.alreadyRegistered',
 }
 
 export function mapErrorKey(message?: string | null): string {
     if (!message) return 'login.errorGeneric'
-    return ERROR_KEYS[message.trim().toLowerCase()] ?? 'login.errorGeneric'
+    return ERROR_KEYS[message.trim()] ?? 'login.errorGeneric'
 }
