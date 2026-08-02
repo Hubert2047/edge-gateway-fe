@@ -37,12 +37,11 @@ function meterToForm(meter: Meter): MeterFormValues {
     }
 }
 
-type FormErrors = Partial<Record<'name' | 'macId' | 'voltage' | 'powerFactor', string>>
+type FormErrors = Partial<Record<'name' | 'voltage' | 'powerFactor', string>>
 
 function validateForm(form: MeterFormValues): FormErrors {
     const errors: FormErrors = {}
     if (!form.name.trim()) errors.name = 'validation.nameRequired'
-    if (!form.macId.trim()) errors.macId = 'validation.macRequired'
     if (!form.voltage || form.voltage <= 0) errors.voltage = 'validation.voltageInvalid'
     if (!form.powerFactor || form.powerFactor <= 0 || form.powerFactor > 1) {
         errors.powerFactor = 'validation.powerFactorInvalid'
@@ -261,17 +260,11 @@ export function MeterList({
                                             )}
                                         </td>
                                         <td data-label='MAC ID' className='p-2'>
-                                            {/* TODO: MAC ID is editable for now. If the backend/hardware ends up
-                                                not supporting MAC ID changes, add `disabled` here instead. */}
                                             <Input
                                                 value={form.macId}
-                                                disabled={rowBusy}
-                                                onChange={(e) => updateRowForm(meter.macId, { macId: e.target.value })}
-                                                className={`font-mono ${errors.macId ? 'border-destructive' : ''}`}
+                                                disabled
+                                                className='font-mono'
                                             />
-                                            {errors.macId && (
-                                                <p className='text-xs text-destructive mt-1'>{t(errors.macId)}</p>
-                                            )}
                                         </td>
                                         <td data-label={t('meter.phase')} className='p-2'>
                                             <Select

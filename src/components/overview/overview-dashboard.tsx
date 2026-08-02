@@ -35,9 +35,10 @@ export function OverviewDashboard({ gateways, cloudTargets, meters, canManage }:
     const enabledGateways = gateways.filter((gateway) => gateway.enabled).length
     const enabledCloudTargets = cloudTargets.filter((target) => target.enabled).length
     const pendingUploads = cloudTargets.reduce((sum, target) => sum + (target.pendingReadings ?? 0), 0)
+    const gatewayNames = new Map(gateways.map((gateway) => [gateway.uid, getGatewayDisplayName(gateway, t)]))
 
     return (
-        <div className='flex min-h-full flex-col gap-8 pb-8 md:h-full md:min-h-[52rem] md:overflow-hidden'>
+        <div className='flex min-h-full flex-col gap-5 md:h-full'>
             <div className='flex shrink-0 items-center justify-between border-b border-[#D8DDD9] pb-5'>
                 <h1 className='text-3xl font-bold tracking-tight'>{t('overview.title')}</h1>
                 <button
@@ -122,7 +123,7 @@ export function OverviewDashboard({ gateways, cloudTargets, meters, canManage }:
                 action={t('common.settings')}
                 canManage={canManage}
                 className='md:flex md:min-h-0 md:flex-1 md:flex-col'>
-                <div className='grid gap-5 md:min-h-[20rem] md:flex-1 md:overflow-y-auto md:overscroll-contain md:pr-1 md:grid-cols-2'>
+                <div className='grid gap-5 md:min-h-[15rem] md:flex-1 md:overflow-y-auto md:overscroll-contain md:pr-1 md:grid-cols-2'>
                     {meters.length === 0 ? (
                         <div className='border border-[#D8DDD9] bg-white'>
                             <EmptyState text={t('overview.noMeters')} />
@@ -139,7 +140,7 @@ export function OverviewDashboard({ gateways, cloudTargets, meters, canManage }:
                                         <StatusDot active={meter.enabled} />
                                         <div>
                                             <p className='font-semibold'>{meter.name || meterID}</p>
-                                            <p className='text-sm text-[#7B8580]'>{meter.gatewayUID}</p>
+                                            <p className='text-sm text-[#7B8580]'>{gatewayNames.get(meter.gatewayUID) ?? '—'}</p>
                                         </div>
                                     </div>
                                     <span
