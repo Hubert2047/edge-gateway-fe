@@ -94,6 +94,7 @@ const zhTW: MessageTree = {
         intervalPlaceholder: '60',
         optional: '選填',
         unableToReach: '無法連線到閘道器',
+        resetManually: '閘道器管理員帳號密碼不符，請手動重置',
     },
 
     cloud: {
@@ -431,6 +432,7 @@ const en: MessageTree = {
         intervalPlaceholder: '60',
         optional: 'Optional',
         unableToReach: 'Unable to reach gateway',
+        resetManually: 'Gateway admin credentials do not match, please reset manually',
     },
 
     cloud: {
@@ -776,6 +778,7 @@ export function useI18n() {
 const ERROR_KEYS: Record<string, string> = {
     'invalid username or password': 'login.invalidCredentials',
     'unable to reach gateway': 'gateway.unableToReach',
+    'gateway admin login do not match, reset it manually': 'gateway.resetManually',
 }
 
 export function mapErrorKey(message?: string | null): string {

@@ -201,7 +201,7 @@ export function GatewayList({ initialGateways: initialGateways }: { initialGatew
                 setNewErrors({})
                 toast.success(t('toast.added'))
             },
-            onError: (err) => toast.error(t(getErrorMessage(err, 'toast.addFailed'))),
+            onError: (err) =>  toast.error(t(getErrorMessage(err, 'toast.addFailed'))) ,
         })
     }
 
@@ -225,13 +225,11 @@ export function GatewayList({ initialGateways: initialGateways }: { initialGatew
         <div className='flex h-full flex-col gap-4 overflow-hidden max-md:h-auto max-md:overflow-visible'>
             <Card className='flex flex-1 min-h-0 flex-col overflow-hidden border border-border/60 pt-0 max-md:flex-none max-md:overflow-visible'>
                 <div
-                    className={`flex-1 min-h-0 overflow-y-auto ${
-                        !hasGateways ? 'max-md:overflow-x-auto' : 'max-md:overflow-visible'
-                    }`}>
-                    <table
-                        className={`responsive-table w-full text-sm ${
-                            !hasGateways ? 'responsive-table-empty min-w-[36rem]' : ''
+                    className={`flex-1 min-h-0 overflow-y-auto ${!hasGateways ? 'max-md:overflow-x-auto' : 'max-md:overflow-visible'
                         }`}>
+                    <table
+                        className={`responsive-table w-full text-sm ${!hasGateways ? 'responsive-table-empty min-w-[36rem]' : ''
+                            }`}>
                         <colgroup>
                             <col className='w-28' />
                             <col className='min-w-72' />
