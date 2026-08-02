@@ -1,9 +1,11 @@
 export type AppSettings = {
     locale?: 'zh-TW' | 'en'
+    timeZone?: string
     [key: string]: unknown
 }
 
 export const SETTINGS_STORAGE_KEY = 'edge-gateway-settings'
+export const SETTINGS_UPDATED_EVENT = 'edge-gateway-settings-updated'
 
 export function getStoredSettings(): AppSettings {
     if (typeof window === 'undefined') return {}
@@ -21,5 +23,6 @@ export function getStoredSettings(): AppSettings {
 export function saveSettings(patch: AppSettings): AppSettings {
     const next = { ...getStoredSettings(), ...patch }
     window.localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(next))
+    window.dispatchEvent(new Event(SETTINGS_UPDATED_EVENT))
     return next
 }

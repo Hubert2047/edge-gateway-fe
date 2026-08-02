@@ -113,9 +113,9 @@ export function Sidebar() {
 
     return (
         <>
-            <aside className='hidden w-64 shrink-0 flex-col justify-between bg-sidebar text-sidebar-foreground md:flex'>
-                <div>{navigation}</div>
-                <div>{account}</div>
+            <aside className='hidden min-h-0 w-64 shrink-0 flex-col overflow-hidden bg-sidebar text-sidebar-foreground md:flex'>
+                <div className='min-h-0 flex-1 overflow-y-auto'>{navigation}</div>
+                <div className='shrink-0'>{account}</div>
             </aside>
             <div className='fixed inset-x-0 top-0 z-40 flex h-16 items-center justify-between bg-sidebar px-4 text-sidebar-foreground md:hidden'>
                 <Link href='/overview' className='flex items-center gap-2'>
@@ -137,7 +137,7 @@ export function Sidebar() {
                 <div className='fixed inset-0 z-50 bg-black/40 md:hidden' onClick={() => setMobileOpen(false)} />
             )}
             <aside
-                className={`fixed inset-y-0 left-0 z-50 flex w-[min(18rem,88vw)] flex-col justify-between bg-sidebar text-sidebar-foreground shadow-xl transition-transform md:hidden ${mobileOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+                className={`fixed inset-y-0 left-0 z-50 flex w-[min(18rem,88vw)] flex-col bg-sidebar text-sidebar-foreground shadow-xl transition-transform md:hidden ${mobileOpen ? 'translate-x-0' : '-translate-x-full'}`}>
                 <button
                     type='button'
                     aria-label={t('nav.closeMenu')}
@@ -145,8 +145,8 @@ export function Sidebar() {
                     className='absolute right-3 top-4 p-2'>
                     <X className='h-5 w-5' />
                 </button>
-                <div className='min-h-0 overflow-y-auto'>{navigation}</div>
-                <div>{account}</div>
+                <div className='min-h-0 flex-1 overflow-y-auto'>{navigation}</div>
+                <div className='shrink-0'>{account}</div>
             </aside>
         </>
     )

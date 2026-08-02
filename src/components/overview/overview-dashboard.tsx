@@ -36,8 +36,8 @@ export function OverviewDashboard({ gateways, cloudTargets, meters, canManage }:
     const pendingUploads = cloudTargets.reduce((sum, target) => sum + (target.pendingReadings ?? 0), 0)
 
     return (
-        <div className='flex min-h-full flex-col gap-8 pb-8'>
-            <div className='flex items-center justify-between border-b border-[#D8DDD9] pb-5'>
+        <div className='flex min-h-full flex-col gap-8 pb-8 md:h-full md:min-h-[52rem] md:overflow-hidden'>
+            <div className='flex shrink-0 items-center justify-between border-b border-[#D8DDD9] pb-5'>
                 <h1 className='text-3xl font-bold tracking-tight'>{t('overview.title')}</h1>
                 <button
                     type='button'
@@ -48,7 +48,7 @@ export function OverviewDashboard({ gateways, cloudTargets, meters, canManage }:
                 </button>
             </div>
 
-            <section className='grid grid-cols-2 border border-[#D8DDD9] bg-white md:grid-cols-5'>
+            <section className='grid shrink-0 grid-cols-2 border border-[#D8DDD9] bg-white md:grid-cols-5'>
                 <Summary label={t('overview.gatewayOnline')} value={enabledGateways} suffix={`/ ${gateways.length}`} />
                 <Summary
                     label={t('overview.cloudOnline')}
@@ -63,7 +63,7 @@ export function OverviewDashboard({ gateways, cloudTargets, meters, canManage }:
                 <Summary label={t('overview.pending')} value={pendingUploads} />
             </section>
 
-            <div className='grid gap-8 lg:grid-cols-2'>
+            <div className='grid shrink-0 gap-8 lg:grid-cols-2'>
                 <OverviewSection title={t('overview.gatewayStatus')} href='/gateways' action={t('common.settings')} canManage={canManage}>
                     <div className='divide-y divide-[#D8DDD9] border border-[#D8DDD9] bg-white'>
                         {gateways.length === 0 ? (
@@ -115,22 +115,29 @@ export function OverviewDashboard({ gateways, cloudTargets, meters, canManage }:
                 </OverviewSection>
             </div>
 
-            <OverviewSection title={t('overview.meterStatus')} href='/meters' action={t('common.settings')} canManage={canManage}>
-                <div className='grid gap-5 md:grid-cols-2'>
+            <OverviewSection
+                title={t('overview.meterStatus')}
+                href='/meters'
+                action={t('common.settings')}
+                canManage={canManage}
+                className='md:flex md:min-h-0 md:flex-1 md:flex-col'>
+                <div className='grid gap-5 md:min-h-[20rem] md:flex-1 md:overflow-y-auto md:overscroll-contain md:pr-1 md:grid-cols-2'>
                     {meters.length === 0 ? (
                         <div className='border border-[#D8DDD9] bg-white'>
                             <EmptyState text={t('overview.noMeters')} />
                         </div>
                     ) : (
-                        meters.map((meter) => (
-                            <div
-                                key={meter.macId}
+                        meters.map((meter) => {
+                            const meterID = meter.meterId ?? meter.macId
+                            return (
+                                <div
+                                key={`${meter.gatewayUID}:${meterID}`}
                                 className={`border-t-4 ${meter.enabled ? 'border-[#64BD91]' : 'border-[#D8665C]'} border-x border-b border-[#D8DDD9] bg-white p-6`}>
                                 <div className='flex items-start justify-between gap-4'>
                                     <div className='flex items-center gap-4'>
                                         <StatusDot active={meter.enabled} />
                                         <div>
-                                            <p className='font-semibold'>{meter.name || meter.macId}</p>
+                                            <p className='font-semibold'>{meter.name || meterID}</p>
                                             <p className='text-sm text-[#7B8580]'>{meter.gatewayUID}</p>
                                         </div>
                                     </div>
@@ -147,7 +154,8 @@ export function OverviewDashboard({ gateways, cloudTargets, meters, canManage }:
                                 </div>
                                 <p className='text-sm text-[#8A938E]'>{t('overview.latestDataUnavailable')}</p>
                             </div>
-                        ))
+                            )
+                        })
                     )}
                 </div>
             </OverviewSection>
@@ -171,16 +179,18 @@ function OverviewSection({
     href,
     action,
     canManage,
+    className,
     children,
 }: {
     title: string
     href: string
     action: string
     canManage: boolean
+    className?: string
     children: ReactNode
 }) {
     return (
-        <section>
+        <section className={className}>
             <div className='mb-4 flex items-center justify-between'>
                 <h2 className='text-2xl font-bold'>{title}</h2>
                 {canManage && (
