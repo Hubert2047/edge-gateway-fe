@@ -21,7 +21,7 @@ export default async function OverviewPage() {
         gateways.map((gateway) => safeFetch<Meter[]>(GATEWAY_ENDPOINT.getMeters(gateway.uid), [])),
     )
 
-    return <OverviewDashboard gateways={gateways} cloudTargets={cloudTargets} meters={meterResults.flat()} />
+    return <OverviewDashboard gateways={gateways} cloudTargets={cloudTargets} meters={meterResults.flat()} canManage={isAdmin} />
 }
 
 async function safeFetch<T>(path: string, fallback: T): Promise<T> {

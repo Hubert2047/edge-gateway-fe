@@ -13,6 +13,7 @@ type OverviewDashboardProps = {
     gateways: Gateway[]
     cloudTargets: CloudTarget[]
     meters: Meter[]
+    canManage: boolean
 }
 
 function StatusDot({ active }: { active: boolean }) {
@@ -27,7 +28,7 @@ function formatValue(value: number | null, suffix = '') {
     return value === null ? '—' : `${value.toFixed(2)}${suffix}`
 }
 
-export function OverviewDashboard({ gateways, cloudTargets, meters }: OverviewDashboardProps) {
+export function OverviewDashboard({ gateways, cloudTargets, meters, canManage }: OverviewDashboardProps) {
     const { t } = useI18n()
     const router = useRouter()
     const enabledGateways = gateways.filter((gateway) => gateway.enabled).length
@@ -63,7 +64,7 @@ export function OverviewDashboard({ gateways, cloudTargets, meters }: OverviewDa
             </section>
 
             <div className='grid gap-8 lg:grid-cols-2'>
-                <OverviewSection title={t('overview.gatewayStatus')} href='/gateways' action={t('common.settings')}>
+                <OverviewSection title={t('overview.gatewayStatus')} href='/gateways' action={t('common.settings')} canManage={canManage}>
                     <div className='divide-y divide-[#D8DDD9] border border-[#D8DDD9] bg-white'>
                         {gateways.length === 0 ? (
                             <EmptyState text={t('overview.noGateways')} />
@@ -86,7 +87,7 @@ export function OverviewDashboard({ gateways, cloudTargets, meters }: OverviewDa
                     </div>
                 </OverviewSection>
 
-                <OverviewSection title={t('overview.cloudStatus')} href='/cloud-sync' action={t('common.settings')}>
+                <OverviewSection title={t('overview.cloudStatus')} href='/cloud-sync' action={t('common.settings')} canManage={canManage}>
                     <div className='divide-y divide-[#D8DDD9] border border-[#D8DDD9] bg-white'>
                         {cloudTargets.length === 0 ? (
                             <EmptyState text={t('overview.noCloudTargets')} />
@@ -114,7 +115,7 @@ export function OverviewDashboard({ gateways, cloudTargets, meters }: OverviewDa
                 </OverviewSection>
             </div>
 
-            <OverviewSection title={t('overview.meterStatus')} href='/meters' action={t('common.settings')}>
+            <OverviewSection title={t('overview.meterStatus')} href='/meters' action={t('common.settings')} canManage={canManage}>
                 <div className='grid gap-5 md:grid-cols-2'>
                     {meters.length === 0 ? (
                         <div className='border border-[#D8DDD9] bg-white'>
@@ -169,23 +170,27 @@ function OverviewSection({
     title,
     href,
     action,
+    canManage,
     children,
 }: {
     title: string
     href: string
     action: string
+    canManage: boolean
     children: ReactNode
 }) {
     return (
         <section>
             <div className='mb-4 flex items-center justify-between'>
                 <h2 className='text-2xl font-bold'>{title}</h2>
-                <Link
-                    href={href}
-                    className='flex items-center gap-1 text-sm font-medium text-[#438466] hover:underline'>
-                    {action}
-                    <ArrowRight className='h-4 w-4' />
-                </Link>
+                {canManage && (
+                    <Link
+                        href={href}
+                        className='flex items-center gap-1 text-sm font-medium text-[#438466] hover:underline'>
+                        {action}
+                        <ArrowRight className='h-4 w-4' />
+                    </Link>
+                )}
             </div>
             {children}
         </section>

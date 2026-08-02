@@ -3,7 +3,7 @@
 ## Tech stack
 - Next.js (App Router)
 - TypeScript
-- Auth: NextAuth (`app/api/auth/[...nextauth]/route.ts`), session-based, redirect to sign-in on 401/expired session
+- Auth: NextAuth (`app/api/auth/[...nextauth]/route.ts`), session-based, redirect to sign-in on 401/expired session. Login stores each user's `locale`; only admin sessions receive the safe global `appConfig` (currently `timeZone`).
 - Styling: Tailwind CSS
 - UI kit: shadcn/ui (`components/ui/`)
 - Data fetching:
@@ -207,11 +207,13 @@ src/
 ## Role-based access
 - Roles are normalized from the backend value to `admin` or `viewer` in `lib/roles.ts`.
 - `admin` can access all application pages.
-- `viewer` can access read-only/public pages: `/overview`, `/history-data`, `/history-events`,
-  and `/process-control`.
-- Admin-only pages are `/cloud-sync`, `/gateways`, `/meters`, `/process-rules`, `/users`, and `/settings`.
+- `viewer` can access only read-only `/overview`, `/history-data`, and `/settings`.
+- Admin-only pages are `/cloud-sync`, `/gateways`, `/meters`, `/history-events`,
+  `/process-control`, `/process-rules`, and `/users`.
   They are filtered from the sidebar and protected by `src/proxy.ts` plus server-page guards.
 - If a viewer tries to open an admin-only URL directly, they are redirected to `/overview`.
+- `/settings` is available to every authenticated user. Every user can save only their own locale through the internal `PUT /api/v1/settings` proxy; only admins receive, see, or can update the global `timeZone` app config. Do not expose app-config controls or values to viewers.
+- Overview detail links to Gateway, Cloud Sync, and Meter management are administrator-only. Do not render them for viewers.
 - `/users` is also admin-only and uses the backend user endpoints through Next.js proxy routes.
 - Current backend user endpoints support list/create, enabled toggle, role update, delete, and
   admin password reset via `PUT /users/:id/password`. Username editing still needs a separate

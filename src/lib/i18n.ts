@@ -1,9 +1,14 @@
 'use client'
 
 import { createContext, createElement, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
+import { useSession } from 'next-auth/react'
 import { getStoredSettings, saveSettings } from '@/lib/settings'
 
 export type Locale = 'zh-TW' | 'en'
+
+export function isLocale(value: unknown): value is Locale {
+    return value === 'zh-TW' || value === 'en'
+}
 
 type MessageTree = { [key: string]: string | MessageTree }
 
@@ -184,10 +189,13 @@ const zhTW: MessageTree = {
         title: '系統設定',
         languageTitle: '語言',
         languageLabel: '介面語言',
+        timeZoneLabel: '國家／地區時間',
+        currentTime: '目前時間',
         zhTW: '繁體中文',
         en: 'English',
         save: '儲存設定',
         saved: '語言設定已儲存',
+        timeZoneSaved: '國家／地區時間設定已儲存',
     },
 
     overview: {
@@ -517,10 +525,13 @@ const en: MessageTree = {
         title: 'Settings',
         languageTitle: 'Language',
         languageLabel: 'Interface language',
+        timeZoneLabel: 'Country / region time',
+        currentTime: 'Current time',
         zhTW: '繁體中文',
         en: 'English',
         save: 'Save settings',
         saved: 'Language preference saved',
+        timeZoneSaved: 'Country / region time saved',
     },
 
     overview: {
@@ -717,14 +728,23 @@ function detectLocale(): Locale {
 
 export function I18nProvider({ children }: { children: ReactNode }) {
     const [locale, setLocale] = useState<Locale>('zh-TW')
+    const { data: session, status } = useSession()
 
     useEffect(() => {
         const stored = getStoredSettings().locale
-        const detected: Locale = stored === 'en' || stored === 'zh-TW' ? stored : detectLocale()
+        const detected: Locale = isLocale(stored) ? stored : detectLocale()
         // eslint-disable-next-line react-hooks/set-state-in-effect
         setLocale(detected)
         document.documentElement.lang = detected === 'en' ? 'en' : 'zh-Hant'
     }, [])
+
+    useEffect(() => {
+        if (status !== 'authenticated' || !isLocale(session?.user?.locale)) return
+        saveSettings({ locale: session.user.locale })
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        setLocale(session.user.locale)
+        document.documentElement.lang = session.user.locale === 'en' ? 'en' : 'zh-Hant'
+    }, [session?.user?.locale, status])
 
     const changeLocale = (nextLocale: Locale) => {
         saveSettings({ locale: nextLocale })

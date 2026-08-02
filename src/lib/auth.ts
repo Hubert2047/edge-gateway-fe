@@ -1,6 +1,21 @@
 import type { NextAuthOptions } from 'next-auth'
 import CredentialsProvider from 'next-auth/providers/credentials'
 import { loginRequest } from '@/lib/api/auth'
+import type { AppConfig } from '@/types/settings'
+
+type AuthUser = {
+    id: string
+    name: string
+    role: string
+    locale: string
+    accessToken: string
+    appConfig?: AppConfig
+}
+
+type SessionUpdate = {
+    user?: { locale?: string }
+    appConfig?: AppConfig
+}
 
 export const authOptions: NextAuthOptions = {
     session: { strategy: 'jwt' },
@@ -26,21 +41,33 @@ export const authOptions: NextAuthOptions = {
                         id: String(result.data.user.id),
                         name: result.data.user.username,
                         role: result.data.user.role,
+                        locale: result.data.user.locale,
                         accessToken: result.data.token,
+                        appConfig: result.data.appConfig,
                     }
-                } catch (err: any) {
-                    throw new Error(err.data.message ?? "Login failed")
+                } catch (error: unknown) {
+                    const message = error instanceof Error ? error.message : 'Login failed'
+                    throw new Error(message)
                 }
             }
         }),
     ],
 
     callbacks: {
-        async jwt({ token, user }) {
+        async jwt({ token, user, trigger, session }) {
             if (user) {
-                token.id = user.id
-                token.role = (user as any).role
-                token.accessToken = (user as any).accessToken
+                const authenticatedUser = user as AuthUser
+                token.id = authenticatedUser.id
+                token.role = authenticatedUser.role
+                token.locale = authenticatedUser.locale
+                token.accessToken = authenticatedUser.accessToken
+                token.appConfig = authenticatedUser.appConfig
+            }
+
+            if (trigger === 'update') {
+                const updated = session as SessionUpdate
+                if (typeof updated?.user?.locale === 'string') token.locale = updated.user.locale
+                if (token.role === 'admin' && updated?.appConfig) token.appConfig = updated.appConfig
             }
 
             return token
@@ -48,10 +75,14 @@ export const authOptions: NextAuthOptions = {
         async session({ session, token }) {
             if (session.user) {
                 session.user.id = token.id as string
-                ;(session.user as any).role = token.role
+                session.user.role = token.role
+                session.user.locale = token.locale
             }
         
-            ;(session as any).accessToken = token.accessToken
+            session.accessToken = token.accessToken
+            if (token.role === 'admin' && token.appConfig) {
+                session.appConfig = token.appConfig
+            }
         
             return session
         }

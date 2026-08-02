@@ -20,3 +20,6 @@ export const USER_ENDPOINT = {
 export const AUTH_ENDPOINT = {
     login: '/api/v1/login',
 }
+export const SETTINGS_ENDPOINT = {
+    base: '/api/v1/settings',
+}

@@ -11,6 +11,10 @@ export interface LoginResponse {
             id: number
             username: string
             role: string
+            locale: string
+        }
+        appConfig?: {
+            timeZone: string
         }
     }
 }

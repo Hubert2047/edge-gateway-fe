@@ -1,7 +1,7 @@
 import { getToken } from 'next-auth/jwt'
 import { NextResponse, type NextRequest } from 'next/server'
 
-const adminOnlyRoutes = ['/cloud-sync', '/gateways', '/meters', '/process-rules', '/users', '/settings']
+const viewerRoutes = ['/overview', '/history-data', '/settings']
 
 export async function proxy(request: NextRequest) {
     if (request.nextUrl.pathname.startsWith('/api/')) {
@@ -14,11 +14,11 @@ export async function proxy(request: NextRequest) {
     }
 
     const role = typeof token.role === 'string' ? token.role.toLowerCase() : ''
-    const isAdminOnlyRoute = adminOnlyRoutes.some((route) =>
+    const isViewerRoute = viewerRoutes.some((route) =>
         request.nextUrl.pathname === route || request.nextUrl.pathname.startsWith(`${route}/`),
     )
 
-    if (isAdminOnlyRoute && role !== 'admin') {
+    if (role !== 'admin' && !isViewerRoute) {
         return NextResponse.redirect(new URL('/overview', request.url))
     }
 
