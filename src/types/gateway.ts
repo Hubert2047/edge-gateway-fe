@@ -8,6 +8,7 @@ export interface Gateway {
     meterCount: number
     note: string
     updatedAt: string
+    isVirtual: boolean
 }
 
 export interface GatewayFormValues {

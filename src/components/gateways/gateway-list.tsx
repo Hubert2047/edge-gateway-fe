@@ -220,18 +220,20 @@ export function GatewayList({ initialGateways: initialGateways }: { initialGatew
         },
     } as const
 
-    const virtualMeterCount = gateways.reduce((total, gateway) => total + gateway.meterCount, 0)
+    const virtualGateway = gateways.find((gateway) => gateway.isVirtual)
+    const physicalGateways = gateways.filter((gateway) => !gateway.isVirtual)
+    const hasGateways = gateways.length > 0
 
     return (
         <div className='flex h-full flex-col gap-4 overflow-hidden max-md:h-auto max-md:overflow-visible'>
             <Card className='flex flex-1 min-h-0 flex-col overflow-hidden border border-border/60 pt-0 max-md:flex-none max-md:overflow-visible'>
                 <div
                     className={`flex-1 min-h-0 overflow-y-auto ${
-                        gateways.length === 0 ? 'max-md:overflow-x-auto' : 'max-md:overflow-visible'
+                        !hasGateways ? 'max-md:overflow-x-auto' : 'max-md:overflow-visible'
                     }`}>
                     <table
                         className={`responsive-table w-full text-sm ${
-                            gateways.length === 0 ? 'responsive-table-empty min-w-[36rem]' : ''
+                            !hasGateways ? 'responsive-table-empty min-w-[36rem]' : ''
                         }`}>
                         <colgroup>
                             <col className='w-28' />
@@ -248,15 +250,15 @@ export function GatewayList({ initialGateways: initialGateways }: { initialGatew
                             </tr>
                         </thead>
                         <tbody>
-                            <VirtualGatewayRow meterCount={virtualMeterCount} />
-                            {gateways.length === 0 ? (
+                            {virtualGateway && <VirtualGatewayRow gateway={virtualGateway} />}
+                            {!hasGateways ? (
                                 <tr>
                                     <td colSpan={4} className='p-6 text-center text-sm text-muted-foreground'>
                                         {t('empty.noGateways')}
                                     </td>
                                 </tr>
                             ) : (
-                                gateways.map((gateway) => {
+                                physicalGateways.map((gateway) => {
                                     const { form, errors } = getRowForm(gateway)
                                     const saving =
                                         updateGatewayMutation.isPending &&

@@ -203,6 +203,10 @@ src/
 - Avoid code comments unless truly necessary.
 - Prefer rewriting the whole file on major changes, rather than small diffs (per your own preference).
 - Keep feature container/list components focused on data flow and orchestration. Extract self-contained UI sections or rows with their own state and actions into sibling components within the same feature folder instead of accumulating them in one large component.
+- A gateway with `isVirtual: true` is a backend-managed virtual gateway. Render
+  it with `VirtualGatewayRow`, separate from physical gateways. That UI may
+  update only its enabled state and polling interval; do not fabricate a
+  virtual row when the backend has not returned one.
 
 ## Role-based access
 - Roles are normalized from the backend value to `admin` or `viewer` in `lib/roles.ts`.
