@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
 import { Search } from 'lucide-react'
 import { CartesianGrid, Line, LineChart, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
+import { getGatewayDisplayName } from '@/lib/gateway'
 import { useI18n } from '@/lib/i18n'
 import type { Gateway } from '@/types/gateway'
 import type { Meter } from '@/types/meter'
@@ -70,7 +71,7 @@ export function ProcessControlAnalysis({ gateways, meters }: Props) {
                             <option value=''>{t('processControl.selectGateway')}</option>
                             {gateways.map((hub) => (
                                 <option key={hub.uid} value={hub.uid}>
-                                    {hub.name}
+                                    {getGatewayDisplayName(hub, t)}
                                 </option>
                             ))}
                         </select>

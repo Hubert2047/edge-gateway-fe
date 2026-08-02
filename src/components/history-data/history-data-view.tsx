@@ -3,6 +3,7 @@
 import { useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
+import { getGatewayDisplayName } from '@/lib/gateway'
 import { useI18n } from '@/lib/i18n'
 import type { Gateway } from '@/types/gateway'
 import type { Meter } from '@/types/meter'
@@ -85,7 +86,7 @@ export function HistoryDataView({ gateways, meters }: Props) {
                             <option value=''>{t('historyData.selectGateway')}</option>
                             {gateways.map((gateway) => (
                                 <option key={gateway.uid} value={gateway.uid}>
-                                    {gateway.name}
+                                    {getGatewayDisplayName(gateway, t)}
                                 </option>
                             ))}
                         </select>

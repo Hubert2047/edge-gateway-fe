@@ -4,6 +4,7 @@ import { ArrowRight, RefreshCw } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import type { ReactNode } from 'react'
+import { getGatewayDisplayName } from '@/lib/gateway'
 import { useI18n } from '@/lib/i18n'
 import type { CloudTarget } from '@/types/cloud-target'
 import type { Gateway } from '@/types/gateway'
@@ -73,7 +74,7 @@ export function OverviewDashboard({ gateways, cloudTargets, meters, canManage }:
                                 <div key={gateway.uid} className='flex items-center gap-4 px-5 py-5'>
                                     <StatusDot active={gateway.enabled} />
                                     <div className='min-w-0 flex-1'>
-                                        <p className='font-semibold'>{gateway.name}</p>
+                                        <p className='font-semibold'>{getGatewayDisplayName(gateway, t)}</p>
                                         <p className='text-sm text-[#7B8580]'>
                                             {gateway.meterCount} {t('overview.meters')}
                                         </p>

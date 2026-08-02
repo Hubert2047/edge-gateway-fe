@@ -34,7 +34,6 @@ import { VirtualGatewayRow } from './virtual-gateway-row'
 
 function emptyForm(): GatewayFormValues {
     return {
-        uid: '',
         name: '',
         ip: '192.168.1.100',
         port: 10123,
@@ -46,7 +45,6 @@ function emptyForm(): GatewayFormValues {
 
 function gatewayToForm(gateway: Gateway): GatewayFormValues {
     return {
-        uid: gateway.uid,
         name: gateway.name,
         ip: gateway.ip,
         port: gateway.port,
@@ -56,12 +54,11 @@ function gatewayToForm(gateway: Gateway): GatewayFormValues {
     }
 }
 
-type FormErrors = Partial<Record<'uid' | 'name' | 'ip' | 'port' | 'pollIntervalSeconds', string>>
+type FormErrors = Partial<Record<'name' | 'ip' | 'port' | 'pollIntervalSeconds', string>>
 
 function validateForm(form: GatewayFormValues): FormErrors {
     const errors: FormErrors = {}
     if (!form.name.trim()) errors.name = 'validation.displayNameRequired'
-    if (!form.uid.trim()) errors.uid = 'validation.idRequired'
     if (!form.ip.trim()) errors.ip = 'validation.ipRequired'
     if (!form.port || form.port <= 0) errors.port = 'validation.portInvalid'
     if (!form.pollIntervalSeconds || form.pollIntervalSeconds <= 0)
@@ -285,12 +282,6 @@ export function GatewayList({ initialGateways: initialGateways }: { initialGatew
                                             </td>
                                             <td data-label={t('common.gateway')} className='p-4 space-y-3'>
                                                 <div className='space-y-1.5'>
-                                                    <Label className='text-xs text-muted-foreground'>ID</Label>
-                                                    <p className='text-sm font-mono text-foreground/80'>
-                                                        {gateway.uid}
-                                                    </p>
-                                                </div>
-                                                <div className='space-y-1.5'>
                                                     <Label
                                                         htmlFor={`name-${gateway.uid}`}
                                                         className='text-xs text-muted-foreground'>
@@ -440,20 +431,7 @@ export function GatewayList({ initialGateways: initialGateways }: { initialGatew
 
             <Card className='shrink-0 px-4 pt-4 space-y-4 sm:px-6'>
                 <h2 className='text-lg font-medium mb-0 font-bold'>{t('gateway.add')}</h2>
-                <div className='grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-0'>
-                    <div className='space-y-1.5'>
-                        <Label htmlFor='new-id' className='text-xs text-muted-foreground'>
-                            {t('common.id')}
-                        </Label>
-                        <Input
-                            id='new-id'
-                            placeholder={t('gateway.idPlaceholder')}
-                            value={newForm.uid}
-                            onChange={(e) => updateNewForm({ uid: e.target.value })}
-                            className={newErrors.uid ? 'border-destructive' : ''}
-                        />
-                         {newErrors.uid && <p className='text-xs text-destructive'>{t(newErrors.uid)}</p>}
-                    </div>
+                <div className='grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mb-0'>
                     <div className='space-y-1.5'>
                         <Label htmlFor='new-name' className='text-xs text-muted-foreground'>
                             {t('common.displayName')}

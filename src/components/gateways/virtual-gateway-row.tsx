@@ -21,7 +21,6 @@ export function VirtualGatewayRow({ gateway }: { gateway: Gateway }) {
 
     function saveSettings(nextEnabled = enabled, nextPollIntervalSeconds = pollIntervalSeconds) {
         const form: GatewayFormValues = {
-            uid: gateway.uid,
             name: gateway.name,
             ip: gateway.ip,
             port: gateway.port,

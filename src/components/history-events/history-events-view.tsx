@@ -1,6 +1,7 @@
 'use client'
 
 import { useMemo, useState, type ReactNode } from 'react'
+import { getGatewayDisplayName } from '@/lib/gateway'
 import type { Gateway } from '@/types/gateway'
 import type { Meter } from '@/types/meter'
 import { useI18n } from '@/lib/i18n'
@@ -73,7 +74,7 @@ export function HistoryEventsView({ gateways, meters }: Props) {
                             <option value=''>{t('historyEvents.allGateways')}</option>
                             {gateways.map((hub) => (
                                 <option key={hub.uid} value={hub.uid}>
-                                    {hub.name}
+                                    {getGatewayDisplayName(hub, t)}
                                 </option>
                             ))}
                         </select>
