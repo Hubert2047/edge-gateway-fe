@@ -30,6 +30,7 @@ import {
 } from '@/lib/api/gateway'
 import { RelativeTime } from '../RelativeTime'
 import { useI18n } from '@/lib/i18n'
+import { VirtualGatewayRow } from './virtual-gateway-row'
 
 function emptyForm(): GatewayFormValues {
     return {
@@ -219,6 +220,8 @@ export function GatewayList({ initialGateways: initialGateways }: { initialGatew
         },
     } as const
 
+    const virtualMeterCount = gateways.reduce((total, gateway) => total + gateway.meterCount, 0)
+
     return (
         <div className='flex h-full flex-col gap-4 overflow-hidden max-md:h-auto max-md:overflow-visible'>
             <Card className='flex flex-1 min-h-0 flex-col overflow-hidden border border-border/60 pt-0 max-md:flex-none max-md:overflow-visible'>
@@ -245,6 +248,7 @@ export function GatewayList({ initialGateways: initialGateways }: { initialGatew
                             </tr>
                         </thead>
                         <tbody>
+                            <VirtualGatewayRow meterCount={virtualMeterCount} />
                             {gateways.length === 0 ? (
                                 <tr>
                                     <td colSpan={4} className='p-6 text-center text-sm text-muted-foreground'>

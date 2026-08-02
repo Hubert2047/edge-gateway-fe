@@ -72,6 +72,11 @@ const zhTW: MessageTree = {
 
     gateway: {
         add: '新增閘道器',
+        virtual: '虛擬閘道器',
+        virtualBadge: '虛擬',
+        virtualDescription: '彙整所有本地閘道器的智慧勾表',
+        virtualSaved: '虛擬閘道器設定已儲存',
+        virtualCollectUnavailable: '後端尚未提供虛擬閘道器的立即收集功能',
         monitoring: '監控中',
         meterCount: '{count} 智慧勾表數',
         lastSuccess: '最近成功：',
@@ -400,6 +405,11 @@ const en: MessageTree = {
 
     gateway: {
         add: 'Add gateway',
+        virtual: 'Virtual gateway',
+        virtualBadge: 'Virtual',
+        virtualDescription: 'Aggregates smart meters from all local gateways',
+        virtualSaved: 'Virtual gateway settings saved',
+        virtualCollectUnavailable: 'The backend does not support collecting from the virtual gateway yet',
         monitoring: 'Monitoring',
         meterCount: '{count} smart meters',
         lastSuccess: 'Last success:',

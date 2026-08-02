@@ -202,6 +202,7 @@ src/
 - i18n: none — UI strings are hard-coded Traditional Chinese directly in components.
 - Avoid code comments unless truly necessary.
 - Prefer rewriting the whole file on major changes, rather than small diffs (per your own preference).
+- Keep feature container/list components focused on data flow and orchestration. Extract self-contained UI sections or rows with their own state and actions into sibling components within the same feature folder instead of accumulating them in one large component.
 
 ## Role-based access
 - Roles are normalized from the backend value to `admin` or `viewer` in `lib/roles.ts`.

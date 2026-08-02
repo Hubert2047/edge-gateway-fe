@@ -1,10 +1,9 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Card } from '@/components/ui/card'
 import { toast } from 'sonner'
@@ -20,21 +19,12 @@ import {
     AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
 import type { Meter, MeterFormValues, MeterType } from '@/types/meter'
+import type { Gateway } from '@/types/gateway'
 import { getErrorMessage } from '@/lib/utils'
 import { StatusBadge } from '../status-badge'
-import { useCreateMeter, useDeleteMeter, useMeters, useUpdateMeter, useUpdateMetersBulk } from '@/lib/api/meter'
+import { useDeleteMeter, useMeters, useUpdateMeter, useUpdateMetersBulk } from '@/lib/api/meter'
 import { useI18n } from '@/lib/i18n'
-
-function emptyForm(): MeterFormValues {
-    return {
-        macId: '',
-        name: '',
-        measurementType: 'three_phase',
-        voltage: 220,
-        powerFactor: 0.9,
-        enabled: true,
-    }
-}
+import { HubSwitcher } from './hub-switcher'
 
 function meterToForm(meter: Meter): MeterFormValues {
     return {
@@ -49,7 +39,7 @@ function meterToForm(meter: Meter): MeterFormValues {
 
 type FormErrors = Partial<Record<'name' | 'macId' | 'voltage' | 'powerFactor', string>>
 
-function validateForm(form: MeterFormValues, opts: { isNew: boolean }): FormErrors {
+function validateForm(form: MeterFormValues): FormErrors {
     const errors: FormErrors = {}
     if (!form.name.trim()) errors.name = 'validation.nameRequired'
     if (!form.macId.trim()) errors.macId = 'validation.macRequired'
@@ -68,12 +58,21 @@ type PendingAction =
 
 type RowFormState = { form: MeterFormValues; errors: FormErrors }
 
-export function MeterList({ hubUid, initialMeters }: { hubUid: string; initialMeters?: Meter[] }) {
+export function MeterList({
+    hubs,
+    hubUid,
+    initialMeters,
+    onHubChange,
+}: {
+    hubs: Gateway[]
+    hubUid: string
+    initialMeters?: Meter[]
+    onHubChange: (hubUid: string) => void
+}) {
     const { t } = useI18n()
     const { data: meters = initialMeters ?? [], isFetching } = useMeters(hubUid, initialMeters)
     const updateMeterMutation = useUpdateMeter(hubUid)
     const deleteMeterMutation = useDeleteMeter(hubUid)
-    const createMeterMutation = useCreateMeter(hubUid)
     const bulkMutation = useUpdateMetersBulk(hubUid)
 
     const [rowFormState, setRowFormState] = useState<Record<string, RowFormState>>({})
@@ -103,34 +102,11 @@ export function MeterList({ hubUid, initialMeters }: { hubUid: string; initialMe
         })
     }
 
-    const [newForm, setNewForm] = useState(emptyForm())
-    const [newErrors, setNewErrors] = useState<FormErrors>({})
-
-    function updateNewForm(patch: Partial<MeterFormValues>) {
-        setNewForm((f) => ({ ...f, ...patch }))
-        setNewErrors((prev) => {
-            const next = { ...prev }
-            for (const key of Object.keys(patch)) {
-                delete next[key as keyof FormErrors]
-            }
-            return next
-        })
-    }
-
     const [pendingAction, setPendingAction] = useState<PendingAction>(null)
-
-    useEffect(() => {
-        setRowFormState({})
-        setNewForm(emptyForm())
-        setNewErrors({})
-        setPendingAction(null)
-        setDeletingMacId(null)
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [hubUid])
 
     function requestSave(meter: Meter) {
         const { form } = getRowForm(meter)
-        const errors = validateForm(form, { isNew: false })
+        const errors = validateForm(form)
         if (Object.keys(errors).length > 0) {
             setRowFormState((prev) => ({ ...prev, [meter.macId]: { form, errors } }))
             return
@@ -151,7 +127,7 @@ export function MeterList({ hubUid, initialMeters }: { hubUid: string; initialMe
         setRowFormState((prev) => {
             const next = { ...prev }
             for (const macId of dirtyMacIds) {
-                const errors = validateForm(next[macId].form, { isNew: false })
+                const errors = validateForm(next[macId].form)
                 if (Object.keys(errors).length > 0) hasError = true
                 next[macId] = { ...next[macId], errors }
             }
@@ -213,25 +189,6 @@ export function MeterList({ hubUid, initialMeters }: { hubUid: string; initialMe
         }
     }
 
-    function createMeter() {
-        const errors = validateForm(newForm, { isNew: true })
-        if (Object.keys(errors).length > 0) {
-            setNewErrors(errors)
-            return
-        }
-        createMeterMutation.mutate(
-            { ...newForm, meterType: newForm.measurementType },
-            {
-                onSuccess: () => {
-                    setNewForm(emptyForm())
-                    setNewErrors({})
-                    toast.success(t('toast.added'))
-                },
-                onError: (err) => toast.error(getErrorMessage(err, t('toast.addFailed'))),
-            },
-        )
-    }
-
     const dialogText = {
         save: { title: t('common.confirmSave'), desc: (name: string) => t('common.confirmSaveDescription', { name }) },
         delete: { title: t('common.confirmDelete'), desc: (name: string) => t('common.confirmDeleteDescription', { name }) },
@@ -242,102 +199,16 @@ export function MeterList({ hubUid, initialMeters }: { hubUid: string; initialMe
 
     return (
         <div className='flex h-full flex-col gap-4 overflow-hidden max-md:h-auto max-md:overflow-visible'>
-            <Card className='shrink-0 px-4 sm:px-6 pt-4 space-y-4'>
-                <div className='flex items-center justify-between mb-0'>
-                    <h2 className='text-lg font-bold'>{t('meter.add')}</h2>
-                    <span className='text-sm text-muted-foreground flex items-center gap-1.5'>
-                        {isFetching && <Loader2 className='h-3 w-3 animate-spin' />}
-                        {t('meter.count', { count: meters.length })}
+            <div className='flex shrink-0 items-center justify-between gap-4 border-b pb-3 max-sm:flex-wrap'>
+                <h1 className='text-xl font-bold sm:text-3xl'>{t('page.meters')}</h1>
+                <div className='flex items-center gap-3 max-sm:w-full max-sm:justify-between'>
+                    <HubSwitcher hubs={hubs} currentHubUid={hubUid} onHubChange={onHubChange} />
+                    <span className='flex items-center gap-1.5 whitespace-nowrap text-sm font-medium text-muted-foreground'>
+                        {isFetching && <Loader2 className='h-3.5 w-3.5 animate-spin' />}
+                        {t('gateway.meterCount', { count: meters.length })}
                     </span>
                 </div>
-                <div className='flex flex-wrap items-start gap-4'>
-                    <div className='w-full space-y-1.5 sm:w-52'>
-                        <Label htmlFor='new-name' className='text-xs text-muted-foreground'>
-                            {t('common.name')}
-                        </Label>
-                        <Input
-                            id='new-name'
-                            placeholder={t('meter.namePlaceholder')}
-                            value={newForm.name}
-                            onChange={(e) => updateNewForm({ name: e.target.value })}
-                            className={newErrors.name ? 'border-destructive' : ''}
-                        />
-                        {newErrors.name && <p className='text-xs text-destructive'>{t(newErrors.name)}</p>}
-                    </div>
-                    <div className='w-full space-y-1.5 sm:w-60'>
-                        <Label htmlFor='new-mac' className='text-xs text-muted-foreground'>
-                            {t('meter.macId')}
-                        </Label>
-                        <Input
-                            id='new-mac'
-                            placeholder={t('meter.macPlaceholder')}
-                            value={newForm.macId}
-                            onChange={(e) => updateNewForm({ macId: e.target.value })}
-                            className={newErrors.macId ? 'border-destructive' : ''}
-                        />
-                        {newErrors.macId && <p className='text-xs text-destructive'>{t(newErrors.macId)}</p>}
-                    </div>
-                    <div className='w-full space-y-1.5 sm:w-28'>
-                        <Label className='text-xs text-muted-foreground'>{t('meter.phase')}</Label>
-                        <Select
-                            value={newForm.measurementType}
-                            onValueChange={(v) => {
-                                if (!v) return
-                                updateNewForm({ measurementType: v as MeterType })
-                            }}>
-                            <SelectTrigger>
-                                <SelectValue>{newForm.measurementType === 'three_phase' ? t('meter.threePhase') : t('meter.singlePhase')}</SelectValue>
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value='three_phase'>{t('meter.threePhase')}</SelectItem>
-                                <SelectItem value='single_phase'>{t('meter.singlePhase')}</SelectItem>
-                            </SelectContent>
-                        </Select>
-                    </div>
-                    <div className='w-full space-y-1.5 sm:w-32'>
-                        <Label htmlFor='new-voltage' className='text-xs text-muted-foreground'>
-                            {t('meter.voltage')}
-                        </Label>
-                        <Input
-                            id='new-voltage'
-                            type='number'
-                            value={newForm.voltage}
-                            onChange={(e) => updateNewForm({ voltage: Number(e.target.value) })}
-                            className={newErrors.voltage ? 'border-destructive' : ''}
-                        />
-                        {newErrors.voltage && <p className='text-xs text-destructive'>{t(newErrors.voltage)}</p>}
-                    </div>
-                    <div className='w-full space-y-1.5 sm:w-28'>
-                        <Label htmlFor='new-pf' className='text-xs text-muted-foreground'>
-                            {t('meter.powerFactor')}
-                        </Label>
-                        <Input
-                            id='new-pf'
-                            type='number'
-                            step='0.01'
-                            value={newForm.powerFactor}
-                            onChange={(e) => updateNewForm({ powerFactor: Number(e.target.value) })}
-                            className={newErrors.powerFactor ? 'border-destructive' : ''}
-                        />
-                        {newErrors.powerFactor && <p className='text-xs text-destructive'>{t(newErrors.powerFactor)}</p>}
-                    </div>
-                    <Button
-                        disabled={createMeterMutation.isPending}
-                        onClick={createMeter}
-                        size='lg'
-                        className='w-full sm:mt-5 sm:w-max'
-                    >
-                        {createMeterMutation.isPending ? (
-                            <>
-                                <Loader2 className='h-4 w-4 animate-spin' />
-                                {t('common.adding')}
-                            </>
-                        ) : (
-                            t('common.add')
-                        )}
-                    </Button>
-                </div>
-            </Card>
+            </div>
             <Card className='flex flex-1 min-h-0 flex-col overflow-hidden border border-border/60 pt-0 max-md:flex-none max-md:overflow-visible'>
                 <div className='flex items-center justify-between border-b px-4 py-3'>
                     <span className='text-sm text-muted-foreground'>

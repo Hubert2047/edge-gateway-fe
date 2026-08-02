@@ -1,11 +1,9 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { HubSwitcher } from './hub-switcher'
 import { MeterList } from './meter-list'
 import type { Gateway } from '@/types/gateway'
 import type { Meter } from '@/types/meter'
-import { useI18n } from '@/lib/i18n'
 
 export function MetersClient({
     hubs,
@@ -17,7 +15,6 @@ export function MetersClient({
     initialMeters: Meter[]
 }) {
     const [hubUid, setHubUid] = useState(initialHubUid)
-    const { t } = useI18n()
 
     useEffect(() => {
         const url = new URL(window.location.href)
@@ -37,14 +34,14 @@ export function MetersClient({
     }
 
     return (
-        <>
-            <div className='flex items-center justify-between gap-3 max-sm:items-start max-sm:flex-col'>
-                <h1 className='text-xl font-bold sm:text-3xl'>{t('page.meters')}</h1>
-                <HubSwitcher hubs={hubs} currentHubUid={hubUid} onHubChange={handleHubChange} />
-            </div>
-            <div className='flex-1 min-h-0'>
-                <MeterList hubUid={hubUid} initialMeters={hubUid === initialHubUid ? initialMeters : undefined} />
-            </div>
-        </>
+        <div className='flex-1 min-h-0'>
+            <MeterList
+                key={hubUid}
+                hubs={hubs}
+                hubUid={hubUid}
+                initialMeters={hubUid === initialHubUid ? initialMeters : undefined}
+                onHubChange={handleHubChange}
+            />
+        </div>
     )
 }
