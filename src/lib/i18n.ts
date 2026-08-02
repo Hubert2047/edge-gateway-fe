@@ -28,8 +28,10 @@ const zhTW: MessageTree = {
         logout: '登出',
         edgeService: 'Edge service',
         connected: '連線正常',
+        disconnected: "連線中斷",
         openMenu: '開啟選單',
         closeMenu: '關閉選單',
+
     },
 
     common: {
@@ -366,6 +368,7 @@ const en: MessageTree = {
         connected: 'Connected',
         openMenu: 'Open menu',
         closeMenu: 'Close menu',
+        disconnected: "Disconnected",
     },
 
     common: {

@@ -34,8 +34,25 @@ export function Sidebar() {
     const { data: session } = useSession()
     const { t } = useI18n()
     const [mobileOpen, setMobileOpen] = useState(false)
+    const [isOnline, setIsOnline] = useState<boolean | null>(null)
     const isAdmin = normalizeRole(session?.user?.role) === 'admin'
     const navItems = NAV_ITEMS.filter((item) => !item.adminOnly || isAdmin)
+
+    useEffect(() => {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        setIsOnline(navigator.onLine)
+
+        const handleOnline = () => setIsOnline(true)
+        const handleOffline = () => setIsOnline(false)
+
+        window.addEventListener('online', handleOnline)
+        window.addEventListener('offline', handleOffline)
+
+        return () => {
+            window.removeEventListener('online', handleOnline)
+            window.removeEventListener('offline', handleOffline)
+        }
+    }, [])
 
     useEffect(() => {
         // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -102,10 +119,10 @@ export function Sidebar() {
                 </button>
             </div>
             <div className='flex items-center gap-2 px-4 py-4 text-xs text-sidebar-foreground/60'>
-                <span className='sidebar-status-dot mt-1 bg-emerald-400' />
+                <span className={`sidebar-status-dot mt-1 ${isOnline ? 'bg-emerald-400' : 'bg-red-400'}`} />
                 <div className='flex flex-col gap-1'>
                     <span>{t('nav.edgeService')}</span>
-                    <span>{t('nav.connected')}</span>
+                    <span>{isOnline ? t('nav.connected') : t('nav.disconnected')}</span>
                 </div>
             </div>
         </>
