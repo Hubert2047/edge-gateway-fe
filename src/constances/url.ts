@@ -5,6 +5,9 @@ export const GATEWAY_ENDPOINT = {
 }
 export const METER_ENDPOINT = {
     base: '/api/v1/meters',
+    batch: (gatewayId: string) => `${METER_ENDPOINT.base}/batch/${encodeURIComponent(gatewayId)}`,
+    update: (meterId: string, gatewayId: string) => `${METER_ENDPOINT.base}/${encodeURIComponent(meterId)}/gateway/${encodeURIComponent(gatewayId)}`,
+    delete: (meterId: string, gatewayId: string) => `${METER_ENDPOINT.base}/${encodeURIComponent(meterId)}/gateway/${encodeURIComponent(gatewayId)}`,
 }
 export const CLOUD_TARGET_ENDPOINT = {
     base: '/api/v1/cloud-targets',

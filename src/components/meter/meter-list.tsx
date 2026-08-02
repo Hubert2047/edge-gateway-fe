@@ -18,13 +18,25 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
-import type { Meter, MeterFormValues, MeterType } from '@/types/meter'
+import type { Meter, MeterBatchUpdateValues, MeterFormValues, MeterType } from '@/types/meter'
 import type { Gateway } from '@/types/gateway'
 import { getErrorMessage } from '@/lib/utils'
 import { StatusBadge } from '../status-badge'
 import { useDeleteMeter, useMeters, useUpdateMeter, useUpdateMetersBulk } from '@/lib/api/meter'
 import { useI18n } from '@/lib/i18n'
 import { HubSwitcher } from './hub-switcher'
+
+function toBatchUpdate(meter: Meter, form: MeterFormValues): MeterBatchUpdateValues {
+    return {
+        ...form,
+        meterId: meter.meterId,
+        gatewayUID: meter.gatewayUID,
+        meterType: meter.meterType,
+        connectionType: meter.connectionType,
+        config: meter.config,
+        note: meter.note,
+    }
+}
 
 function meterToForm(meter: Meter): MeterFormValues {
     return {
@@ -35,6 +47,18 @@ function meterToForm(meter: Meter): MeterFormValues {
         powerFactor: meter.powerFactor,
         enabled: meter.enabled,
     }
+}
+
+function isMeterFormDirty(meter: Meter, form: MeterFormValues): boolean {
+    const current = meterToForm(meter)
+    return (
+        form.macId !== current.macId ||
+        form.name !== current.name ||
+        form.measurementType !== current.measurementType ||
+        form.voltage !== current.voltage ||
+        form.powerFactor !== current.powerFactor ||
+        form.enabled !== current.enabled
+    )
 }
 
 type FormErrors = Partial<Record<'name' | 'voltage' | 'powerFactor', string>>
@@ -101,10 +125,19 @@ export function MeterList({
         })
     }
 
+    function getDirtyMacIds() {
+        return Object.keys(rowFormState).filter((macId) => {
+            const meter = meters.find((item) => item.macId === macId)
+            const row = rowFormState[macId]
+            return meter !== undefined && isMeterFormDirty(meter, row.form)
+        })
+    }
+
     const [pendingAction, setPendingAction] = useState<PendingAction>(null)
 
     function requestSave(meter: Meter) {
         const { form } = getRowForm(meter)
+        if (!isMeterFormDirty(meter, form)) return
         const errors = validateForm(form)
         if (Object.keys(errors).length > 0) {
             setRowFormState((prev) => ({ ...prev, [meter.macId]: { form, errors } }))
@@ -119,7 +152,7 @@ export function MeterList({
     }
 
     function requestSaveAll() {
-        const dirtyMacIds = Object.keys(rowFormState)
+        const dirtyMacIds = getDirtyMacIds()
         if (dirtyMacIds.length === 0) return
 
         let hasError = false
@@ -151,7 +184,7 @@ export function MeterList({
             if (!meter) return
             const { form } = getRowForm(meter)
             updateMeterMutation.mutate(
-                { ...form, macId: action.macId },
+                toBatchUpdate(meter, form),
                 {
                     onSuccess: () => clearRowForm(action.macId),
                     onError: (err) => toast.error(getErrorMessage(err, t('toast.saveFailed'))),
@@ -173,7 +206,7 @@ export function MeterList({
                     const meter = meters.find((m) => m.macId === macId)
                     if (!meter) return null
                     const form = rowFormState[macId].form
-                    return { ...form, macId }
+                    return toBatchUpdate(meter, form)
                 })
                 .filter((u): u is NonNullable<typeof u> => u !== null)
 
@@ -194,7 +227,8 @@ export function MeterList({
         saveAll: { title: t('meter.confirmSaveAll'), desc: (name: string) => t('meter.confirmSaveAllDescription', { name }) },
     } as const
 
-    const dirtyCount = Object.keys(rowFormState).length
+    const dirtyMacIds = getDirtyMacIds()
+    const dirtyCount = dirtyMacIds.length
 
     return (
         <div className='flex h-full flex-col gap-4 overflow-hidden max-md:h-auto max-md:overflow-visible'>
@@ -228,7 +262,7 @@ export function MeterList({
                         <thead className='bg-muted text-left sticky top-0 z-10'>
                             <tr>
                                 <th className='p-3 whitespace-nowrap'>{t('meter.tableName')}</th>
-                                <th className='p-3 whitespace-nowrap'>{t('meter.macId')}</th>
+                                <th className='min-w-48 p-3 whitespace-nowrap'>{t('meter.macId')}</th>
                                 <th className='p-3 whitespace-nowrap'>{t('meter.phase')}</th>
                                 <th className='p-3 whitespace-nowrap'>{t('meter.voltage')}</th>
                                 <th className='p-3 whitespace-nowrap'>{t('meter.powerFactor')}</th>
@@ -239,6 +273,7 @@ export function MeterList({
                         <tbody>
                             {meters.map((meter) => {
                                 const { form, errors } = getRowForm(meter)
+                                const dirty = isMeterFormDirty(meter, form)
                                 const saving =
                                     updateMeterMutation.isPending &&
                                     updateMeterMutation.variables?.macId === meter.macId
@@ -328,7 +363,7 @@ export function MeterList({
                                                 <Button
                                                     size='sm'
                                                     className='w-16'
-                                                    disabled={rowBusy}
+                                                    disabled={rowBusy || !dirty}
                                                     onClick={() => requestSave(meter)}>
                                                     {saving ? <Loader2 className='h-4 w-4 animate-spin' /> : t('common.save')}
                                                 </Button>

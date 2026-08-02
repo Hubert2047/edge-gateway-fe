@@ -3,7 +3,7 @@ export interface MeterCreateValues extends MeterFormValues {
     meterType: MeterType
 }
 export interface Meter {
-    meterId?: string
+    meterId: string
     macId: string
     gatewayUID: string
     name: string | null
@@ -16,6 +16,8 @@ export interface Meter {
     note: string | null
     createdAt: string
     updatedAt: string
+    connectionType: string
+    config: unknown
 }
 
 export type MeterFormValues  = {
@@ -39,4 +41,13 @@ export interface MeterUpdateValues {
 export interface MeterBulkSaveResult {
     succeeded: string[]
     failed: { macId: string; message: string }[]
+}
+
+export interface MeterBatchUpdateValues extends MeterUpdateValues {
+    meterId: string
+    gatewayUID: string
+    meterType: MeterType
+    connectionType: string
+    config: unknown
+    note: string | null
 }

@@ -1,7 +1,7 @@
 'use client'
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { apiFetch } from './client'
-import type { Meter, MeterBulkSaveResult, MeterCreateValues, MeterFormValues, MeterUpdateValues } from '@/types/meter'
+import type { Meter, MeterBatchUpdateValues, MeterBulkSaveResult, MeterCreateValues } from '@/types/meter'
 import { GATEWAY_ENDPOINT, METER_ENDPOINT } from '@/constances/url'
 
 export const meterKeys = {
@@ -31,14 +31,14 @@ export function useCreateMeter(gatewayUid: string) {
 export function useUpdateMeter(gatewayUID: string) {
     const queryClient = useQueryClient()
     return useMutation({
-        mutationFn: (values: MeterUpdateValues) => updateMeter(values),
+        mutationFn: (values: MeterBatchUpdateValues) => updateMeter(values),
         onMutate: async (values) => {
             await queryClient.cancelQueries({ queryKey: meterKeys.list(gatewayUID) })
             const previous = queryClient.getQueryData<Meter[]>(meterKeys.list(gatewayUID))
             if (previous) {
                 queryClient.setQueryData<Meter[]>(
                     meterKeys.list(gatewayUID),
-                    previous.map((m) => (m.macId === values.macId ? { ...m, ...values } : m)),
+                    previous.map((m) => (m.meterId === values.meterId ? { ...m, ...values } : m)),
                 )
             }
             return { previous }
@@ -57,7 +57,7 @@ export function useUpdateMeter(gatewayUID: string) {
 export function useDeleteMeter(gatewayUid: string) {
     const queryClient = useQueryClient()
     return useMutation({
-        mutationFn: (macId: string) => deleteMeter(macId),
+        mutationFn: (macId: string) => deleteMeter(macId, gatewayUid),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: meterKeys.list(gatewayUid) })
         },
@@ -66,24 +66,19 @@ export function useDeleteMeter(gatewayUid: string) {
 
 /**
  * Bulk save for the "Save all" button.
- * Backend has no batch endpoint, so this fires one PUT per dirty row via
- * Promise.allSettled, then reconciles the list with a single invalidate.
+ * Existing meters are saved together through the backend batch endpoint.
  */
 export function useUpdateMetersBulk(gatewayUID: string) {
     const queryClient = useQueryClient()
     return useMutation({
-        mutationFn: async (updates: MeterUpdateValues[]): Promise<MeterBulkSaveResult> => {
-            const results = await Promise.allSettled(updates.map((u) => updateMeter(u)))
+        mutationFn: async (updates: MeterBatchUpdateValues[]): Promise<MeterBulkSaveResult> => {
+            const result = await updateMetersBatch(updates)
             const succeeded: string[] = []
             const failed: { macId: string; message: string }[] = []
-            results.forEach((result, i) => {
+            result.forEach((item, i) => {
                 const macId = updates[i].macId
-                if (result.status === 'fulfilled') {
-                    succeeded.push(macId)
-                } else {
-                    const message = result.reason instanceof Error ? result.reason.message : 'Save failed'
-                    failed.push({ macId, message })
-                }
+                if (item.ok) succeeded.push(macId)
+                else failed.push({ macId, message: item.error ?? 'Save failed' })
             })
             return { succeeded, failed }
         },
@@ -98,22 +93,32 @@ async function getMeters(gatewayUid: string): Promise<Meter[]> {
 }
 
 async function createMeter(gatewayUid: string, values: MeterCreateValues): Promise<Meter> {
-    return apiFetch<Meter>(`/api/hubs/${encodeURIComponent(gatewayUid)}/meters`, {
+    return apiFetch<Meter>(METER_ENDPOINT.base, {
         method: 'POST',
-        body: JSON.stringify(values),
+        body: JSON.stringify({ ...values, gatewayUID: gatewayUid, meterId: values.macId }),
     })
 }
 
-async function updateMeter(values: MeterUpdateValues): Promise<Meter> {
-    const { macId, ...rest } = values
-    return apiFetch<Meter>(`${METER_ENDPOINT.base}/${encodeURIComponent(macId)}`, {
+async function updateMeter(values: MeterBatchUpdateValues): Promise<Meter> {
+    const { meterId, gatewayUID, ...body } = values
+    return apiFetch<Meter>(METER_ENDPOINT.update(meterId, gatewayUID), {
         method: 'PUT',
-        body: JSON.stringify(rest),
+        body: JSON.stringify(body),
     })
 }
 
-async function deleteMeter(macId: string): Promise<void> {
-    return apiFetch<void>(`${METER_ENDPOINT.base}/${encodeURIComponent(macId)}`, {
+type MeterBatchResult = { meterId: string; ok: boolean; error?: string; data?: Meter }
+
+async function updateMetersBatch(values: MeterBatchUpdateValues[]): Promise<MeterBatchResult[]> {
+    const gatewayUID = values[0]?.gatewayUID ?? ''
+    return apiFetch<MeterBatchResult[]>(METER_ENDPOINT.batch(gatewayUID), {
+        method: 'PUT',
+        body: JSON.stringify({ meters: values }),
+    })
+}
+
+async function deleteMeter(macId: string, gatewayUID: string): Promise<void> {
+    return apiFetch<void>(METER_ENDPOINT.delete(macId, gatewayUID), {
         method: 'DELETE',
     })
 }
