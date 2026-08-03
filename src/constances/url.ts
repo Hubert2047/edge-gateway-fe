@@ -12,6 +12,8 @@ export const METER_ENDPOINT = {
 export const CLOUD_TARGET_ENDPOINT = {
     base: '/api/v1/cloud-targets',
     test: (id: string) => `${CLOUD_TARGET_ENDPOINT.base}/${id}/test`,
+    flushAll: '/api/v1/cloud-targets/flush',
+    flush: (id: string) => `${CLOUD_TARGET_ENDPOINT.base}/${id}/flush`,
 }
 export const USER_ENDPOINT = {
     base: '/api/v1/users',

@@ -7,7 +7,7 @@ import type { Meter } from '@/types/meter'
 export default async function HistoryDataPage() {
     const gateways = await serverApiFetch<Gateway[]>(GATEWAY_ENDPOINT.base)
     const meterResults = await Promise.all(
-        gateways.map((hub) => serverApiFetch<Meter[]>(GATEWAY_ENDPOINT.getMeters(hub.uid))),
+        gateways.map((gateway) => serverApiFetch<Meter[]>(GATEWAY_ENDPOINT.getMeters(gateway.uid))),
     )
 
     return <HistoryDataView gateways={gateways} meters={meterResults.flat()} />

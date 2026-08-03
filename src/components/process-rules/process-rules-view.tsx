@@ -112,9 +112,9 @@ export function ProcessRulesView({ gateways, meters }: Props) {
                                                     updateRule(rule.id, { gatewayUid: event.target.value })
                                                 }
                                                 className='control-input'>
-                                                {gateways.map((hub) => (
-                                                    <option key={hub.uid} value={hub.uid}>
-                                                        {getGatewayDisplayName(hub, t)}
+                                                {gateways.map((gateway) => (
+                                                    <option key={gateway.uid} value={gateway.uid}>
+                                                        {getGatewayDisplayName(gateway, t)}
                                                     </option>
                                                 ))}
                                             </select>
@@ -210,9 +210,9 @@ export function ProcessRulesView({ gateways, meters }: Props) {
                             }
                             className='control-input'>
                             <option value=''>{t('processRules.selectGateway')}</option>
-                            {gateways.map((hub) => (
-                                <option key={hub.uid} value={hub.uid}>
-                                    {getGatewayDisplayName(hub, t)}
+                            {gateways.map((gateway) => (
+                                <option key={gateway.uid} value={gateway.uid}>
+                                    {getGatewayDisplayName(gateway, t)}
                                 </option>
                             ))}
                         </select>

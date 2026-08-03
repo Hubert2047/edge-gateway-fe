@@ -10,7 +10,7 @@ type Props = { gateways: Gateway[]; meters: Meter[] }
 type EventRow = {
     time: string
     rule: string
-    hub: string
+    gateway: string
     meter: string
     metric: string
     value: string
@@ -22,14 +22,14 @@ export function HistoryEventsView({ gateways, meters }: Props) {
     const { t } = useI18n()
     const [range, setRange] = useState('daily')
     const [date, setDate] = useState('2026-07-23')
-    const [hubUid, setGatewayUid] = useState('')
+    const [gatewayUid, setGatewayUid] = useState('')
     const [meterId, setMeterId] = useState('')
     const [rule, setRule] = useState('')
     const [rows, setRows] = useState<EventRow[]>([])
 
     const availableMeters = useMemo(
-        () => meters.filter((meter) => !hubUid || meter.gatewayUID === hubUid),
-        [hubUid, meters],
+        () => meters.filter((meter) => !gatewayUid || meter.gatewayUID === gatewayUid),
+        [gatewayUid, meters],
     )
 
     function handleGatewayChange(value: string) {
@@ -68,13 +68,13 @@ export function HistoryEventsView({ gateways, meters }: Props) {
                     </Field>
                     <Field label={t('historyEvents.gateway')}>
                         <select
-                            value={hubUid}
+                            value={gatewayUid}
                             onChange={(event) => handleGatewayChange(event.target.value)}
                             className='control-input'>
                             <option value=''>{t('historyEvents.allGateways')}</option>
-                            {gateways.map((hub) => (
-                                <option key={hub.uid} value={hub.uid}>
-                                    {getGatewayDisplayName(hub, t)}
+                            {gateways.map((gateway) => (
+                                <option key={gateway.uid} value={gateway.uid}>
+                                    {getGatewayDisplayName(gateway, t)}
                                 </option>
                             ))}
                         </select>
@@ -142,7 +142,7 @@ export function HistoryEventsView({ gateways, meters }: Props) {
                                     <tr key={row.time} className='border-t border-[#E1E5E2]'>
                                         <td className='px-4 py-3'>{row.time}</td>
                                         <td className='px-4 py-3'>{row.rule}</td>
-                                        <td className='px-4 py-3'>{row.hub}</td>
+                                        <td className='px-4 py-3'>{row.gateway}</td>
                                         <td className='px-4 py-3'>{row.meter}</td>
                                         <td className='px-4 py-3'>{row.metric}</td>
                                         <td className='px-4 py-3 font-semibold text-[#B54E45]'>{row.value}</td>

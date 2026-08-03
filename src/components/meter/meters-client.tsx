@@ -6,40 +6,40 @@ import type { Gateway } from '@/types/gateway'
 import type { Meter } from '@/types/meter'
 
 export function MetersClient({
-    hubs,
-    initialHubUid,
+    gateways: gateways,
+    initialGatewayUid: initialGatewayUid,
     initialMeters,
 }: {
-    hubs: Gateway[]
-    initialHubUid: string
+    gateways: Gateway[]
+    initialGatewayUid: string
     initialMeters: Meter[]
 }) {
-    const [hubUid, setHubUid] = useState(initialHubUid)
+    const [gatewayUid, setGatewayUid] = useState(initialGatewayUid)
 
     useEffect(() => {
         const url = new URL(window.location.href)
-        if (url.searchParams.get('hubUid') !== initialHubUid) {
-            url.searchParams.set('hubUid', initialHubUid)
+        if (url.searchParams.get('gatewayUid') !== initialGatewayUid) {
+            url.searchParams.set('gatewayUid', initialGatewayUid)
             window.history.replaceState(null, '', url.toString())
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [])
 
-    function handleHubChange(nextHubUid: string) {
-        if (nextHubUid === hubUid) return
-        setHubUid(nextHubUid)
+    function handleHubChange(nextGatewayUid: string) {
+        if (nextGatewayUid === gatewayUid) return
+        setGatewayUid(nextGatewayUid)
         const url = new URL(window.location.href)
-        url.searchParams.set('hubUid', nextHubUid)
+        url.searchParams.set('gatewayUid', nextGatewayUid)
         window.history.replaceState(null, '', url.toString())
     }
 
     return (
         <div className='flex-1 min-h-0'>
             <MeterList
-                key={hubUid}
-                hubs={hubs}
-                hubUid={hubUid}
-                initialMeters={hubUid === initialHubUid ? initialMeters : undefined}
+                key={gatewayUid}
+                gateways={gateways}
+                gatewayUid={gatewayUid}
+                initialMeters={gatewayUid === initialGatewayUid ? initialMeters : undefined}
                 onHubChange={handleHubChange}
             />
         </div>

@@ -65,6 +65,27 @@ export function useTestCloudTargetConnection() {
         mutationFn: (id: string) => testCloudTargetConnection(id),
     })
 }
+
+export function useFlushAllCloudTargets() {
+    const queryClient = useQueryClient()
+    return useMutation({
+        mutationFn: flushAllCloudTargets,
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: cloudTargetKeys.list() })
+        },
+    })
+}
+
+export function useFlushCloudTarget() {
+    const queryClient = useQueryClient()
+    return useMutation({
+        mutationFn: (id: string) => flushCloudTarget(id),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: cloudTargetKeys.list() })
+        },
+    })
+}
+
 function getCloudTargets() {
     return apiFetch<CloudTarget[]>(CLOUD_TARGET_ENDPOINT.base)
 }
@@ -83,4 +104,12 @@ function deleteCloudTarget(id: string) {
 
 function testCloudTargetConnection(id: string) {
     return apiFetch<TestConnectionResult>(CLOUD_TARGET_ENDPOINT.test(id), { method: 'POST' })
+}
+
+function flushAllCloudTargets() {
+    return apiFetch<void>(CLOUD_TARGET_ENDPOINT.flushAll, { method: 'POST' })
+}
+
+function flushCloudTarget(id: string) {
+    return apiFetch<void>(CLOUD_TARGET_ENDPOINT.flush(id), { method: 'POST' })
 }

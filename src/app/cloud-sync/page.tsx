@@ -1,5 +1,5 @@
 import { CloudTargetList } from '@/components/cloud-sync/cloud-target-list'
-import { CloudTarget } from '@/types/cloud-target'
+import type { CloudTarget } from '@/types/cloud-target'
 import { serverApiFetch } from '@/lib/api/server'
 import { requireAdmin } from '@/lib/auth-guard'
 import { CLOUD_TARGET_ENDPOINT } from '@/constances/url'

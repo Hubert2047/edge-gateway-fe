@@ -101,6 +101,12 @@ const zhTW: MessageTree = {
     cloud: {
         runQueue: '執行佇列上傳',
         running: '執行中...',
+        runningProcess: '進程執行中',
+        flush: '立即上傳',
+        confirmFlush: '確認立即上傳',
+        confirmFlushDescription: '確定要對「{name}」立即上傳佇列資料嗎？',
+        confirmFlushAll: '確認執行全部佇列上傳',
+        confirmFlushAllDescription: '確定要對所有啟用的雲端服務器立即上傳佇列資料嗎？',
         online: '在線',
         server: '雲端服務器',
         secret: '雲端服務器密鑰',
@@ -116,6 +122,9 @@ const zhTW: MessageTree = {
         namePlaceholder: '例如：MMold 雲端（展示工廠A）',
         urlPlaceholder: 'https://api.mmold.com',
         add: '新增雲端服務器',
+        backfillEnabled: '上傳既有歷史資料',
+        backfillStart: '開始日期',
+        backfillEnd: '結束日期',
 
     },
 
@@ -169,6 +178,11 @@ const zhTW: MessageTree = {
         urlRequired: '請輸入 API BASE URL',
         cloudIdRequired: '請輸入雲端服務器 ID',
         secretRequired: '請輸入雲端服務器密鑰',
+        backfillStartRequired: '請選擇開始日期',
+        backfillEndRequired: '請選擇結束日期',
+        backfillEndAfterStart: '結束日期必須晚於開始日期',
+        backfillRangeTooLong: '歷史資料範圍不可超過 12 個月',
+        backfillDateTooOld: '日期不可早於一年前',
     },
 
     toast: {
@@ -179,6 +193,8 @@ const zhTW: MessageTree = {
         statusFailed: '更新狀態失敗',
         added: '新增成功',
         connectionFailed: '連線失敗',
+        flushStarted: '已開始上傳佇列資料',
+        flushFailed: '執行佇列上傳失敗',
     },
 
     time: {
@@ -440,6 +456,12 @@ const en: MessageTree = {
     cloud: {
         runQueue: 'Run queued uploads',
         running: 'Running...',
+        runningProcess: 'Process running',
+        flush: 'Flush now',
+        confirmFlush: 'Confirm flush',
+        confirmFlushDescription: 'Flush queued uploads for “{name}” now?',
+        confirmFlushAll: 'Confirm flush all',
+        confirmFlushAllDescription: 'Flush queued uploads for all enabled cloud targets now?',
         online: 'Online',
         server: 'Cloud server',
         secret: 'Cloud server secret',
@@ -455,6 +477,9 @@ const en: MessageTree = {
         namePlaceholder: 'e.g. MMold Cloud (Factory A)',
         urlPlaceholder: 'https://api.mmold.com',
         add: 'Add cloud server',
+        backfillEnabled: 'Upload existing historical data',
+        backfillStart: 'Start date',
+        backfillEnd: 'End date',
 
     },
 
@@ -508,6 +533,11 @@ const en: MessageTree = {
         urlRequired: 'Please enter an API base URL',
         cloudIdRequired: 'Please enter a cloud server ID',
         secretRequired: 'Please enter a cloud server secret',
+        backfillStartRequired: 'Please select a start date',
+        backfillEndRequired: 'Please select an end date',
+        backfillEndAfterStart: 'End date must be after the start date',
+        backfillRangeTooLong: 'The historical range cannot exceed 12 months',
+        backfillDateTooOld: 'Dates cannot be earlier than one year ago',
     },
 
     toast: {
@@ -518,6 +548,8 @@ const en: MessageTree = {
         statusFailed: 'Failed to update status',
         added: 'Added successfully',
         connectionFailed: 'Connection failed',
+        flushStarted: 'Queued uploads started',
+        flushFailed: 'Failed to flush queued uploads',
     },
 
     time: {

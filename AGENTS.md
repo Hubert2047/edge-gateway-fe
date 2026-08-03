@@ -226,11 +226,11 @@ src/
   `user`, and `readonly` only.
 
 ## Known TODOs / not yet implemented
-- Cloud-sync "執行佇列上傳" (run queued uploads) button — no backend endpoint yet
-  (depends on an offline-buffer/upload-worker module planned backend-side). Currently
-  a no-op placeholder in `cloud-target-list.tsx`.
-- `pendingReadings` / queue count on `CloudTarget` — backend field not implemented yet either
-  (see backend AGENTS.md poller/cloud-target notes).
+- Cloud-sync flush actions start the existing asynchronous uploader worker and
+  the UI polls the cloud-target list at a low frequency while displaying live
+  pending counts.
+- `pendingReadings` / queue count on `CloudTarget` is provided by the backend
+  upload-status calculation and may change while new readings are collected.
 
 ## Operations overview API gaps
 - The overview page currently uses the existing `/api/hubs`, `/api/cloud-targets`, and

@@ -19,6 +19,9 @@ export interface CloudTargetFormValues {
     apiSecret: string
     uploadIntervalSec: number
     enabled: boolean
+    backfillEnabled?: boolean
+    backfillFromTs?: string
+    backfillToTs?: string
 }
 
 export interface TestConnectionResult {

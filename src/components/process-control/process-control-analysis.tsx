@@ -28,7 +28,7 @@ export function ProcessControlAnalysis({ gateways, meters }: Props) {
         [gatewayUid, meters],
     )
 
-    function handleHubChange(value: string) {
+    function handleGatewayChange(value: string) {
         setGatewayUid(value)
         const firstMeter = meters.find((meter) => meter.gatewayUID === value)
         setMeterId(firstMeter?.macId ?? '')
@@ -66,12 +66,12 @@ export function ProcessControlAnalysis({ gateways, meters }: Props) {
                     <Field label={t('processControl.gateway')}>
                         <select
                             value={gatewayUid}
-                            onChange={(event) => handleHubChange(event.target.value)}
+                            onChange={(event) => handleGatewayChange(event.target.value)}
                             className='control-input'>
                             <option value=''>{t('processControl.selectGateway')}</option>
-                            {gateways.map((hub) => (
-                                <option key={hub.uid} value={hub.uid}>
-                                    {getGatewayDisplayName(hub, t)}
+                            {gateways.map((gateway) => (
+                                <option key={gateway.uid} value={gateway.uid}>
+                                    {getGatewayDisplayName(gateway, t)}
                                 </option>
                             ))}
                         </select>

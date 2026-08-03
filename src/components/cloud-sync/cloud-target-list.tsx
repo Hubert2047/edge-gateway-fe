@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState, useSyncExternalStore } from 'react'
 import { Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -19,12 +19,15 @@ import {
     AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
 import type { CloudTarget, CloudTargetFormValues } from '@/types/cloud-target'
-import { formatRelativeTime, getErrorMessage } from '@/lib/utils'
+import { getErrorMessage } from '@/lib/utils'
+import { ClientRelativeTime } from './client-relative-time'
 import { StatusBadge } from '../status-badge'
 import {
     useCloudTargets,
     useCreateCloudTarget,
     useDeleteCloudTarget,
+    useFlushAllCloudTargets,
+    useFlushCloudTarget,
     useTestCloudTargetConnection,
     useUpdateCloudTarget,
 } from '@/lib/api/cloud-target'
@@ -38,6 +41,9 @@ function emptyForm(): CloudTargetFormValues {
         apiSecret: '',
         uploadIntervalSec: 60,
         enabled: true,
+        backfillEnabled: false,
+        backfillFromTs: '',
+        backfillToTs: '',
     }
 }
 
@@ -54,7 +60,16 @@ function targetToForm(target: CloudTarget): CloudTargetFormValues {
 }
 
 type FormErrors = Partial<
-    Record<'name' | 'apiBaseUrl' | 'apiKey' | 'cloudServerSecret' | 'uploadIntervalSec', string>
+    Record<
+        | 'name'
+        | 'apiBaseUrl'
+        | 'apiKey'
+        | 'cloudServerSecret'
+        | 'uploadIntervalSec'
+        | 'backfillFromTs'
+        | 'backfillToTs',
+        string
+    >
 >
 
 function validateForm(form: CloudTargetFormValues): FormErrors {
@@ -65,24 +80,127 @@ function validateForm(form: CloudTargetFormValues): FormErrors {
     if (!form.apiSecret.trim()) errors.cloudServerSecret = 'validation.secretRequired'
     if (!form.uploadIntervalSec || form.uploadIntervalSec <= 0)
         errors.uploadIntervalSec = 'validation.intervalInvalid'
+    if (form.backfillEnabled) {
+        if (!form.backfillFromTs) errors.backfillFromTs = 'validation.backfillStartRequired'
+        if (!form.backfillToTs) errors.backfillToTs = 'validation.backfillEndRequired'
+        if (form.backfillFromTs && form.backfillToTs) {
+            const from = new Date(`${form.backfillFromTs}T00:00:00`)
+            const to = new Date(`${form.backfillToTs}T00:00:00`)
+            const earliest = new Date()
+            earliest.setMonth(earliest.getMonth() - 12)
+            earliest.setHours(0, 0, 0, 0)
+            if (from < earliest) errors.backfillFromTs = 'validation.backfillDateTooOld'
+            if (to < earliest) errors.backfillToTs = 'validation.backfillDateTooOld'
+            if (to <= from) errors.backfillToTs = 'validation.backfillEndAfterStart'
+            const maxTo = new Date(from)
+            maxTo.setMonth(maxTo.getMonth() + 12)
+            if (to > maxTo) errors.backfillToTs = 'validation.backfillRangeTooLong'
+        }
+    }
     return errors
 }
 
-type PendingAction = { type: 'save' | 'delete'; id: string; name: string } | null
+function toBackfillTimestamp(value: string, isEnd: boolean) {
+    const date = new Date(`${value}T00:00:00`)
+    if (isEnd) {
+        date.setDate(date.getDate() + 1)
+        const now = new Date()
+        if (date > now) date.setTime(now.getTime())
+    }
+    const pad = (number: number) => String(number).padStart(2, '0')
+    const offsetMinutes = -date.getTimezoneOffset()
+    const sign = offsetMinutes >= 0 ? '+' : '-'
+    const absoluteOffset = Math.abs(offsetMinutes)
+    const offset = `${sign}${pad(Math.floor(absoluteOffset / 60))}:${pad(absoluteOffset % 60)}`
+    return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}${offset}`
+}
+
+function todayDateInput() {
+    const now = new Date()
+    const month = String(now.getMonth() + 1).padStart(2, '0')
+    const day = String(now.getDate()).padStart(2, '0')
+    return `${now.getFullYear()}-${month}-${day}`
+}
+
+function earliestDateInput() {
+    const date = new Date()
+    date.setMonth(date.getMonth() - 12)
+    const month = String(date.getMonth() + 1).padStart(2, '0')
+    const day = String(date.getDate()).padStart(2, '0')
+    return `${date.getFullYear()}-${month}-${day}`
+}
+
+type PendingAction = {
+    type: 'save' | 'delete' | 'flush'
+    id: string
+    name: string
+} | { type: 'flushAll'; name: string } | null
 type TestResult = { success: boolean; message?: string }
 type RowFormState = { form: CloudTargetFormValues; errors: FormErrors }
 
+const emptySubscribe = () => () => undefined
+const getClientSnapshot = () => true
+const getServerSnapshot = () => false
+
 export function CloudTargetList({ initialTargets }: { initialTargets: CloudTarget[] }) {
     const { t, locale } = useI18n()
-    const { data: targets = initialTargets } = useCloudTargets(initialTargets)
+    const { data: targets = initialTargets, refetch } = useCloudTargets(initialTargets)
     const updateMutation = useUpdateCloudTarget()
     const deleteMutation = useDeleteCloudTarget()
     const createMutation = useCreateCloudTarget()
     const testMutation = useTestCloudTargetConnection()
+    const flushAllMutation = useFlushAllCloudTargets()
+    const flushMutation = useFlushCloudTarget()
 
     const [rowFormState, setRowFormState] = useState<Record<string, RowFormState>>({})
     const [testResults, setTestResults] = useState<Record<string, TestResult>>({})
+    const [flushStates, setFlushStates] = useState<Record<string, { pendingReadings: number; delayMs: number }>>({})
     const [deletingId, setDeletingId] = useState<string | null>(null)
+    const isHydrated = useSyncExternalStore(emptySubscribe, getClientSnapshot, getServerSnapshot)
+    const earliestBackfillDate = isHydrated ? earliestDateInput() : undefined
+    const latestBackfillDate = isHydrated ? todayDateInput() : undefined
+
+    const hasFlushInProgress = Object.keys(flushStates).length > 0
+
+    useEffect(() => {
+        if (!hasFlushInProgress) return
+
+        let disposed = false
+        let timer: number | undefined
+        const pollFlushStatus = async () => {
+            const result = await refetch()
+            if (disposed || !result.data) return
+
+            let nextDelay = 2_000
+            setFlushStates((previous) => {
+                const next = { ...previous }
+                for (const [id, state] of Object.entries(previous)) {
+                    const target = result.data.find((item) => String(item.id) === id)
+                    if (!target) {
+                        continue
+                    }
+                    const currentPending = Number(target.pendingReadings)
+                    if (!Number.isFinite(currentPending)) continue
+                    const changed = currentPending !== state.pendingReadings
+                    if (changed) {
+                        delete next[id]
+                        continue
+                    }
+                    const delayMs = Math.min(state.delayMs * 2, 15_000)
+                    next[id] = { pendingReadings: target.pendingReadings, delayMs }
+                    nextDelay = Math.max(nextDelay, delayMs)
+                }
+                return next
+            })
+            timer = window.setTimeout(pollFlushStatus, nextDelay)
+        }
+
+        timer = window.setTimeout(pollFlushStatus, 2_000)
+        return () => {
+            disposed = true
+            if (timer !== undefined) window.clearTimeout(timer)
+        }
+    }, [hasFlushInProgress, refetch])
 
     function getRowForm(target: CloudTarget): RowFormState {
         return rowFormState[target.id] ?? { form: targetToForm(target), errors: {} }
@@ -110,8 +228,6 @@ export function CloudTargetList({ initialTargets }: { initialTargets: CloudTarge
 
     const [newForm, setNewForm] = useState(emptyForm())
     const [newErrors, setNewErrors] = useState<FormErrors>({})
-    const [runningQueue, setRunningQueue] = useState(false)
-
     function updateNewForm(patch: Partial<CloudTargetFormValues>) {
         setNewForm((f) => ({ ...f, ...patch }))
         setNewErrors((prev) => {
@@ -149,8 +265,36 @@ export function CloudTargetList({ initialTargets }: { initialTargets: CloudTarge
 
     function confirmPendingAction() {
         if (!pendingAction) return
-        const { type, id } = pendingAction
+        const { type } = pendingAction
         setPendingAction(null)
+
+        if (type === 'flushAll') {
+            const ids = targets.filter((target) => target.enabled).map((target) => String(target.id))
+            beginFlush(ids)
+            flushAllMutation.mutate(undefined, {
+                onSuccess: () => toast.success(t('toast.flushStarted')),
+                onError: (err) => {
+                    clearFlush(ids)
+                    toast.error(getErrorMessage(err, t('toast.flushFailed')))
+                },
+            })
+            return
+        }
+
+        if (type === 'flush') {
+            const id = String(pendingAction.id)
+            beginFlush([id])
+            flushMutation.mutate(id, {
+                onSuccess: () => toast.success(t('toast.flushStarted')),
+                onError: (err) => {
+                    clearFlush([id])
+                    toast.error(getErrorMessage(err, t('toast.flushFailed')))
+                },
+            })
+            return
+        }
+
+        const { id } = pendingAction
         const target = targets.find((t) => t.id === id)
         if (!target) return
 
@@ -192,7 +336,16 @@ export function CloudTargetList({ initialTargets }: { initialTargets: CloudTarge
             return
         }
 
-        createMutation.mutate(newForm, {
+        const form = { ...newForm }
+        if (form.backfillEnabled) {
+            form.backfillFromTs = toBackfillTimestamp(form.backfillFromTs!, false)
+            form.backfillToTs = toBackfillTimestamp(form.backfillToTs!, true)
+        } else {
+            delete form.backfillFromTs
+            delete form.backfillToTs
+        }
+
+        createMutation.mutate(form, {
             onSuccess: () => {
                 setNewForm(emptyForm())
                 setNewErrors({})
@@ -202,27 +355,55 @@ export function CloudTargetList({ initialTargets }: { initialTargets: CloudTarge
         })
     }
 
-    async function runQueuedUploads() {
-        setRunningQueue(true)
-        try {
-            // TODO: waiting for the backend queue-upload endpoint
-            console.log('execute queued uploads')
-        } finally {
-            setRunningQueue(false)
-        }
+    function runQueuedUploads() {
+        setPendingAction({ type: 'flushAll', name: t('page.cloudSync') })
+    }
+
+    function requestFlush(target: CloudTarget) {
+        setPendingAction({ type: 'flush', id: target.id, name: target.name })
+    }
+
+    function beginFlush(ids: string[]) {
+        const normalizedIds = ids.map(String)
+        const initialStates = normalizedIds.reduce<Record<string, { pendingReadings: number; delayMs: number }>>(
+            (states, id) => {
+                const target = targets.find((item) => String(item.id) === id)
+                if (target) {
+                    states[id] = { pendingReadings: Number(target.pendingReadings), delayMs: 2_000 }
+                }
+                return states
+            },
+            {},
+        )
+        setFlushStates((previous) => {
+            return { ...previous, ...initialStates }
+        })
+    }
+
+    function clearFlush(ids: string[]) {
+        setFlushStates((previous) => {
+            const next = { ...previous }
+            for (const id of ids) delete next[id]
+            return next
+        })
     }
 
     const dialogText = {
         save: { title: t('common.confirmSave'), desc: (name: string) => t('common.confirmSaveDescription', { name }) },
         delete: { title: t('common.confirmDelete'), desc: (name: string) => t('common.confirmDeleteDescription', { name }) },
+        flush: { title: t('cloud.confirmFlush'), desc: (name: string) => t('cloud.confirmFlushDescription', { name }) },
+        flushAll: { title: t('cloud.confirmFlushAll'), desc: () => t('cloud.confirmFlushAllDescription') },
     } as const
 
     return (
         <div className='flex h-full flex-col gap-4 overflow-hidden max-md:h-auto max-md:overflow-visible'>
             <div className='flex shrink-0 items-center justify-between gap-3 max-sm:items-start max-sm:flex-col'>
                 <h1 className='md:text-3xl font-bold'>{t('page.cloudSync')}</h1>
-                <Button className='max-sm:w-full' disabled={runningQueue} onClick={runQueuedUploads}>
-                    {runningQueue ? (
+                <Button
+                    className='max-sm:w-full'
+                    disabled={flushAllMutation.isPending || hasFlushInProgress}
+                    onClick={runQueuedUploads}>
+                    {flushAllMutation.isPending || hasFlushInProgress ? (
                         <>
                             <Loader2 className='h-4 w-4 animate-spin' />
                             {t('cloud.running')}
@@ -266,6 +447,10 @@ export function CloudTargetList({ initialTargets }: { initialTargets: CloudTarge
                                     const saving =
                                         updateMutation.isPending && updateMutation.variables?.id === target.id
                                     const testing = testMutation.isPending && testMutation.variables === target.id
+                                    const flushing =
+                                        (flushMutation.isPending &&
+                                            String(flushMutation.variables) === String(target.id)) ||
+                                        Boolean(flushStates[String(target.id)])
                                     const deleting = deletingId === target.id
                                     const rowBusy = saving || deleting
                                     const testResult = testResults[target.id]
@@ -402,14 +587,20 @@ export function CloudTargetList({ initialTargets }: { initialTargets: CloudTarge
                                                         <div className='flex gap-4'>
                                                             <p className='leading-snug'>{t('cloud.lastUpload')}</p>
                                                             <p className='font-bold'>
-                                                                {target.lastUploadAt
-                                                                    ? formatRelativeTime(target.lastUploadAt, locale)
-                                                                    : t('cloud.notUploaded')}
+                                                                <ClientRelativeTime
+                                                                    value={target.lastUploadAt}
+                                                                    locale={locale}
+                                                                    fallback={String(t('cloud.notUploaded'))}
+                                                                />
                                                             </p>
                                                         </div>
                                                         <div className='flex gap-4'>
                                                             <p>{t('cloud.pending')}</p>
-                                                            <p className='font-bold'>{target.pendingReadings}</p>
+                                                            <p className='font-bold'>
+                                                                {typeof target.pendingReadings === 'number'
+                                                                    ? target.pendingReadings
+                                                                    : 0}
+                                                            </p>
                                                         </div>
                                                     </div>
                                                 </div>
@@ -438,6 +629,14 @@ export function CloudTargetList({ initialTargets }: { initialTargets: CloudTarge
                                                         ) : (
                                                             t('cloud.testConnection')
                                                         )}
+                                                    </Button>
+                                                    <Button
+                                                        size='sm'
+                                                        variant='outline'
+                                                        className='w-20'
+                                                        disabled={flushing || !form.enabled}
+                                                        onClick={() => requestFlush(target)}>
+                                                        {flushing ? t('cloud.runningProcess') : t('cloud.flush')}
                                                     </Button>
                                                     <Button
                                                         size='sm'
@@ -477,6 +676,61 @@ export function CloudTargetList({ initialTargets }: { initialTargets: CloudTarge
                     </div>
                 )}
                 <h2 className='text-lg font-medium mb-0 font-bold'>{t('cloud.add')}</h2>
+                <div className='rounded-lg border border-border/60 bg-muted/30 p-3'>
+                    <div className='flex flex-col gap-4 lg:flex-row lg:items-start'>
+                        <div className='flex items-center gap-3 lg:min-w-64'>
+                        <Checkbox
+                            id='new-backfill-enabled'
+                            checked={newForm.backfillEnabled === true}
+                            disabled={createMutation.isPending}
+                            onCheckedChange={(checked) => updateNewForm({ backfillEnabled: checked === true })}
+                        />
+                            <Label htmlFor='new-backfill-enabled' className='font-medium'>
+                                {t('cloud.backfillEnabled')}
+                            </Label>
+                        </div>
+                        {newForm.backfillEnabled && (
+                            <div className='grid flex-1 grid-cols-1 gap-4 sm:grid-cols-2'>
+                        <div className='space-y-1.5'>
+                            <Label htmlFor='new-backfill-start' className='text-xs text-muted-foreground'>
+                                {t('cloud.backfillStart')}
+                            </Label>
+                            <Input
+                                id='new-backfill-start'
+                                type='date'
+                                value={newForm.backfillFromTs ?? ''}
+                                min={earliestBackfillDate}
+                                max={newForm.backfillToTs || latestBackfillDate}
+                                disabled={createMutation.isPending}
+                                onChange={(e) => updateNewForm({ backfillFromTs: e.target.value })}
+                                className={newErrors.backfillFromTs ? 'border-destructive' : ''}
+                            />
+                            {newErrors.backfillFromTs && (
+                                <p className='text-xs text-destructive'>{t(newErrors.backfillFromTs)}</p>
+                            )}
+                        </div>
+                        <div className='space-y-1.5'>
+                            <Label htmlFor='new-backfill-end' className='text-xs text-muted-foreground'>
+                                {t('cloud.backfillEnd')}
+                            </Label>
+                            <Input
+                                id='new-backfill-end'
+                                type='date'
+                                value={newForm.backfillToTs ?? ''}
+                                min={newForm.backfillFromTs || earliestBackfillDate}
+                                max={latestBackfillDate}
+                                disabled={createMutation.isPending}
+                                onChange={(e) => updateNewForm({ backfillToTs: e.target.value })}
+                                className={newErrors.backfillToTs ? 'border-destructive' : ''}
+                            />
+                            {newErrors.backfillToTs && (
+                                <p className='text-xs text-destructive'>{t(newErrors.backfillToTs)}</p>
+                            )}
+                        </div>
+                            </div>
+                        )}
+                    </div>
+                </div>
                 <div className='grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 mb-0'>
                     <div className='space-y-1.5'>
                         <Label htmlFor='new-name' className='text-xs text-muted-foreground'>

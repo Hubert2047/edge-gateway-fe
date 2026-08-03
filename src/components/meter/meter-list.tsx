@@ -24,7 +24,7 @@ import { getErrorMessage } from '@/lib/utils'
 import { StatusBadge } from '../status-badge'
 import { useDeleteMeter, useMeters, useUpdateMeter, useUpdateMetersBulk } from '@/lib/api/meter'
 import { useI18n } from '@/lib/i18n'
-import { HubSwitcher } from './hub-switcher'
+import { GatewaySwitcher } from './gateway-switcher'
 
 function toBatchUpdate(meter: Meter, form: MeterFormValues): MeterBatchUpdateValues {
     return {
@@ -82,21 +82,21 @@ type PendingAction =
 type RowFormState = { form: MeterFormValues; errors: FormErrors }
 
 export function MeterList({
-    hubs,
-    hubUid,
+    gateways: gateways,
+    gatewayUid: gatewayUid,
     initialMeters,
     onHubChange,
 }: {
-    hubs: Gateway[]
-    hubUid: string
+    gateways: Gateway[]
+    gatewayUid: string
     initialMeters?: Meter[]
-    onHubChange: (hubUid: string) => void
+    onHubChange: (gatewayUid: string) => void
 }) {
     const { t } = useI18n()
-    const { data: meters = initialMeters ?? [], isFetching } = useMeters(hubUid, initialMeters)
-    const updateMeterMutation = useUpdateMeter(hubUid)
-    const deleteMeterMutation = useDeleteMeter(hubUid)
-    const bulkMutation = useUpdateMetersBulk(hubUid)
+    const { data: meters = initialMeters ?? [], isFetching } = useMeters(gatewayUid, initialMeters)
+    const updateMeterMutation = useUpdateMeter(gatewayUid)
+    const deleteMeterMutation = useDeleteMeter(gatewayUid)
+    const bulkMutation = useUpdateMetersBulk(gatewayUid)
 
     const [rowFormState, setRowFormState] = useState<Record<string, RowFormState>>({})
     const [deletingMacId, setDeletingMacId] = useState<string | null>(null)
@@ -235,7 +235,7 @@ export function MeterList({
             <div className='flex shrink-0 items-center justify-between gap-4 border-b pb-3 max-sm:flex-wrap'>
                 <h1 className='text-xl font-bold sm:text-3xl'>{t('page.meters')}</h1>
                 <div className='flex items-center gap-3 max-sm:w-full max-sm:justify-between'>
-                    <HubSwitcher hubs={hubs} currentHubUid={hubUid} onHubChange={onHubChange} />
+                    <GatewaySwitcher gateways={gateways} currentGatewayUid={gatewayUid} onGatewayChange={onHubChange} />
                     <span className='flex items-center gap-1.5 whitespace-nowrap text-sm font-medium text-muted-foreground'>
                         {isFetching && <Loader2 className='h-3.5 w-3.5 animate-spin' />}
                         {t('gateway.meterCount', { count: meters.length })}
