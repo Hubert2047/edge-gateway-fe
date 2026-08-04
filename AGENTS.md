@@ -80,9 +80,11 @@ The Go backend (`edge-gateway`) is migrating all endpoints to a consistent envel
 ```
 
 - `CloudTarget` handlers already use this envelope. The cloud-target list data
-  is `{ targets: CloudTarget[], cloudTargetMax: number }`. `Hub` handlers are
-  legacy (still return raw arrays/objects, and `{ "message": ... }` on error)
-  and will be migrated later.
+  is `{ targets: CloudTarget[], cloudTargetMax: number }`. New cloud targets
+  start disabled; the UI only offers enabling after the backend reports an
+  `online` connection status, and displays backend errors when enabling is
+  rejected. `Hub` handlers are legacy (still return raw arrays/objects, and
+  `{ "message": ... }` on error) and will be migrated later.
 - `serverApiFetch()` (`lib/api/server.ts`) handles **both formats transparently**:
   it detects an envelope via `isEnvelope(body)` (checks for a boolean `ok` field);
   if present, unwraps `.data` and throws using `.message` on `ok: false`; if not

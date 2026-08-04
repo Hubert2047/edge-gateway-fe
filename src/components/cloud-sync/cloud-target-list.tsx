@@ -40,7 +40,7 @@ function emptyForm(): CloudTargetFormValues {
         apiKey: '',
         apiSecret: '',
         uploadIntervalSec: 60,
-        enabled: true,
+        enabled: false,
         backfillEnabled: false,
         backfillFromTs: '',
         backfillToTs: '',
@@ -55,7 +55,7 @@ function targetToForm(target: CloudTarget): CloudTargetFormValues {
         apiKey: target.apiKey ?? '',
         apiSecret: target.apiSecretMasked ?? '',
         uploadIntervalSec: target.uploadIntervalSec ?? 0,
-        enabled: target.enabled ?? true,
+        enabled: target.enabled ?? false,
     }
 }
 
@@ -156,6 +156,7 @@ export function CloudTargetList({ initialTargets }: { initialTargets: CloudTarge
 
     const [rowFormState, setRowFormState] = useState<Record<string, RowFormState>>({})
     const [testResults, setTestResults] = useState<Record<string, TestResult>>({})
+    const [enableErrors, setEnableErrors] = useState<Record<string, string>>({})
     const [flushStates, setFlushStates] = useState<Record<string, { pendingReadings: number; delayMs: number }>>({})
     const [deletingId, setDeletingId] = useState<string | null>(null)
     const isHydrated = useSyncExternalStore(emptySubscribe, getClientSnapshot, getServerSnapshot)
@@ -245,7 +246,33 @@ export function CloudTargetList({ initialTargets }: { initialTargets: CloudTarge
 
     function toggleEnabled(target: CloudTarget, checked: boolean) {
         const { form } = getRowForm(target)
-        updateMutation.mutate({ id: target.id, form: { ...form, enabled: checked } })
+        setEnableErrors((previous) => {
+            const next = { ...previous }
+            delete next[target.id]
+            return next
+        })
+        updateMutation.mutate(
+            { id: target.id, form: { ...form, enabled: checked } },
+            {
+                onSuccess: () => {
+                    if (checked) {
+                        setEnableErrors((previous) => {
+                            const next = { ...previous }
+                            delete next[target.id]
+                            return next
+                        })
+                    }
+                },
+                onError: (error) => {
+                    if (checked) {
+                        setEnableErrors((previous) => ({
+                            ...previous,
+                            [target.id]: error instanceof Error ? error.message : t('toast.statusFailed'),
+                        }))
+                    }
+                },
+            },
+        )
         clearRowForm(target.id)
     }
 
@@ -326,7 +353,17 @@ export function CloudTargetList({ initialTargets }: { initialTargets: CloudTarge
             return next
         })
         testMutation.mutate(id, {
-            onSuccess: (result) => setTestResults((prev) => ({ ...prev, [id]: result })),
+            onSuccess: (result) => {
+                setTestResults((prev) => ({ ...prev, [id]: result }))
+                if (result.success) {
+                    setEnableErrors((previous) => {
+                        const next = { ...previous }
+                        delete next[id]
+                        return next
+                    })
+                }
+                void refetch()
+            },
             onError: () => setTestResults((prev) => ({ ...prev, [id]: { success: false, message: t('cloud.failure') } })),
         })
     }
@@ -468,6 +505,11 @@ export function CloudTargetList({ initialTargets }: { initialTargets: CloudTarge
                                                         toggleEnabled(target, checked === true)
                                                     }
                                                 />
+                                                {enableErrors[target.id] && (
+                                                    <p className='text-xs text-destructive'>
+                                                        {enableErrors[target.id]}
+                                                    </p>
+                                                )}
                                                 <StatusBadge enabled={form.enabled} activeLabel={t('cloud.online')} />
                                             </td>
                                             <td data-label={t('cloud.server')} className='p-4 space-y-3'>
@@ -624,7 +666,7 @@ export function CloudTargetList({ initialTargets }: { initialTargets: CloudTarge
                                                                 ? 'w-20 border bg-sky-50 text-sky-700 hover:bg-sky-100 border-sky-200'
                                                                 : 'w-20 border bg-muted text-muted-foreground hover:bg-muted cursor-not-allowed'
                                                         }
-                                                        disabled={testing || !form.enabled}
+                                                        disabled={testing}
                                                         onClick={() => runTestConnection(target.id)}>
                                                         {testing ? (
                                                             <Loader2 className='h-4 w-4 animate-spin' />

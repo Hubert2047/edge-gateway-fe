@@ -6,6 +6,7 @@ export interface CloudTarget {
     apiSecretMasked: string
     uploadIntervalSec: number
     enabled: boolean
+    connectionStatus: string
     lastUploadAt: string | null
     pendingReadings: number
     remainingRounds: number
