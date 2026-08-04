@@ -11,6 +11,11 @@ export interface CloudTarget {
     remainingRounds: number
 }
 
+export interface CloudTargetListResponse {
+    targets: CloudTarget[]
+    cloudTargetMax: number
+}
+
 export interface CloudTargetFormValues {
     id?: string
     name: string

@@ -18,7 +18,7 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
-import type { CloudTarget, CloudTargetFormValues } from '@/types/cloud-target'
+import type { CloudTarget, CloudTargetFormValues, CloudTargetListResponse } from '@/types/cloud-target'
 import { getErrorMessage } from '@/lib/utils'
 import { ClientRelativeTime } from './client-relative-time'
 import { StatusBadge } from '../status-badge'
@@ -142,9 +142,11 @@ const emptySubscribe = () => () => undefined
 const getClientSnapshot = () => true
 const getServerSnapshot = () => false
 
-export function CloudTargetList({ initialTargets }: { initialTargets: CloudTarget[] }) {
+export function CloudTargetList({ initialTargets }: { initialTargets: CloudTargetListResponse }) {
     const { t, locale } = useI18n()
-    const { data: targets = initialTargets, refetch } = useCloudTargets(initialTargets)
+    const { data: cloudTargetList = initialTargets, refetch } = useCloudTargets(initialTargets)
+    const targets = cloudTargetList.targets
+    const canCreateCloudTarget = targets.length < cloudTargetList.cloudTargetMax
     const updateMutation = useUpdateCloudTarget()
     const deleteMutation = useDeleteCloudTarget()
     const createMutation = useCreateCloudTarget()
@@ -175,7 +177,7 @@ export function CloudTargetList({ initialTargets }: { initialTargets: CloudTarge
             setFlushStates((previous) => {
                 const next = { ...previous }
                 for (const [id, state] of Object.entries(previous)) {
-                    const target = result.data.find((item) => String(item.id) === id)
+                    const target = result.data.targets.find((item) => String(item.id) === id)
                     if (!target) {
                         continue
                     }
@@ -669,7 +671,7 @@ export function CloudTargetList({ initialTargets }: { initialTargets: CloudTarge
                 </div>
             </Card>
 
-            <Card className='relative shrink-0 px-4 sm:px-6 pt-4 space-y-4'>
+            {canCreateCloudTarget && <Card className='relative shrink-0 px-4 sm:px-6 pt-4 space-y-4'>
                 {createMutation.isPending && (
                     <div className='absolute inset-0 z-10 flex items-center justify-center rounded-xl bg-white/60'>
                         <Loader2 className='h-5 w-5 animate-spin text-muted-foreground' />
@@ -823,7 +825,7 @@ export function CloudTargetList({ initialTargets }: { initialTargets: CloudTarge
                         t('common.add')
                     )}
                 </Button>
-            </Card>
+            </Card>}
 
             <AlertDialog open={pendingAction !== null} onOpenChange={(open) => !open && setPendingAction(null)}>
                 <AlertDialogContent>

@@ -79,9 +79,10 @@ The Go backend (`edge-gateway`) is migrating all endpoints to a consistent envel
 { "ok": false, "message": "<error message>" }
 ```
 
-- `CloudTarget` handlers already use this envelope. `Hub` handlers are legacy
-  (still return raw arrays/objects, and `{ "message": ... }` on error) and will be
-  migrated later.
+- `CloudTarget` handlers already use this envelope. The cloud-target list data
+  is `{ targets: CloudTarget[], cloudTargetMax: number }`. `Hub` handlers are
+  legacy (still return raw arrays/objects, and `{ "message": ... }` on error)
+  and will be migrated later.
 - `serverApiFetch()` (`lib/api/server.ts`) handles **both formats transparently**:
   it detects an envelope via `isEnvelope(body)` (checks for a boolean `ok` field);
   if present, unwraps `.data` and throws using `.message` on `ok: false`; if not

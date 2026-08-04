@@ -3,7 +3,7 @@ import { ServerApiError, serverApiFetch } from '@/lib/api/server'
 import { authOptions } from '@/lib/auth'
 import { normalizeRole } from '@/lib/roles'
 import { getServerSession } from 'next-auth'
-import type { CloudTarget } from '@/types/cloud-target'
+import type { CloudTargetListResponse } from '@/types/cloud-target'
 import type { Gateway } from '@/types/gateway'
 import type { Meter } from '@/types/meter'
 import { CLOUD_TARGET_ENDPOINT, GATEWAY_ENDPOINT } from '@/constances/url'
@@ -11,17 +11,17 @@ import { CLOUD_TARGET_ENDPOINT, GATEWAY_ENDPOINT } from '@/constances/url'
 export default async function OverviewPage() {
     const session = await getServerSession(authOptions)
     const isAdmin = normalizeRole(session?.user?.role) === 'admin'
-    const [gateways, cloudTargets] = isAdmin
+    const [gateways, cloudTargetList] = isAdmin
         ? await Promise.all([
               serverApiFetch<Gateway[]>(GATEWAY_ENDPOINT.base),
-              serverApiFetch<CloudTarget[]>(CLOUD_TARGET_ENDPOINT.base),
+              serverApiFetch<CloudTargetListResponse>(CLOUD_TARGET_ENDPOINT.base),
           ])
-        : [await safeFetch<Gateway[]>(GATEWAY_ENDPOINT.base, []), []]
+        : [await safeFetch<Gateway[]>(GATEWAY_ENDPOINT.base, []), { targets: [], cloudTargetMax: 0 }]
     const meterResults = await Promise.all(
         gateways.map((gateway) => safeFetch<Meter[]>(GATEWAY_ENDPOINT.getMeters(gateway.uid), [])),
     )
 
-    return <OverviewDashboard gateways={gateways} cloudTargets={cloudTargets} meters={meterResults.flat()} canManage={isAdmin} />
+    return <OverviewDashboard gateways={gateways} cloudTargets={cloudTargetList.targets} meters={meterResults.flat()} canManage={isAdmin} />
 }
 
 async function safeFetch<T>(path: string, fallback: T): Promise<T> {

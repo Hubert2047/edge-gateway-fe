@@ -1,6 +1,6 @@
 'use client'
 
-import { CloudTarget, CloudTargetFormValues, TestConnectionResult } from '@/types/cloud-target'
+import { CloudTarget, CloudTargetFormValues, CloudTargetListResponse, TestConnectionResult } from '@/types/cloud-target'
 import { apiFetch } from './client'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { CLOUD_TARGET_ENDPOINT } from '@/constances/url'
@@ -10,7 +10,7 @@ export const cloudTargetKeys = {
     list: () => [...cloudTargetKeys.all, 'list'] as const,
 }
 
-export function useCloudTargets(initialData: CloudTarget[]) {
+export function useCloudTargets(initialData: CloudTargetListResponse) {
     return useQuery({
         queryKey: cloudTargetKeys.list(),
         queryFn: getCloudTargets,
@@ -35,9 +35,16 @@ export function useUpdateCloudTarget() {
         mutationFn: ({ id, form }: { id: string; form: CloudTargetFormValues }) => updateCloudTarget(id, form),
         onMutate: async ({ id, form }) => {
             await queryClient.cancelQueries({ queryKey: cloudTargetKeys.list() })
-            const previous = queryClient.getQueryData<CloudTarget[]>(cloudTargetKeys.list())
-            queryClient.setQueryData<CloudTarget[]>(cloudTargetKeys.list(), (old) =>
-                old?.map((target) => (target.id === id ? { ...target, ...form } : target)),
+            const previous = queryClient.getQueryData<CloudTargetListResponse>(cloudTargetKeys.list())
+            queryClient.setQueryData<CloudTargetListResponse>(cloudTargetKeys.list(), (old) =>
+                old
+                    ? {
+                          ...old,
+                          targets: old.targets.map((target) =>
+                              target.id === id ? { ...target, ...form } : target,
+                          ),
+                      }
+                    : old,
             )
             return { previous }
         },
@@ -87,7 +94,7 @@ export function useFlushCloudTarget() {
 }
 
 function getCloudTargets() {
-    return apiFetch<CloudTarget[]>(CLOUD_TARGET_ENDPOINT.base)
+    return apiFetch<CloudTargetListResponse>(CLOUD_TARGET_ENDPOINT.base)
 }
 
 function createCloudTarget(form: CloudTargetFormValues) {
