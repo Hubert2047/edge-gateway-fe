@@ -34,7 +34,7 @@ export function OverviewDashboard({ gateways, cloudTargets, meters, canManage }:
     const router = useRouter()
     const enabledGateways = gateways.filter((gateway) => gateway.enabled).length
     const enabledCloudTargets = cloudTargets.filter((target) => target.enabled).length
-    const pendingUploads = cloudTargets.reduce((sum, target) => sum + (target.pendingReadings ?? 0), 0)
+    const realtimePending = cloudTargets.reduce((sum, target) => sum + (target.realtimePending ?? 0), 0)
     const gatewayNames = new Map(gateways.map((gateway) => [gateway.uid, getGatewayDisplayName(gateway, t)]))
 
     return (
@@ -62,7 +62,7 @@ export function OverviewDashboard({ gateways, cloudTargets, meters, canManage }:
                     label={t('overview.uploaded')}
                     value={cloudTargets.reduce((sum, target) => sum + (target.lastUploadAt ? 1 : 0), 0)}
                 />
-                <Summary label={t('overview.pending')} value={pendingUploads} />
+                <Summary label={t('overview.realtimePending')} value={realtimePending} />
             </section>
 
             <div className='grid shrink-0 gap-8 lg:grid-cols-2'>
@@ -107,7 +107,8 @@ export function OverviewDashboard({ gateways, cloudTargets, meters, canManage }:
                                             {target.enabled ? t('overview.online') : t('common.disabled')}
                                         </span>
                                         <p className='mt-2 text-xs text-[#7B8580]'>
-                                            {t('overview.pending')}: {target.pendingReadings ?? 0}
+                                            {t('overview.realtimePending')}: {target.realtimePending ?? 0}
+                                            {target.backfill ? ` · ${t('overview.backfill')}: ${target.backfill.createdCount}/${target.backfill.estimatedTotalCount}` : ''}
                                         </p>
                                     </div>
                                 </div>

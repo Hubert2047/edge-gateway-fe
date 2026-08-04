@@ -1,3 +1,11 @@
+export interface CloudTargetBackfillStatus {
+    status: string
+    createdCount: number
+    estimatedTotalCount: number
+    currentMeterUid?: string
+    currentCursorTs?: number
+}
+
 export interface CloudTarget {
     id: string
     name: string
@@ -8,13 +16,14 @@ export interface CloudTarget {
     enabled: boolean
     connectionStatus: string
     lastUploadAt: string | null
-    pendingReadings: number
-    remainingRounds: number
+    realtimePending: number
+    backfill?: CloudTargetBackfillStatus | null
 }
 
 export interface CloudTargetListResponse {
     targets: CloudTarget[]
     cloudTargetMax: number
+    uploadedToday?: number
 }
 
 export interface CloudTargetFormValues {

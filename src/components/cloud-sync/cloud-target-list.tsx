@@ -157,7 +157,7 @@ export function CloudTargetList({ initialTargets }: { initialTargets: CloudTarge
     const [rowFormState, setRowFormState] = useState<Record<string, RowFormState>>({})
     const [testResults, setTestResults] = useState<Record<string, TestResult>>({})
     const [enableErrors, setEnableErrors] = useState<Record<string, string>>({})
-    const [flushStates, setFlushStates] = useState<Record<string, { pendingReadings: number; delayMs: number }>>({})
+    const [flushStates, setFlushStates] = useState<Record<string, { realtimePending: number; backfillCreatedCount: number; delayMs: number }>>({})
     const [deletingId, setDeletingId] = useState<string | null>(null)
     const isHydrated = useSyncExternalStore(emptySubscribe, getClientSnapshot, getServerSnapshot)
     const earliestBackfillDate = isHydrated ? earliestDateInput() : undefined
@@ -182,15 +182,16 @@ export function CloudTargetList({ initialTargets }: { initialTargets: CloudTarge
                     if (!target) {
                         continue
                     }
-                    const currentPending = Number(target.pendingReadings)
-                    if (!Number.isFinite(currentPending)) continue
-                    const changed = currentPending !== state.pendingReadings
+                    const currentRealtimePending = Number(target.realtimePending)
+                    const currentBackfillCreatedCount = Number(target.backfill?.createdCount ?? 0)
+                    if (!Number.isFinite(currentRealtimePending) || !Number.isFinite(currentBackfillCreatedCount)) continue
+                    const changed = currentRealtimePending !== state.realtimePending || currentBackfillCreatedCount !== state.backfillCreatedCount
                     if (changed) {
                         delete next[id]
                         continue
                     }
                     const delayMs = Math.min(state.delayMs * 2, 15_000)
-                    next[id] = { pendingReadings: target.pendingReadings, delayMs }
+                    next[id] = { realtimePending: currentRealtimePending, backfillCreatedCount: currentBackfillCreatedCount, delayMs }
                     nextDelay = Math.max(nextDelay, delayMs)
                 }
                 return next
@@ -404,11 +405,15 @@ export function CloudTargetList({ initialTargets }: { initialTargets: CloudTarge
 
     function beginFlush(ids: string[]) {
         const normalizedIds = ids.map(String)
-        const initialStates = normalizedIds.reduce<Record<string, { pendingReadings: number; delayMs: number }>>(
+        const initialStates = normalizedIds.reduce<Record<string, { realtimePending: number; backfillCreatedCount: number; delayMs: number }>>(
             (states, id) => {
                 const target = targets.find((item) => String(item.id) === id)
                 if (target) {
-                    states[id] = { pendingReadings: Number(target.pendingReadings), delayMs: 2_000 }
+                    states[id] = {
+                        realtimePending: Number(target.realtimePending),
+                        backfillCreatedCount: Number(target.backfill?.createdCount ?? 0),
+                        delayMs: 2_000,
+                    }
                 }
                 return states
             },
@@ -639,13 +644,31 @@ export function CloudTargetList({ initialTargets }: { initialTargets: CloudTarge
                                                             </p>
                                                         </div>
                                                         <div className='flex gap-4'>
-                                                            <p>{t('cloud.pending')}</p>
+                                                            <p>{t('cloud.realtimePending')}</p>
                                                             <p className='font-bold'>
-                                                                {typeof target.pendingReadings === 'number'
-                                                                    ? target.pendingReadings
+                                                                {typeof target.realtimePending === 'number'
+                                                                    ? target.realtimePending
                                                                     : 0}
                                                             </p>
                                                         </div>
+                                                        {target.backfill ? (
+                                                            <div className='mt-2 min-w-48'>
+                                                                <div className='flex justify-between text-xs'>
+                                                                    <span>{t('cloud.backfillProgress')}</span>
+                                                                    <span className='font-bold'>
+                                                                        {target.backfill.createdCount} / {target.backfill.estimatedTotalCount}
+                                                                    </span>
+                                                                </div>
+                                                                <div className='mt-1 h-1.5 overflow-hidden rounded bg-[#E5EAE6]'>
+                                                                    <div
+                                                                        className='h-full bg-[#64BD91]'
+                                                                        style={{
+                                                                            width: `${target.backfill.estimatedTotalCount > 0 ? Math.min(100, (target.backfill.createdCount / target.backfill.estimatedTotalCount) * 100) : 0}%`,
+                                                                        }}
+                                                                    />
+                                                                </div>
+                                                            </div>
+                                                        ) : null}
                                                     </div>
                                                 </div>
                                             </td>
