@@ -18,7 +18,7 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
-import type { Meter, MeterBatchUpdateValues, MeterFormValues, MeterType } from '@/types/meter'
+import type { Meter, MeterBatchUpdateValues, MeterFormValues, PhaseMode } from '@/types/meter'
 import type { Gateway } from '@/types/gateway'
 import { getErrorMessage } from '@/lib/utils'
 import { StatusBadge } from '../status-badge'
@@ -42,7 +42,7 @@ function meterToForm(meter: Meter): MeterFormValues {
     return {
         macId: meter.macId,
         name: meter.name ?? '',
-        measurementType: meter.measurementType,
+        phaseMode: meter.phaseMode,
         voltage: meter.voltage,
         powerFactor: meter.powerFactor,
         enabled: meter.enabled,
@@ -54,7 +54,7 @@ function isMeterFormDirty(meter: Meter, form: MeterFormValues): boolean {
     return (
         form.macId !== current.macId ||
         form.name !== current.name ||
-        form.measurementType !== current.measurementType ||
+        form.phaseMode !== current.phaseMode ||
         form.voltage !== current.voltage ||
         form.powerFactor !== current.powerFactor ||
         form.enabled !== current.enabled
@@ -303,17 +303,24 @@ export function MeterList({
                                         </td>
                                         <td data-label={t('meter.phase')} className='p-2'>
                                             <Select
-                                                value={form.measurementType}
+                                                value={form.phaseMode}
                                                 disabled={rowBusy}
                                                 onValueChange={(v) => {
                                                     if (!v) return
-                                                    updateRowForm(meter.macId, { measurementType: v as MeterType })
+                                                    updateRowForm(meter.macId, { phaseMode: v as PhaseMode })
                                                 }}>
                                                 <SelectTrigger>
-                                                    <SelectValue>{form.measurementType === 'three_phase' ? t('meter.threePhase') : t('meter.singlePhase')}</SelectValue>
+                                                    <SelectValue>
+                                                        {form.phaseMode === 'three_phase'
+                                                            ? t('meter.threePhase')
+                                                            : form.phaseMode === 'three_phase_balanced'
+                                                                ? t('meter.threePhaseBalanced')
+                                                                : t('meter.singlePhase')}
+                                                    </SelectValue>
                                                 </SelectTrigger>
                                                 <SelectContent>
                                                     <SelectItem value='three_phase'>{t('meter.threePhase')}</SelectItem>
+                                                    <SelectItem value='three_phase_balanced'>{t('meter.threePhaseBalanced')}</SelectItem>
                                                     <SelectItem value='single_phase'>{t('meter.singlePhase')}</SelectItem>
                                                 </SelectContent>
                                             </Select>

@@ -1,14 +1,17 @@
-export type MeterType = 'single_phase' | 'three_phase'
+export type PhaseMode = 'single_phase' | 'three_phase' | 'three_phase_balanced'
+export type HardwareMeterType = string
+
 export interface MeterCreateValues extends MeterFormValues {
-    meterType: MeterType
+    meterType: HardwareMeterType
 }
+
 export interface Meter {
     meterId: string
     macId: string
     gatewayUID: string
     name: string | null
-    meterType: MeterType
-    measurementType: MeterType
+    meterType: HardwareMeterType
+    phaseMode: PhaseMode
     voltage: number
     powerFactor: number
     isVirtual: boolean
@@ -20,19 +23,19 @@ export interface Meter {
     config: unknown
 }
 
-export type MeterFormValues  = {
+export type MeterFormValues = {
     macId: string
     name: string
-    measurementType: MeterType
+    phaseMode: PhaseMode
     voltage: number
     powerFactor: number
-    enabled: boolean   
+    enabled: boolean
 }
 
 export interface MeterUpdateValues {
     macId: string
     name: string | null
-    measurementType: MeterType
+    phaseMode: PhaseMode
     voltage?: number
     powerFactor: number
     enabled: boolean
@@ -46,7 +49,7 @@ export interface MeterBulkSaveResult {
 export interface MeterBatchUpdateValues extends MeterUpdateValues {
     meterId: string
     gatewayUID: string
-    meterType: MeterType
+    meterType: HardwareMeterType
     connectionType: string
     config: unknown
     note: string | null
