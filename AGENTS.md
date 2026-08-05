@@ -252,10 +252,13 @@ src/
   endpoint with the selected time range, meter, metric, and control limits, plus aggregated
   latest/average/minimum/maximum/exceeded values.
 
-## History data API gaps
-- `/history-data` currently uses existing gateway and meter metadata for its selectors.
-- The chart and table remain empty until the backend exposes a historical samples query
-  endpoint returning timestamp, gateway, meter, voltage, current, active power, and status.
+## History data
+- `/history-data` uses the gateway → meter → axis → range flow and calls the
+  internal Next.js `/api/v1/readings/timeseries` proxy through the feature
+  query hook. The backend returns a dense grid; null measurement values remain
+  null so Recharts renders gaps rather than invented zeroes.
+- A minute-axis request over `minute_axis_max_buckets` surfaces the backend's
+  400 error message without silently changing the requested range or axis.
 
 ## History events API gaps
 - `/history-events` currently uses existing gateway and meter metadata for its selectors.

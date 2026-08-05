@@ -2,32 +2,26 @@
 
 import { useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
-import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
+import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import { getGatewayDisplayName } from '@/lib/gateway'
 import { useI18n } from '@/lib/i18n'
+import { ApiError } from '@/lib/api/client'
+import { useTimeseries } from '@/lib/api/timeseries'
 import type { Gateway } from '@/types/gateway'
 import type { Meter } from '@/types/meter'
+import type { TimeseriesAxis } from '@/types/timeseries'
 
 type Props = { gateways: Gateway[]; meters: Meter[] }
-type HistoryRow = {
-    time: string
-    gateway: string
-    meter: string
-    voltage: number
-    current: number
-    power: number
-    status: string
-}
-
 export function HistoryDataView({ gateways, meters }: Props) {
     const { t } = useI18n()
-    const [range, setRange] = useState('hourly')
-    const [date, setDate] = useState('2026-07-23T19:00')
+    const [axis, setAxis] = useState<TimeseriesAxis>('hour')
+    const [date, setDate] = useState(() => new Date(Date.now() - 60 * 60 * 1000).toISOString().slice(0, 16))
+    const [endDate, setEndDate] = useState(() => new Date().toISOString().slice(0, 16))
     const [gatewayUid, setGatewayUid] = useState(gateways[0]?.uid ?? '')
     const [meterId, setMeterId] = useState(meters[0]?.macId ?? '')
     const [metric, setMetric] = useState('average-current')
     const [threePhase, setThreePhase] = useState(false)
-    const [rows, setRows] = useState<HistoryRow[]>([])
+    const [submitted, setSubmitted] = useState(false)
 
     const availableMeters = useMemo(
         () => meters.filter((meter) => !gatewayUid || meter.gatewayUID === gatewayUid),
@@ -40,13 +34,13 @@ export function HistoryDataView({ gateways, meters }: Props) {
         setMeterId(nextMeter?.macId ?? '')
     }
 
-    function queryHistory() {
-        setRows([])
-    }
+    const params = { gatewayUid, meterId, axis, start: new Date(date).toISOString(), end: new Date(endDate).toISOString() }
+    const query = useTimeseries(params, submitted && Boolean(gatewayUid && meterId))
+    const rows = query.data ?? []
 
     const chartData = rows.map((row) => ({
-        time: row.time,
-        value: metric === 'voltage' ? row.voltage : metric === 'active-power' ? row.power : row.current,
+        time: row.bucket,
+        value: metric === 'voltage' ? row.voltage : metric === 'active-power' ? row.activePower : row.avgCurrent,
     }))
 
     return (
@@ -62,12 +56,13 @@ export function HistoryDataView({ gateways, meters }: Props) {
                 <div className='grid gap-3 xl:grid-cols-5'>
                     <Field label={t('historyData.timeRange')}>
                         <select
-                            value={range}
-                            onChange={(event) => setRange(event.target.value)}
+                            value={axis}
+                            onChange={(event) => setAxis(event.target.value as TimeseriesAxis)}
                             className='control-input'>
-                            <option value='hourly'>{t('historyData.hourly')}</option>
-                            <option value='daily'>{t('historyData.daily')}</option>
-                            <option value='weekly'>{t('historyData.weekly')}</option>
+                            <option value='minute'>Minute</option>
+                            <option value='hour'>Hour</option>
+                            <option value='day'>Day</option>
+                            <option value='month'>Month</option>
                         </select>
                     </Field>
                     <Field label={t('historyData.date')}>
@@ -77,6 +72,9 @@ export function HistoryDataView({ gateways, meters }: Props) {
                             onChange={(event) => setDate(event.target.value)}
                             className='control-input'
                         />
+                    </Field>
+                    <Field label='End'>
+                        <input type='datetime-local' value={endDate} onChange={(event) => setEndDate(event.target.value)} className='control-input' />
                     </Field>
                     <Field label={t('historyData.gateway')}>
                         <select
@@ -127,7 +125,7 @@ export function HistoryDataView({ gateways, meters }: Props) {
                     </label>
                     <button
                         type='button'
-                        onClick={queryHistory}
+                        onClick={() => setSubmitted(true)}
                         className='ml-8 h-8 w-32 bg-[#153F31] px-2.5 text-sm font-medium text-white hover:bg-[#1B503D]'>
                         {t('historyData.query')}
                     </button>
@@ -143,7 +141,7 @@ export function HistoryDataView({ gateways, meters }: Props) {
                 </div>
                 <div className='h-[27rem] w-full'>
                     <ResponsiveContainer width='100%' height='100%'>
-                        <BarChart data={chartData} margin={{ top: 20, right: 18, left: 18, bottom: 8 }}>
+                        <LineChart data={chartData} margin={{ top: 20, right: 18, left: 18, bottom: 8 }}>
                             <CartesianGrid stroke='#E5E9E6' vertical />
                             <XAxis
                                 dataKey='time'
@@ -153,11 +151,14 @@ export function HistoryDataView({ gateways, meters }: Props) {
                             />
                             <YAxis tick={{ fill: '#7B8580', fontSize: 12 }} tickLine={false} axisLine={false} />
                             <Tooltip />
-                            <Bar dataKey='value' fill='#4E8B74' radius={[0, 0, 0, 0]} />
-                        </BarChart>
+                            <Line type='monotone' dataKey='value' stroke='#4E8B74' dot={false} connectNulls={false} />
+                        </LineChart>
                     </ResponsiveContainer>
                 </div>
-                {rows.length === 0 && (
+                {query.error instanceof ApiError && (
+                    <p className='mt-4 text-center text-sm text-[#B54E45]'>{query.error.message}</p>
+                )}
+                {!query.error && rows.length === 0 && (
                     <p className='mt-4 text-center text-sm text-[#8A938E]'>{t('historyData.dataUnavailable')}</p>
                 )}
             </section>
@@ -184,14 +185,14 @@ export function HistoryDataView({ gateways, meters }: Props) {
                             </tr>
                         ) : (
                             rows.map((row) => (
-                                <tr key={row.time} className='border-t border-[#E1E5E2]'>
-                                    <td className='px-4 py-3'>{row.time}</td>
-                                    <td className='px-4 py-3'>{row.gateway}</td>
-                                    <td className='px-4 py-3'>{row.meter}</td>
-                                    <td className='px-4 py-3'>{row.voltage}</td>
-                                    <td className='px-4 py-3'>{row.current}</td>
-                                    <td className='px-4 py-3'>{row.power}</td>
-                                    <td className='px-4 py-3'>{row.status}</td>
+                                <tr key={row.bucketTs} className='border-t border-[#E1E5E2]'>
+                                    <td className='px-4 py-3'>{row.bucket}</td>
+                                    <td className='px-4 py-3'>{getGatewayDisplayName(gateways.find((g) => g.uid === gatewayUid)!, t)}</td>
+                                    <td className='px-4 py-3'>{meterId}</td>
+                                    <td className='px-4 py-3'>{row.voltage ?? '—'}</td>
+                                    <td className='px-4 py-3'>{row.avgCurrent ?? '—'}</td>
+                                    <td className='px-4 py-3'>{row.activePower ?? '—'}</td>
+                                    <td className='px-4 py-3'>{row.sampleCount ? 'OK' : '—'}</td>
                                 </tr>
                             ))
                         )}

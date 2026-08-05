@@ -28,3 +28,6 @@ export const AUTH_ENDPOINT = {
 export const SETTINGS_ENDPOINT = {
     base: '/api/v1/settings',
 }
+export const TIMESERIES_ENDPOINT = {
+    base: '/api/v1/readings/timeseries',
+}
