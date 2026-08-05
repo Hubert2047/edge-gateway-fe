@@ -23,7 +23,12 @@ export function useCreateCloudTarget() {
     const queryClient = useQueryClient()
     return useMutation({
         mutationFn: (form: CloudTargetFormValues) => createCloudTarget(form),
-        onSuccess: () => {
+        onSuccess: (target) => {
+            queryClient.setQueryData<CloudTargetListResponse>(cloudTargetKeys.list(), (current) =>
+                current
+                    ? { ...current, targets: [...current.targets, target] }
+                    : current,
+            )
             queryClient.invalidateQueries({ queryKey: cloudTargetKeys.list() })
         },
     })

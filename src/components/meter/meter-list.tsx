@@ -258,7 +258,16 @@ export function MeterList({
                 <div
                     className={`flex-1 min-h-0 overflow-y-auto transition-opacity duration-200 ${isFetching ? 'opacity-60' : 'opacity-100'
                         } max-md:overflow-visible`}>
-                    <table className='responsive-table w-full text-sm'>
+                    <table className='responsive-table w-full table-fixed text-sm'>
+                        <colgroup>
+                            <col className='w-[16%]' />
+                            <col className='w-[16%]' />
+                            <col className='w-[15%]' />
+                            <col className='w-[12%]' />
+                            <col className='w-[12%]' />
+                            <col className='w-[11%]' />
+                            <col className='w-[18%]' />
+                        </colgroup>
                         <thead className='bg-muted text-left sticky top-0 z-10'>
                             <tr>
                                 <th className='p-3 whitespace-nowrap'>{t('meter.tableName')}</th>

@@ -156,7 +156,6 @@ export function CloudTargetList({ initialTargets }: { initialTargets: CloudTarge
 
     const [rowFormState, setRowFormState] = useState<Record<string, RowFormState>>({})
     const [testResults, setTestResults] = useState<Record<string, TestResult>>({})
-    const [enableErrors, setEnableErrors] = useState<Record<string, string>>({})
     const [flushStates, setFlushStates] = useState<Record<string, { realtimePending: number; backfillCreatedCount: number; delayMs: number }>>({})
     const [deletingId, setDeletingId] = useState<string | null>(null)
     const isHydrated = useSyncExternalStore(emptySubscribe, getClientSnapshot, getServerSnapshot)
@@ -246,32 +245,16 @@ export function CloudTargetList({ initialTargets }: { initialTargets: CloudTarge
     const [pendingAction, setPendingAction] = useState<PendingAction>(null)
 
     function toggleEnabled(target: CloudTarget, checked: boolean) {
+        if (checked && target.connectionStatus !== 'online') {
+            toast.error(t('toast.cloudTestRequired'))
+            return
+        }
+
         const { form } = getRowForm(target)
-        setEnableErrors((previous) => {
-            const next = { ...previous }
-            delete next[target.id]
-            return next
-        })
         updateMutation.mutate(
             { id: target.id, form: { ...form, enabled: checked } },
             {
-                onSuccess: () => {
-                    if (checked) {
-                        setEnableErrors((previous) => {
-                            const next = { ...previous }
-                            delete next[target.id]
-                            return next
-                        })
-                    }
-                },
-                onError: (error) => {
-                    if (checked) {
-                        setEnableErrors((previous) => ({
-                            ...previous,
-                            [target.id]: error instanceof Error ? error.message : t('toast.statusFailed'),
-                        }))
-                    }
-                },
+                onError: () => toast.error(t('toast.statusFailed')),
             },
         )
         clearRowForm(target.id)
@@ -356,13 +339,6 @@ export function CloudTargetList({ initialTargets }: { initialTargets: CloudTarge
         testMutation.mutate(id, {
             onSuccess: (result) => {
                 setTestResults((prev) => ({ ...prev, [id]: result }))
-                if (result.success) {
-                    setEnableErrors((previous) => {
-                        const next = { ...previous }
-                        delete next[id]
-                        return next
-                    })
-                }
                 void refetch()
             },
             onError: () => setTestResults((prev) => ({ ...prev, [id]: { success: false, message: t('cloud.failure') } })),
@@ -510,11 +486,6 @@ export function CloudTargetList({ initialTargets }: { initialTargets: CloudTarge
                                                         toggleEnabled(target, checked === true)
                                                     }
                                                 />
-                                                {enableErrors[target.id] && (
-                                                    <p className='text-xs text-destructive'>
-                                                        {enableErrors[target.id]}
-                                                    </p>
-                                                )}
                                                 <StatusBadge enabled={form.enabled} activeLabel={t('cloud.online')} />
                                             </td>
                                             <td data-label={t('cloud.server')} className='p-4 space-y-3'>
@@ -684,11 +655,7 @@ export function CloudTargetList({ initialTargets }: { initialTargets: CloudTarge
                                                     <Button
                                                         size='sm'
                                                         variant='secondary'
-                                                        className={
-                                                            form.enabled
-                                                                ? 'w-20 border bg-sky-50 text-sky-700 hover:bg-sky-100 border-sky-200'
-                                                                : 'w-20 border bg-muted text-muted-foreground hover:bg-muted cursor-not-allowed'
-                                                        }
+                                                        className='w-20 border bg-sky-50 text-sky-700 hover:bg-sky-100 border-sky-200'
                                                         disabled={testing}
                                                         onClick={() => runTestConnection(target.id)}>
                                                         {testing ? (
@@ -757,8 +724,8 @@ export function CloudTargetList({ initialTargets }: { initialTargets: CloudTarge
                             </Label>
                         </div>
                         {newForm.backfillEnabled && (
-                            <div className='grid flex-1 grid-cols-1 gap-4 sm:grid-cols-2'>
-                        <div className='space-y-1.5'>
+                            <div className='flex flex-1 flex-col gap-4 sm:flex-row'>
+                        <div className='w-full space-y-1.5 sm:w-48'>
                             <Label htmlFor='new-backfill-start' className='text-xs text-muted-foreground'>
                                 {t('cloud.backfillStart')}
                             </Label>
@@ -776,7 +743,7 @@ export function CloudTargetList({ initialTargets }: { initialTargets: CloudTarge
                                 <p className='text-xs text-destructive'>{t(newErrors.backfillFromTs)}</p>
                             )}
                         </div>
-                        <div className='space-y-1.5'>
+                        <div className='w-full space-y-1.5 sm:w-48'>
                             <Label htmlFor='new-backfill-end' className='text-xs text-muted-foreground'>
                                 {t('cloud.backfillEnd')}
                             </Label>
