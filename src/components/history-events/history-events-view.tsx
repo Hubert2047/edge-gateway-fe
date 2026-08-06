@@ -39,15 +39,15 @@ export function HistoryEventsView({ gateways, meters }: Props) {
     }
 
     return (
-        <div className='flex min-h-full flex-col gap-7 pb-8'>
-            <div className='flex items-center justify-between border-b border-[#D8DDD9] pb-5'>
+        <div className='flex h-full min-h-0 flex-col gap-7 overflow-y-auto pb-8'>
+            <div className='sticky top-0 z-10 flex shrink-0 items-center justify-between border-b border-[#D8DDD9] bg-[#F7F5F0] pt-1 pb-5'>
                 <h1 className='text-3xl font-bold tracking-tight'>{t('historyEvents.title')}</h1>
                 <span className='border border-[#BFC8C2] px-4 py-2 text-sm text-[#357A59]'>
                     {rows.length} {t('historyEvents.records')}
                 </span>
             </div>
 
-            <section className='border border-[#D8DDD9] bg-white p-4'>
+            <section className='shrink-0 border border-[#D8DDD9] bg-white p-4'>
                 <div className='grid gap-3 xl:grid-cols-5'>
                     <Field label={t('historyEvents.timeRange')}>
                         <select
@@ -110,7 +110,7 @@ export function HistoryEventsView({ gateways, meters }: Props) {
                 </button>
             </section>
 
-            <section className='overflow-hidden border border-[#D8DDD9] bg-white'>
+            <section className='shrink-0 overflow-hidden border border-[#D8DDD9] bg-white'>
                 <div className='overflow-x-auto'>
                     <table className='w-full min-w-[980px] text-sm'>
                         <thead className='bg-[#F1F2EF] text-left text-[#4F5A54]'>

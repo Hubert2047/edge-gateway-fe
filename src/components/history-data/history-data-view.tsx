@@ -135,15 +135,15 @@ export function HistoryDataView({ gateways, meters }: Props) {
         : [{ key: 'avgCurrent', label: t('historyData.current') }]
 
     return (
-        <div className='flex min-h-full flex-col gap-7 pb-8'>
-            <div className='flex items-center justify-between border-b border-[#D8DDD9] pb-5'>
+        <div className='flex h-full min-h-0 flex-col gap-7 overflow-y-auto pb-8'>
+            <div className='sticky top-0 z-10 flex shrink-0 items-center justify-between border-b border-[#D8DDD9] bg-[#F7F5F0] pt-1 pb-5'>
                 <h1 className='text-3xl font-bold tracking-tight'>{t('historyData.title')}</h1>
                 <span className='border border-[#BFC8C2] px-4 py-2 text-sm text-[#357A59]'>
                     {rows.length} {t('historyData.records')}
                 </span>
             </div>
 
-            <section className='border border-[#D8DDD9] bg-white p-4'>
+            <section className='shrink-0 border border-[#D8DDD9] bg-white p-4'>
                 <div className='grid gap-3 xl:grid-cols-5'>
                     <Field label={t('historyData.gateway')}>
                         <select
@@ -230,7 +230,7 @@ export function HistoryDataView({ gateways, meters }: Props) {
                 </div>
             </section>
 
-            <section className='border border-[#D8DDD9] bg-white p-7'>
+            <section className='shrink-0 border border-[#D8DDD9] bg-white p-7'>
                 <div className='mb-8 flex items-center justify-between'>
                     <h2 className='text-2xl font-bold'>{t('historyData.chartTitle')}</h2>
                     <span className='text-sm text-[#7B8580]'>
@@ -287,8 +287,8 @@ export function HistoryDataView({ gateways, meters }: Props) {
                 )}
             </section>
 
-            <section className='overflow-x-auto border border-[#D8DDD9] bg-white'>
-                <table className='w-full text-sm'>
+            <section className='shrink-0 overflow-x-auto border border-[#D8DDD9] bg-white'>
+                <table className='w-full min-w-[980px] text-sm'>
                     <thead className='bg-[#F1F2EF] text-left text-[#4F5A54]'>
                         <tr>
                             {[

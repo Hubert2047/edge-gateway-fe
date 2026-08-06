@@ -33,8 +33,8 @@ export function OverviewDashboard({ gateways, cloudTargets, meters, canManage }:
     const gatewayNames = new Map(gateways.map((gateway) => [gateway.uid, getGatewayDisplayName(gateway, t)]))
 
     return (
-        <div className='flex min-h-full flex-col gap-5 md:h-full'>
-            <div className='flex shrink-0 items-center justify-between border-b border-[#D8DDD9] pb-5'>
+        <div className='flex h-full min-h-0 flex-col gap-5 overflow-y-auto pb-6'>
+            <div className='sticky top-0 z-10 flex shrink-0 items-center justify-between border-b border-[#D8DDD9] bg-[#F7F5F0] pt-1 pb-5'>
                 <h1 className='text-3xl font-bold tracking-tight'>{t('overview.title')}</h1>
                 <button
                     type='button'

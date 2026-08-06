@@ -35,8 +35,8 @@ export function ProcessControlAnalysis({ gateways, meters }: Props) {
     }
 
     return (
-        <div className='flex min-h-full flex-col gap-7 pb-8'>
-            <div className='flex items-center justify-between border-b border-[#D8DDD9] pb-5'>
+        <div className='flex h-full min-h-0 flex-col gap-7 overflow-y-auto pb-8'>
+            <div className='sticky top-0 z-10 flex shrink-0 items-center justify-between border-b border-[#D8DDD9] bg-[#F7F5F0] pt-1 pb-5'>
                 <h1 className='text-3xl font-bold tracking-tight'>{t('processControl.title')}</h1>
                 <span className='rounded-full bg-[#EAF5EF] px-4 py-2 text-sm font-medium text-[#357A59]'>
                     {t('processControl.normal')}

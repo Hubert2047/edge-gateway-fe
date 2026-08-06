@@ -1,13 +1,15 @@
 export const GATEWAY_ENDPOINT = {
     base: '/api/v1/gateways',
-    syncMeter: (uid: string) => `${GATEWAY_ENDPOINT.base}/${uid}/sync-meters`,
-    getMeters: (uid: string) => `${GATEWAY_ENDPOINT.base}/${uid}/meters`,
+    syncMeter: (gatewayUID: string) => `${GATEWAY_ENDPOINT.base}/${gatewayUID}/sync-meters`,
+    getMeters: (gatewayUID: string) => `${GATEWAY_ENDPOINT.base}/${gatewayUID}/meters`,
 }
 export const METER_ENDPOINT = {
     base: '/api/v1/meters',
     batch: (gatewayId: string) => `${METER_ENDPOINT.base}/batch/${encodeURIComponent(gatewayId)}`,
-    update: (meterId: string, gatewayId: string) => `${METER_ENDPOINT.base}/${encodeURIComponent(meterId)}/gateway/${encodeURIComponent(gatewayId)}`,
-    delete: (meterId: string, gatewayId: string) => `${METER_ENDPOINT.base}/${encodeURIComponent(meterId)}/gateway/${encodeURIComponent(gatewayId)}`,
+    update: (meterId: string, gatewayId: string) =>
+        `${METER_ENDPOINT.base}/${encodeURIComponent(meterId)}/gateway/${encodeURIComponent(gatewayId)}`,
+    delete: (meterId: string, gatewayId: string) =>
+        `${METER_ENDPOINT.base}/${encodeURIComponent(meterId)}/gateway/${encodeURIComponent(gatewayId)}`,
 }
 export const CLOUD_TARGET_ENDPOINT = {
     base: '/api/v1/cloud-targets',

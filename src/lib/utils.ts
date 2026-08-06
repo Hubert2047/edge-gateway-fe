@@ -26,7 +26,7 @@ export function formatValue(value: number | null, suffix = '') {
     return value === null ? '—' : `${value.toFixed(2)}${suffix}`
 }
 export function formatLastPolledAt(value: string | null | undefined, t: (key: string) => string) {
-    return value ? value.replace('T', ' ').replace(/([+-]\d\d:\d\d)$/, ' $1') : t('overview.notAvailable')
+    return value ? value.replace('T', ' ').replace(/([+-]\d\d:\d\d)$/, ' $1') : t('overview.neverPolled')
 }
 function parseAsUtcIfNoTimezone(input: string | Date): Date {
     if (input instanceof Date) return input
