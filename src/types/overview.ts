@@ -1,3 +1,7 @@
+import { CloudTarget } from './cloud-target'
+import { Gateway } from './gateway'
+import { Meter } from './meter'
+
 export type ActivePowerPoint = {
     bucket: string
     activePower: number | null

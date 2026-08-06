@@ -1,13 +1,13 @@
 'use client'
 
 import { useMemo, useState } from 'react'
-import type { ReactNode } from 'react'
 import { Search } from 'lucide-react'
 import { CartesianGrid, Line, LineChart, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import { getGatewayDisplayName } from '@/lib/gateway'
 import { useI18n } from '@/lib/i18n'
 import type { Gateway } from '@/types/gateway'
 import type { Meter } from '@/types/meter'
+import { Field } from '../ui/field'
 
 type Props = { gateways: Gateway[]; meters: Meter[] }
 
@@ -175,15 +175,6 @@ export function ProcessControlAnalysis({ gateways, meters }: Props) {
                 <p className='mt-6 text-center text-sm text-[#8A938E]'>{t('processControl.dataUnavailable')}</p>
             </section>
         </div>
-    )
-}
-
-function Field({ label, children }: { label: string; children: ReactNode }) {
-    return (
-        <label className='flex min-w-0 flex-col gap-1.5 text-sm text-[#5F6964]'>
-            <span>{label}</span>
-            {children}
-        </label>
     )
 }
 

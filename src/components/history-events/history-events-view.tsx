@@ -5,6 +5,7 @@ import { getGatewayDisplayName } from '@/lib/gateway'
 import type { Gateway } from '@/types/gateway'
 import type { Meter } from '@/types/meter'
 import { useI18n } from '@/lib/i18n'
+import { Field } from '../ui/field'
 
 type Props = { gateways: Gateway[]; meters: Meter[] }
 type EventRow = {
@@ -160,14 +161,5 @@ export function HistoryEventsView({ gateways, meters }: Props) {
                 </div>
             </section>
         </div>
-    )
-}
-
-function Field({ label, children }: { label: string; children: ReactNode }) {
-    return (
-        <label className='flex min-w-0 flex-col gap-1.5 text-sm text-[#5F6964]'>
-            <span>{label}</span>
-            {children}
-        </label>
     )
 }

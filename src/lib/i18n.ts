@@ -28,10 +28,9 @@ const zhTW: MessageTree = {
         logout: '登出',
         edgeService: 'Edge service',
         connected: '連線正常',
-        disconnected: "連線中斷",
+        disconnected: '連線中斷',
         openMenu: '開啟選單',
         closeMenu: '關閉選單',
-
     },
 
     common: {
@@ -127,7 +126,6 @@ const zhTW: MessageTree = {
         backfillEnabled: '上傳既有歷史資料',
         backfillStart: '開始日期',
         backfillEnd: '結束日期',
-
     },
 
     meter: {
@@ -244,7 +242,6 @@ const zhTW: MessageTree = {
         activePower: '有效功率',
         lastPolled: '最後輪詢',
         notAvailable: '—',
-        latestDataUnavailable: '最新資料：尚未提供即時讀值 API',
         noGateways: '尚未設定任何本地閘道',
         noCloudTargets: '尚未設定任何雲端服務器',
         noMeters: '尚未設定任何智慧勾表',
@@ -382,8 +379,8 @@ const zhTW: MessageTree = {
         passwordResetFailed: '密碼重設失敗',
         usernameUpdated: '使用者名稱更新成功',
         protected: '系統管理員',
-        confirmDeleteTitle: "刪除使用者",
-        confirmDelete: "確定要刪除使用者「{username}」嗎？此操作無法復原。"
+        confirmDeleteTitle: '刪除使用者',
+        confirmDelete: '確定要刪除使用者「{username}」嗎？此操作無法復原。',
     },
 }
 
@@ -405,7 +402,7 @@ const en: MessageTree = {
         connected: 'Connected',
         openMenu: 'Open menu',
         closeMenu: 'Close menu',
-        disconnected: "Disconnected",
+        disconnected: 'Disconnected',
     },
 
     common: {
@@ -501,7 +498,6 @@ const en: MessageTree = {
         backfillEnabled: 'Upload existing historical data',
         backfillStart: 'Start date',
         backfillEnd: 'End date',
-
     },
 
     meter: {
@@ -618,7 +614,6 @@ const en: MessageTree = {
         activePower: 'Active power',
         lastPolled: 'Last polled',
         notAvailable: '—',
-        latestDataUnavailable: 'Latest data: real-time readings API is not available yet',
         noGateways: 'No local gateways configured',
         noCloudTargets: 'No cloud targets configured',
         noMeters: 'No smart meters configured',
@@ -726,7 +721,6 @@ const en: MessageTree = {
         allMeters: 'All smart meters',
         selectGateway: 'Select gateway',
         addTitle: 'Add process rule',
-
     },
 
     users: {
@@ -757,8 +751,8 @@ const en: MessageTree = {
         passwordResetFailed: 'Failed to reset password',
         usernameUpdated: 'Username updated',
         protected: 'System administrator',
-        confirmDeleteTitle: "Delete user",
-        confirmDelete: "Are you sure you want to delete \"{username}\"? This action cannot be undone."
+        confirmDeleteTitle: 'Delete user',
+        confirmDelete: 'Are you sure you want to delete "{username}"? This action cannot be undone.',
     },
 }
 
@@ -829,14 +823,17 @@ export function I18nProvider({ children }: { children: ReactNode }) {
         document.documentElement.lang = nextLocale === 'en' ? 'en' : 'zh-Hant'
     }
 
-    const value = useMemo<I18nContextValue>(() => ({
-        locale,
-        setLocale: changeLocale,
-        t: (key, values = {}) => {
-            const template = messages[locale][key] ?? messages['zh-TW'][key] ?? key
-            return template.replace(/\{(\w+)\}/g, (_, name: string) => String(values[name] ?? `{${name}}`))
-        },
-    }), [locale])
+    const value = useMemo<I18nContextValue>(
+        () => ({
+            locale,
+            setLocale: changeLocale,
+            t: (key, values = {}) => {
+                const template = messages[locale][key] ?? messages['zh-TW'][key] ?? key
+                return template.replace(/\{(\w+)\}/g, (_, name: string) => String(values[name] ?? `{${name}}`))
+            },
+        }),
+        [locale],
+    )
 
     return createElement(I18nContext.Provider, { value }, children)
 }
