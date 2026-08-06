@@ -61,11 +61,14 @@ function isMeterFormDirty(meter: Meter, form: MeterFormValues): boolean {
     )
 }
 
-type FormErrors = Partial<Record<'name' | 'voltage' | 'powerFactor', string>>
+type FormErrors = Partial<Record<'name' | 'phaseMode' | 'voltage' | 'powerFactor', string>>
 
-function validateForm(form: MeterFormValues): FormErrors {
+function validateForm(form: MeterFormValues, meterType: string): FormErrors {
     const errors: FormErrors = {}
     if (!form.name.trim()) errors.name = 'validation.nameRequired'
+    if (meterType === '513' && form.phaseMode === 'three_phase') {
+        errors.phaseMode = 'validation.phaseMode513Invalid'
+    }
     if (!form.voltage || form.voltage <= 0) errors.voltage = 'validation.voltageInvalid'
     if (!form.powerFactor || form.powerFactor <= 0 || form.powerFactor > 1) {
         errors.powerFactor = 'validation.powerFactorInvalid'
@@ -138,7 +141,7 @@ export function MeterList({
     function requestSave(meter: Meter) {
         const { form } = getRowForm(meter)
         if (!isMeterFormDirty(meter, form)) return
-        const errors = validateForm(form)
+        const errors = validateForm(form, meter.meterType)
         if (Object.keys(errors).length > 0) {
             setRowFormState((prev) => ({ ...prev, [meter.macId]: { form, errors } }))
             return
@@ -159,7 +162,8 @@ export function MeterList({
         setRowFormState((prev) => {
             const next = { ...prev }
             for (const macId of dirtyMacIds) {
-                const errors = validateForm(next[macId].form)
+                const meter = meters.find((item) => item.macId === macId)
+                const errors = meter ? validateForm(next[macId].form, meter.meterType) : {}
                 if (Object.keys(errors).length > 0) hasError = true
                 next[macId] = { ...next[macId], errors }
             }
@@ -328,11 +332,16 @@ export function MeterList({
                                                     </SelectValue>
                                                 </SelectTrigger>
                                                 <SelectContent>
-                                                    <SelectItem value='three_phase'>{t('meter.threePhase')}</SelectItem>
+                                                    {meter.meterType !== '513' && (
+                                                        <SelectItem value='three_phase'>{t('meter.threePhase')}</SelectItem>
+                                                    )}
                                                     <SelectItem value='three_phase_balanced'>{t('meter.threePhaseBalanced')}</SelectItem>
                                                     <SelectItem value='single_phase'>{t('meter.singlePhase')}</SelectItem>
                                                 </SelectContent>
                                             </Select>
+                                            {errors.phaseMode && (
+                                                <p className='text-xs text-destructive mt-1'>{t(errors.phaseMode)}</p>
+                                            )}
                                         </td>
                                         <td data-label={t('meter.voltage')} className='p-2'>
                                             <Input
