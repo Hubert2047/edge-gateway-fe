@@ -31,3 +31,6 @@ export const SETTINGS_ENDPOINT = {
 export const TIMESERIES_ENDPOINT = {
     base: '/api/v1/readings/timeseries',
 }
+export const OVERVIEW_ENDPOINT = {
+    metersActivePower: '/api/v1/overview/meters-active-power',
+}

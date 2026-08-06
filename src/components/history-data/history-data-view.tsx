@@ -180,9 +180,14 @@ export function HistoryDataView({ gateways, meters }: Props) {
                             <MetricCheckbox key={option.key} option={option} selected={selectedMetrics} onChange={toggleMetric} />
                         ))}
                     </fieldset>
-                    <button type='button' onClick={() => setSubmitted(true)} className='h-8 w-32 bg-[#153F31] px-2.5 text-sm font-medium text-white hover:bg-[#1B503D]'>
-                        {t('historyData.query')}
+                    <button
+                        type='button'
+                        onClick={() => setSubmitted(true)}
+                        disabled={query.isFetching}
+                        className='h-8 w-32 bg-[#153F31] px-2.5 text-sm font-medium text-white hover:bg-[#1B503D] disabled:cursor-wait disabled:opacity-60'>
+                        {query.isFetching ? t('historyData.loading') : t('historyData.query')}
                     </button>
+                    {query.isFetching && <span role='status' className='self-center text-sm text-[#5F6964]'>{t('historyData.loading')}</span>}
                 </div>
             </section>
 
@@ -191,7 +196,12 @@ export function HistoryDataView({ gateways, meters }: Props) {
                     <h2 className='text-2xl font-bold'>{t('historyData.chartTitle')}</h2>
                     <span className='text-sm text-[#7B8580]'>{rows.length} {t('historyData.samples')}</span>
                 </div>
-                <div className='h-[27rem] w-full'>
+                <div className={`relative h-[27rem] w-full transition-opacity ${query.isFetching ? 'opacity-60' : ''}`}>
+                    {query.isFetching && (
+                        <div className='absolute inset-0 z-10 flex items-center justify-center bg-white/40' role='status' aria-live='polite'>
+                            <span className='rounded border border-[#D8DDD9] bg-white px-4 py-2 text-sm text-[#5F6964]'>{t('historyData.loading')}</span>
+                        </div>
+                    )}
                     <ResponsiveContainer width='100%' height='100%'>
                         <LineChart data={chartData} margin={{ top: 20, right: 18, left: 18, bottom: 8 }}>
                             <CartesianGrid stroke='#E5E9E6' vertical />

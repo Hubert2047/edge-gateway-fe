@@ -6,9 +6,11 @@ import { useRouter } from 'next/navigation'
 import type { ReactNode } from 'react'
 import { getGatewayDisplayName } from '@/lib/gateway'
 import { useI18n } from '@/lib/i18n'
+import { useOverviewActivePower } from '@/lib/api/overview.queries'
 import type { CloudTarget } from '@/types/cloud-target'
 import type { Gateway } from '@/types/gateway'
 import type { Meter } from '@/types/meter'
+import type { ActivePowerPoint } from '@/types/overview'
 
 type OverviewDashboardProps = {
     gateways: Gateway[]
@@ -32,6 +34,8 @@ function formatValue(value: number | null, suffix = '') {
 export function OverviewDashboard({ gateways, cloudTargets, meters, canManage }: OverviewDashboardProps) {
     const { t } = useI18n()
     const router = useRouter()
+    const activePowerQuery = useOverviewActivePower()
+    const activePowerByMeter = activePowerQuery.data ?? {}
     const enabledGateways = gateways.filter((gateway) => gateway.enabled).length
     const enabledCloudTargets = cloudTargets.filter((target) => target.enabled).length
     const realtimePending = cloudTargets.reduce((sum, target) => sum + (target.realtimePending ?? 0), 0)
@@ -155,6 +159,10 @@ export function OverviewDashboard({ gateways, cloudTargets, meters, canManage }:
                                     <Metric label='L1' value='—' />
                                     <Metric label='L2 / L3' value='—' />
                                 </div>
+                                <div className='space-y-2'>
+                                    <p className='text-xs text-[#8A938E]'>{t('overview.activePower')}</p>
+                                    <MeterSparkline points={activePowerByMeter[`${meter.gatewayUID}:${meterID}`] ?? []} loading={activePowerQuery.isLoading} />
+                                </div>
                                 <p className='text-sm text-[#8A938E]'>{t('overview.latestDataUnavailable')}</p>
                             </div>
                             )
@@ -219,5 +227,28 @@ function Metric({ label, value }: { label: string; value: string }) {
             <p className='text-xs text-[#8A938E]'>{label}</p>
             <p className='mt-2 font-mono font-semibold'>{value}</p>
         </div>
+    )
+}
+
+function MeterSparkline({ points, loading }: { points: ActivePowerPoint[]; loading: boolean }) {
+    const values = points.flatMap((point) => point.activePower == null ? [] : [point.activePower])
+    if (loading && values.length === 0) {
+        return <div className='h-8 animate-pulse rounded bg-[#F1F2EF]' aria-label='Loading' />
+    }
+    if (values.length === 0) return <div className='flex h-8 items-center text-sm text-[#AAB2AD]'>—</div>
+
+    const min = Math.min(...values)
+    const max = Math.max(...values)
+    const range = max - min || 1
+    const polyline = values.map((value, index) => {
+        const x = values.length === 1 ? 50 : (index / (values.length - 1)) * 100
+        const y = 30 - ((value - min) / range) * 26
+        return `${x},${y}`
+    }).join(' ')
+
+    return (
+        <svg viewBox='0 0 100 32' preserveAspectRatio='none' className='h-8 w-full text-[#438466]' role='img' aria-label='Active power trend'>
+            <polyline points={polyline} fill='none' stroke='currentColor' strokeWidth='2' vectorEffect='non-scaling-stroke' strokeLinecap='round' strokeLinejoin='round' />
+        </svg>
     )
 }

@@ -127,6 +127,8 @@ src/
           route.ts
           test/route.ts
         route.ts
+      overview/
+        meters-active-power/route.ts
     cloud-sync/
       page.tsx        # renders CloudTargetList, fed by getCloudTargets()
     gateways/
@@ -141,7 +143,7 @@ src/
     settings/
       page.tsx
     overview/
-      page.tsx             # operations dashboard, fed by hubs, cloud targets and meter metadata
+      page.tsx             # operations dashboard, fed by gateways, cloud targets and meter metadata
     globals.css
     layout.tsx
     page.tsx
@@ -176,6 +178,7 @@ src/
       client.ts           # apiFetch() — see above
       cloud-target.queries.ts # react-query hooks: useCloudTargets, useCreateCloudTarget,
                                # useUpdateCloudTarget, useDeleteCloudTarget, useTestCloudTargetConnection
+      overview.queries.ts     # one aggregated hourly active-power query for overview meter sparklines
       cloud-target.server.ts  # getCloudTargets()
       cloud-target.ts          # createCloudTarget/updateCloudTarget/deleteCloudTarget/testCloudTargetConnection
       hub.queries.ts       # react-query hooks: useHubs, useCreateHub, useUpdateHub, useDeleteHub
@@ -237,7 +240,9 @@ src/
 
 ## Operations overview API gaps
 - The overview page currently uses the existing `/api/hubs`, `/api/cloud-targets`, and
-  `/api/hubs/{uid}/meters` endpoints. Counts and enabled/disabled states are real data.
+  `/api/hubs/{uid}/meters` endpoints, plus the aggregated
+  `/api/v1/overview/meters-active-power` proxy for enabled-meter hourly active power.
+  Counts and enabled/disabled states are real data.
 - The screenshot includes gateway health/last-seen status, current readings (average current,
   L1/L2/L3), and latest sample timestamps. No backend endpoints currently expose those fields,
   so the UI displays `—` for them and must not fabricate values.
