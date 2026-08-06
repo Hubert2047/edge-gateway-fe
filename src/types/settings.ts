@@ -4,7 +4,7 @@ export type AppConfig = {
 
 export type UserSettings = {
     locale: string
-    appConfig?: AppConfig
+    appConfig: AppConfig
 }
 
 export type UpdateSettingsInput = {
