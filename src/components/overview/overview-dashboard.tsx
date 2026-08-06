@@ -27,7 +27,9 @@ export function OverviewDashboard({ gateways, cloudTargets, meters, canManage }:
     const router = useRouter()
     const activePowerQuery = useOverviewActivePower()
     const activePowerByMeter = activePowerQuery.data ?? {}
-    const enabledGateways = gateways.filter((gateway) => gateway.enabled).length
+    const enabledGateways = gateways.filter(
+        (gateway) => gateway.enabled && (gateway.isOnline ?? gateway.isVirtual)
+    ).length
     const enabledCloudTargets = cloudTargets.filter((target) => target.enabled).length
     const realtimePending = cloudTargets.reduce((sum, target) => sum + (target.realtimePending ?? 0), 0)
     const gatewayNames = new Map(gateways.map((gateway) => [gateway.uid, getGatewayDisplayName(gateway, t)]))
@@ -70,20 +72,27 @@ export function OverviewDashboard({ gateways, cloudTargets, meters, canManage }:
                         {gateways.length === 0 ? (
                             <EmptyState text={t('overview.noGateways')} />
                         ) : (
-                            gateways.map((gateway) => (
-                                <div key={gateway.uid} className='flex items-center gap-4 px-5 py-5'>
-                                    <StatusDot active={gateway.enabled} />
-                                    <div className='min-w-0 flex-1'>
-                                        <p className='font-semibold'>{getGatewayDisplayName(gateway, t)}</p>
-                                        <p className='text-sm text-[#7B8580]'>
-                                            {gateway.meterCount} {t('overview.meters')}
-                                        </p>
+                            gateways.map((gateway) => {
+                                const isOnline = gateway.enabled && (gateway.isOnline ?? gateway.isVirtual)
+                                return (
+                                    <div key={gateway.uid} className='flex items-center gap-4 px-5 py-5'>
+                                        <StatusDot active={isOnline} />
+                                        <div className='min-w-0 flex-1'>
+                                            <p className='font-semibold'>{getGatewayDisplayName(gateway, t)}</p>
+                                            <p className='text-sm text-[#7B8580]'>
+                                                {gateway.meterCount} {t('overview.meters')}
+                                            </p>
+                                        </div>
+                                        <span className='text-sm text-[#7B8580]'>
+                                            {!gateway.enabled
+                                                ? t('common.disabled')
+                                                : isOnline
+                                                ? t('overview.monitoring')
+                                                : t('common.offline')}
+                                        </span>
                                     </div>
-                                    <span className='text-sm text-[#7B8580]'>
-                                        {gateway.enabled ? t('overview.monitoring') : t('common.disabled')}
-                                    </span>
-                                </div>
-                            ))
+                                )
+                            })
                         )}
                     </div>
                 </OverviewSection>

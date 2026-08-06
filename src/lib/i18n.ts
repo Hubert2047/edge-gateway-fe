@@ -36,6 +36,7 @@ const zhTW: MessageTree = {
     common: {
         enabled: '啟用',
         disabled: '停用',
+        offline: '離線',
         save: '儲存',
         delete: '刪除',
         cancel: '取消',
@@ -409,6 +410,7 @@ const en: MessageTree = {
     common: {
         enabled: 'Enabled',
         disabled: 'Disabled',
+        offline: 'Offline',
         save: 'Save',
         delete: 'Delete',
         cancel: 'Cancel',

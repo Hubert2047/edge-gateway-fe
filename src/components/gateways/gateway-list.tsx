@@ -273,10 +273,21 @@ export function GatewayList({ initialGateways: initialGateways }: { initialGatew
                                                         toggleEnabled(gateway, checked === true)
                                                     }
                                                 />
-                                                <StatusBadge
-                                                    enabled={form.enabled}
-                                                    activeLabel={t('gateway.monitoring')}
-                                                />
+                                                {!form.enabled ? (
+                                                    <StatusBadge
+                                                        enabled={false}
+                                                        activeLabel={t('gateway.monitoring')}
+                                                    />
+                                                ) : gateway.isOnline ?? false ? (
+                                                    <StatusBadge
+                                                        enabled={true}
+                                                        activeLabel={t('gateway.monitoring')}
+                                                    />
+                                                ) : (
+                                                    <span className='inline-flex items-center rounded-md bg-rose-100 px-2.5 py-0.5 text-xs font-semibold text-rose-600 border border-rose-200'>
+                                                        {t('common.offline')}
+                                                    </span>
+                                                )}
                                             </td>
                                             <td data-label={t('common.gateway')} className='p-4 space-y-3'>
                                                 <div className='space-y-1.5'>
@@ -372,7 +383,7 @@ export function GatewayList({ initialGateways: initialGateways }: { initialGatew
                                                 <p>{t('gateway.meterCount', { count: gateway.meterCount })}</p>
                                                 <p>
                                                     {t('gateway.lastSuccess')}
-                                                    <RelativeTime value={gateway.updatedAt} />
+                                                    <RelativeTime value={gateway.lastSeenAt || gateway.updatedAt} />
                                                 </p>
                                             </td>
                                             <td data-label={t('common.actions')} data-role='actions' className='p-4'>

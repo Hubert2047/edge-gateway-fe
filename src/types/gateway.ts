@@ -7,6 +7,8 @@ export interface Gateway {
     pollIntervalSeconds: number
     meterCount: number
     note: string
+    lastSeenAt?: string | null
+    isOnline?: boolean
     updatedAt: string
     isVirtual: boolean
 }
