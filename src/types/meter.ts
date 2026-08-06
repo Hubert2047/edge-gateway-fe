@@ -16,6 +16,9 @@ export interface Meter {
     powerFactor: number
     isVirtual: boolean
     enabled: boolean
+    lastSeenAt?: string
+    lastState?: number | null
+    isOnline?: boolean
     note: string | null
     createdAt: string
     updatedAt: string

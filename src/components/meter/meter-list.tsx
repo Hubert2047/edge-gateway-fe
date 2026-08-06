@@ -372,7 +372,7 @@ export function MeterList({
                                                 <p className='text-xs text-destructive mt-1'>{t(errors.powerFactor)}</p>
                                             )}
                                         </td>
-                                        <td data-label={t('common.status')} className='pt-3 px-2 space-y-2 flex align-items gap-2'>
+                                        <td data-label={t('common.status')} className='pt-3 px-2 space-y-2 flex items-center gap-2'>
                                             <Checkbox
                                                 className='mb-0'
                                                 checked={form.enabled}
@@ -381,7 +381,15 @@ export function MeterList({
                                                     updateRowForm(meter.macId, { enabled: checked === true })
                                                 }
                                             />
-                                            <StatusBadge enabled={form.enabled} activeLabel={t('common.enabled')} />
+                                            {!form.enabled ? (
+                                                <StatusBadge enabled={false} activeLabel={t('common.enabled')} />
+                                            ) : meter.isOnline ?? false ? (
+                                                <StatusBadge enabled={true} activeLabel={t('gateway.monitoring')} />
+                                            ) : (
+                                                <span className='inline-flex items-center rounded-md bg-rose-100 px-2.5 py-0.5 text-xs font-semibold text-rose-600 border border-rose-200'>
+                                                    {t('common.offline')}
+                                                </span>
+                                            )}
                                         </td>
                                         <td data-label={t('common.actions')} data-role='actions' className='p-2'>
                                             <div className='flex items-end gap-1.5'>
