@@ -136,6 +136,7 @@ export function OverviewDashboard({ gateways, cloudTargets, meters, canManage }:
                     ) : (
                         meters.map((meter) => {
                             const meterID = meter.meterId ?? meter.macId
+                            const overviewData = activePowerByMeter[`${meter.gatewayUID}:${meterID}`]
                             return (
                                 <div
                                 key={`${meter.gatewayUID}:${meterID}`}
@@ -161,7 +162,8 @@ export function OverviewDashboard({ gateways, cloudTargets, meters, canManage }:
                                 </div>
                                 <div className='space-y-2'>
                                     <p className='text-xs text-[#8A938E]'>{t('overview.activePower')}</p>
-                                    <MeterSparkline points={activePowerByMeter[`${meter.gatewayUID}:${meterID}`] ?? []} loading={activePowerQuery.isLoading} />
+                                    <MeterSparkline points={overviewData?.activePower ?? []} loading={activePowerQuery.isLoading} />
+                                    <p className='text-xs text-[#8A938E]'>{t('overview.lastPolled')}: {formatLastPolledAt(overviewData?.lastPolledAt, t)}</p>
                                 </div>
                                 <p className='text-sm text-[#8A938E]'>{t('overview.latestDataUnavailable')}</p>
                             </div>
@@ -251,4 +253,8 @@ function MeterSparkline({ points, loading }: { points: ActivePowerPoint[]; loadi
             <polyline points={polyline} fill='none' stroke='currentColor' strokeWidth='2' vectorEffect='non-scaling-stroke' strokeLinecap='round' strokeLinejoin='round' />
         </svg>
     )
+}
+
+function formatLastPolledAt(value: string | null | undefined, t: (key: string) => string) {
+    return value ? value.replace('T', ' ').replace(/([+-]\d\d:\d\d)$/, ' $1') : t('overview.notAvailable')
 }

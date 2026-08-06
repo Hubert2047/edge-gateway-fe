@@ -3,4 +3,9 @@ export type ActivePowerPoint = {
     activePower: number | null
 }
 
-export type OverviewActivePower = Record<string, ActivePowerPoint[]>
+export type MeterOverviewData = {
+    activePower: ActivePowerPoint[]
+    lastPolledAt: string | null
+}
+
+export type OverviewActivePower = Record<string, MeterOverviewData>
