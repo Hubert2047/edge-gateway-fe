@@ -8,7 +8,7 @@ import { useEffect, useState } from 'react'
 import { useI18n } from '@/lib/i18n'
 import { normalizeRole } from '@/lib/roles'
 import { ROUTES } from '@/constances/route'
-
+import Image from 'next/image'
 type NavItem = { key: string; href: string; adminOnly?: boolean }
 
 const NAV_ITEMS: NavItem[] = [
@@ -67,9 +67,15 @@ export function Sidebar() {
     const navigation = (
         <>
             <Link href='/overview' onClick={() => setMobileOpen(false)} className='flex items-center gap-3 px-6 py-6'>
-                <span className='flex h-9 w-9 items-center justify-center rounded-lg bg-sidebar-foreground text-sm font-bold text-sidebar'>
-                    M
-                </span>
+                <Image
+                    src="/assets/green-assistant-logo-dark.png"
+                    alt="綠品助手 Logo"
+                    width={160}
+                    height={40}
+                    className="h-9 w-auto object-contain"
+                    unoptimized
+                    priority
+                />
                 <span className='text-lg font-semibold'>MMold Edge</span>
             </Link>
 

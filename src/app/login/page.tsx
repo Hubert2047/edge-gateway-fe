@@ -9,9 +9,8 @@ import { z } from 'zod'
 import { User, Lock, AlertCircle } from 'lucide-react'
 import { mapErrorKey, useI18n } from '@/lib/i18n'
 import { ROUTES } from '@/constances/route'
-
+import Image from 'next/image'
 type LoginFormValues = { username: string; password: string }
-
 export default function LoginPage() {
     const router = useRouter()
     const { t } = useI18n()
@@ -55,9 +54,15 @@ export default function LoginPage() {
             <div className='flex flex-1 items-center justify-center bg-[#f4f2ec] px-6 py-12'>
                 <div className='w-full max-w-sm'>
                     <div className='mb-8 flex items-center gap-2.5'>
-                        <div className='flex h-9 w-9 items-center justify-center rounded-md bg-[#0f2b22] text-lg font-bold text-white'>
-                            M
-                        </div>
+                        <Image
+                            src="/assets/green-assistant-logo-dark.png"
+                            alt="綠品助手 Logo"
+                            width={160}
+                            height={40}
+                            className="h-9 w-auto object-contain"
+                            unoptimized
+                            priority
+                        />
                         <span className='text-lg font-semibold tracking-tight text-[#14231c]'>MMold Edge</span>
                     </div>
 

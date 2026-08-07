@@ -14,8 +14,12 @@ const geistMono = Geist_Mono({ variable: '--font-geist-mono', subsets: ['latin']
 export const metadata: Metadata = {
     title: 'MMold Edge',
     description: 'MMold Edge Gateway Management',
+    icons: {
+        icon: '/assets/green-assistant-logo-dark.png',
+        shortcut: '/assets/green-assistant-logo-dark.png',
+        apple: '/assets/green-assistant-logo-dark.png',
+    },
 }
-
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
     const session = await getServerSession(authOptions)
 
