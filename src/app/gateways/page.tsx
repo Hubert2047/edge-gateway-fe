@@ -11,7 +11,7 @@ export default async function GatewaysPage() {
 
     return (
         <div className='flex h-full min-h-0 flex-col gap-4'>
-            <h1 className='sticky top-0 z-10 shrink-0 bg-[#F7F5F0] pt-1 pb-2 text-xl font-bold sm:text-3xl'>
+            <h1 className='sticky top-0 z-10 shrink-0 bg-[#F7F5F0] text-xl font-bold sm:text-3xl'>
                 <LocalizedText messageKey='page.gateways' />
             </h1>
             <div className='flex-1 min-h-0'>

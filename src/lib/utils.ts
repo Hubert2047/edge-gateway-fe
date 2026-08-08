@@ -3,6 +3,7 @@ import { twMerge } from 'tailwind-merge'
 import { mapErrorKey, type Locale } from '@/lib/i18n'
 import { TimeseriesAxis } from '@/types/timeseries'
 import { MetricKey } from '@/components/history-data/history-data-view'
+import { PhaseMode } from '@/types/meter'
 
 export function cn(...inputs: ClassValue[]) {
     return twMerge(clsx(inputs))
@@ -23,32 +24,32 @@ export function getErrorMessage(err: unknown, fallback: string) {
 }
 
 export function formatValue(value: number | null, suffix = '') {
-    return value === null ? '—' : `${value.toFixed(2)}${suffix}`
+    return value === null || value === undefined ? '—' : `${value.toFixed(2)}${suffix}`
 }
 export function formatLastPolledAt(
     value: string | null | undefined,
     t: (key: string) => string
-  ) {
+) {
     if (!value) {
-      return t('overview.neverPolled')
+        return t('overview.neverPolled')
     }
-  
+
     const date = new Date(value)
-  
+
     if (Number.isNaN(date.getTime())) {
-      return value
+        return value
     }
-  
+
     return new Intl.DateTimeFormat(undefined, {
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit',
-      hour12: false,
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: false,
     }).format(date)
-  }
+}
 function parseAsUtcIfNoTimezone(input: string | Date): Date {
     if (input instanceof Date) return input
     const hasTimezone = /Z$|[+-]\d{2}:?\d{2}$/.test(input)
@@ -200,4 +201,16 @@ export function getMetricLabel(metric: MetricKey, t: (key: string) => string) {
         ch3Current: 'historyData.l3Current',
     }
     return t(labels[metric])
+}
+export function transformPhaseMode(phaseMode: PhaseMode) {
+    switch (phaseMode) {
+        case 'single_phase':
+            return '1P'
+        case 'three_phase':
+            return '3P'
+        case 'three_phase_balanced':
+            return '3P-Bal'
+        default:
+            return ""
+    }
 }

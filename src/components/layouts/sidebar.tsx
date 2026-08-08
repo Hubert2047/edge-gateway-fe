@@ -66,7 +66,7 @@ export function Sidebar() {
 
     const navigation = (
         <>
-            <Link href='/overview' onClick={() => setMobileOpen(false)} className='flex items-center gap-3 px-6 py-6'>
+            <Link href='/overview' onClick={() => setMobileOpen(false)} className='flex items-center gap-3 px-5 py-3'>
                 <Image
                     src="/assets/green-assistant-logo-dark.png"
                     alt="綠品助手 Logo"
@@ -94,7 +94,7 @@ export function Sidebar() {
                 ))}
             </nav>
 
-            <div className='mt-6 flex flex-col gap-1 border-t border-sidebar-border px-3 pt-4'>
+            <div className='mt-2 flex flex-col gap-1 border-t border-sidebar-border px-3 pt-3 pb-0'>
                 {externalLinks.map((link) => (
                     <a
                         key={link.href}
@@ -111,7 +111,7 @@ export function Sidebar() {
 
     const account = (
         <>
-            <div className='mb-3 flex items-center justify-between border-y border-sidebar-border px-4 py-4'>
+            <div className='flex items-center justify-between border-y border-sidebar-border px-6 py-4'>
                 <div>
                     <p className='text-sm font-medium'>{session?.user?.name ?? 'admin'}</p>
                     <p className='text-xs uppercase text-sidebar-foreground/60'>
@@ -124,7 +124,7 @@ export function Sidebar() {
                     {t('nav.logout')}
                 </button>
             </div>
-            <div className='flex items-center gap-2 px-4 py-4 text-xs text-sidebar-foreground/60'>
+            <div className='flex items-center gap-2 px-5 py-2 pb-3 text-xs text-sidebar-foreground/60'>
                 <span className={`sidebar-status-dot mt-1 ${isOnline ? 'bg-emerald-400' : 'bg-red-400'}`} />
                 <div className='flex flex-col gap-1'>
                     <span>{t('nav.edgeService')}</span>

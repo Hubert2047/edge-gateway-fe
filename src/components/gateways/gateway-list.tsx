@@ -238,10 +238,10 @@ export function GatewayList({ initialGateways: initialGateways }: { initialGatew
                         </colgroup>
                         <thead className='bg-muted text-left sticky top-0 z-10'>
                             <tr>
-                                <th className='whitespace-nowrap p-4'>{t('common.status')}</th>
-                                <th className='whitespace-nowrap p-4'>{t('common.gateway')}</th>
-                                <th className='whitespace-nowrap p-4'>{t('common.settings')}</th>
-                                <th className='whitespace-nowrap p-4'>{t('common.actions')}</th>
+                                <th className='whitespace-nowrap px-4 py-1.5'>{t('common.status')}</th>
+                                <th className='whitespace-nowrap px-4 py-1.5'>{t('common.gateway')}</th>
+                                <th className='whitespace-nowrap px-4 py-1.5'>{t('common.settings')}</th>
+                                <th className='whitespace-nowrap px-4 py-1.5'>{t('common.actions')}</th>
                             </tr>
                         </thead>
                         <tbody>

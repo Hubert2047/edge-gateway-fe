@@ -13,7 +13,7 @@ export default async function MetersPage({ searchParams }: { searchParams: Promi
     if (gateways.length === 0) {
         return (
             <div className='h-full'>
-                <h1 className='mb-6 text-3xl font-bold'>
+                <h1 className='text-3xl font-bold'>
                     <LocalizedText messageKey='page.meters' />
                 </h1>
                 <p className='text-muted-foreground'>

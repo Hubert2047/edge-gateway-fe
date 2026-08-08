@@ -236,7 +236,7 @@ export function MeterList({
 
     return (
         <div className='flex h-full flex-col gap-4 overflow-hidden max-md:h-auto max-md:overflow-visible'>
-            <div className='flex shrink-0 items-center justify-between gap-4 border-b pb-3 max-sm:flex-wrap'>
+            <div className='flex shrink-0 items-center justify-between gap-4 max-sm:flex-wrap'>
                 <h1 className='text-xl font-bold sm:text-3xl'>{t('page.meters')}</h1>
                 <div className='flex items-center gap-3 max-sm:w-full max-sm:justify-between'>
                     <GatewaySwitcher gateways={gateways} currentGatewayUid={gatewayUid} onGatewayChange={onHubChange} />
@@ -265,8 +265,8 @@ export function MeterList({
                     <table className='responsive-table w-full table-fixed text-sm'>
                         <colgroup>
                             <col className='w-[16%]' />
-                            <col className='w-[16%]' />
-                            <col className='w-[15%]' />
+                            <col className='w-[19%]' />
+                            <col className='w-[11%]' />
                             <col className='w-[12%]' />
                             <col className='w-[12%]' />
                             <col className='w-[11%]' />
@@ -274,13 +274,13 @@ export function MeterList({
                         </colgroup>
                         <thead className='bg-muted text-left sticky top-0 z-10'>
                             <tr>
-                                <th className='p-3 whitespace-nowrap'>{t('meter.tableName')}</th>
-                                <th className='min-w-48 p-3 whitespace-nowrap'>{t('meter.macId')}</th>
-                                <th className='p-3 whitespace-nowrap'>{t('meter.phase')}</th>
-                                <th className='p-3 whitespace-nowrap'>{t('meter.voltage')}</th>
-                                <th className='p-3 whitespace-nowrap'>{t('meter.powerFactor')}</th>
-                                <th className='p-3 whitespace-nowrap'>{t('common.status')}</th>
-                                <th className='p-3 whitespace-nowrap'>{t('common.actions')}</th>
+                                <th className='px-4 py-2 whitespace-nowrap'>{t('meter.tableName')}</th>
+                                <th className='px-4 py-2 min-w-48 whitespace-nowrap'>{t('meter.macId')}</th>
+                                <th className='px-4 py-2 whitespace-nowrap'>{t('meter.phase')}</th>
+                                <th className='px-4 py-2 whitespace-nowrap'>{t('meter.voltage')}</th>
+                                <th className='px-4 py-2 whitespace-nowrap'>{t('meter.powerFactor')}</th>
+                                <th className='px-4 py-2 whitespace-nowrap'>{t('common.status')}</th>
+                                <th className='px-4 py-2 whitespace-nowrap'>{t('common.actions')}</th>
                             </tr>
                         </thead>
                         <tbody>

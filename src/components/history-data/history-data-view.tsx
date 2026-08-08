@@ -13,6 +13,7 @@ import { formatDisplayTime, getDefaultRange, getMetricLabel, getYDomain, parseDa
 import { MetricCheckboxes } from './metric-check-boxes'
 import { MetricCheckbox } from './metric-checkbox'
 import { Field } from '../ui/field'
+import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '../ui/select'
 
 type Props = { gateways: Gateway[]; meters: Meter[] }
 export type MetricKey = 'voltage' | 'activePower' | 'avgCurrent' | 'ch1Current' | 'ch2Current' | 'ch3Current'
@@ -149,9 +150,6 @@ export function HistoryDataView({ gateways, meters }: Props) {
         [rows],
     )
     const visibleMetrics = (Object.keys(selectedMetrics) as MetricKey[]).filter((metric) => selectedMetrics[metric])
-    const visibleCurrentColumns = (['ch1Current', 'ch2Current', 'ch3Current'] as CurrentColumnKey[]).filter(
-        (metric) => selectedMetrics[metric],
-    )
     const chartData = rows.map((row) => ({
         time: formatAxisTick(row.bucket, timeZone, axis),
         voltage: row.voltage,
@@ -176,20 +174,27 @@ export function HistoryDataView({ gateways, meters }: Props) {
         ]
         : [{ key: 'avgCurrent', label: t('historyData.current') }]
 
+    const threePhaseColumns: CurrentColumnKey[] = ['ch1Current', 'ch2Current', 'ch3Current']
+
     const tableHeaders = [
         'time',
         'gateway',
         'meter',
         'voltage',
         'averageCurrent',
-        ...visibleCurrentColumns.map((metric) => currentColumnLabelKeys[metric]),
+        ...(isThreePhase ? threePhaseColumns.map((metric) => currentColumnLabelKeys[metric]) : []),
         'activePower',
         'status',
     ]
-
+    const axisLabels: Record<TimeseriesAxis, string> = {
+        minute: t('historyData.minute'),
+        hour: t('historyData.hour'),
+        day: t('historyData.day'),
+        month: t('historyData.month'),
+    }
     return (
-        <div className='flex h-full min-h-0 flex-col gap-7 overflow-y-auto pb-8'>
-            <div className='sticky top-0 z-10 flex shrink-0 items-center justify-between border-b border-[#D8DDD9] bg-[#F7F5F0] pt-1 pb-5'>
+        <div className='flex h-full min-h-0 flex-col gap-4 overflow-y-auto pb-4'>
+            <div className='sticky top-0 z-10 flex shrink-0 items-center justify-between bg-[#F7F5F0]'>
                 <h1 className='text-3xl font-bold tracking-tight'>{t('historyData.title')}</h1>
                 <span className='border border-[#BFC8C2] px-4 py-2 text-sm text-[#357A59]'>
                     {rows.length} {t('historyData.records')}
@@ -197,43 +202,71 @@ export function HistoryDataView({ gateways, meters }: Props) {
             </div>
 
             <section className='shrink-0 border border-[#D8DDD9] bg-white p-4'>
-                <div className='grid gap-3 xl:grid-cols-5'>
+                <div className='grid gap-3 xl:grid-cols-6'>
                     <Field label={t('historyData.gateway')}>
-                        <select
-                            value={gatewayUid}
-                            onChange={(event) => handleGatewayChange(event.target.value)}
-                            className='control-input'>
-                            <option value=''>{t('historyData.selectGateway')}</option>
-                            {gateways.map((gateway) => (
-                                <option key={gateway.uid} value={gateway.uid}>
-                                    {getGatewayDisplayName(gateway, t)}
-                                </option>
-                            ))}
-                        </select>
+                        <Select
+                            value={gatewayUid || undefined}
+                            onValueChange={(value) => {
+                                if (value) handleGatewayChange(value)
+                            }}>
+                            <SelectTrigger className='w-full'>
+                                <SelectValue placeholder={t('historyData.selectGateway')}>
+                                    {() => {
+                                        const gateway = gateways.find((g) => g.uid === gatewayUid)
+                                        return gateway ? getGatewayDisplayName(gateway, t) : t('historyData.selectGateway')
+                                    }}
+                                </SelectValue>
+                            </SelectTrigger>
+                            <SelectContent>
+                                {gateways.map((gateway) => (
+                                    <SelectItem key={gateway.uid} value={gateway.uid}>
+                                        {getGatewayDisplayName(gateway, t)}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
                     </Field>
                     <Field label={t('historyData.meter')}>
-                        <select
-                            value={meterId}
-                            onChange={(event) => handleMeterChange(event.target.value)}
-                            className='control-input'>
-                            <option value=''>{t('historyData.selectMeter')}</option>
-                            {availableMeters.map((meter) => (
-                                <option key={meter.macId} value={meter.macId}>
-                                    {meter.name || meter.macId}
-                                </option>
-                            ))}
-                        </select>
+                        <Select
+                            value={meterId || undefined}
+                            onValueChange={(value) => {
+                                if (value) handleMeterChange(value)
+                            }}>
+                            <SelectTrigger className='w-full'>
+                                <SelectValue placeholder={t('historyData.selectMeter')}>
+                                    {() => {
+                                        const meter = availableMeters.find((m) => m.macId === meterId)
+                                        return meter ? (meter.name || meter.macId) : t('historyData.selectMeter')
+                                    }}
+                                </SelectValue>
+                            </SelectTrigger>
+                            <SelectContent>
+                                {availableMeters.map((meter) => (
+                                    <SelectItem key={meter.macId} value={meter.macId}>
+                                        {meter.name || meter.macId}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
                     </Field>
                     <Field label={t('historyData.timeRange')}>
-                        <select
+                        <Select
                             value={axis}
-                            onChange={(event) => handleAxisChange(event.target.value as TimeseriesAxis)}
-                            className='control-input'>
-                            <option value='minute'>{t('historyData.minute')}</option>
-                            <option value='hour'>{t('historyData.hour')}</option>
-                            <option value='day'>{t('historyData.day')}</option>
-                            <option value='month'>{t('historyData.month')}</option>
-                        </select>
+                            onValueChange={(value) => {
+                                if (value) handleAxisChange(value as TimeseriesAxis)
+                            }}>
+                            <SelectTrigger className='w-full'>
+                                <SelectValue>{() => axisLabels[axis]}</SelectValue>
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectGroup>
+                                    <SelectItem value='minute'>{t('historyData.minute')}</SelectItem>
+                                    <SelectItem value='hour'>{t('historyData.hour')}</SelectItem>
+                                    <SelectItem value='day'>{t('historyData.day')}</SelectItem>
+                                    <SelectItem value='month'>{t('historyData.month')}</SelectItem>
+                                </SelectGroup>
+                            </SelectContent>
+                        </Select>
                     </Field>
                     <Field label={t('historyData.startTime')}>
                         <input
@@ -251,35 +284,47 @@ export function HistoryDataView({ gateways, meters }: Props) {
                             className='control-input'
                         />
                     </Field>
+                    <div className='flex justify-center items-center mt-6'>
+                        <button
+                            type='button'
+                            onClick={() => setSubmitted(true)}
+                            disabled={query.isFetching}
+                            className='h-8 w-32 bg-[#153F31] px-2.5 text-sm font-medium text-white hover:bg-[#1B503D] disabled:cursor-wait disabled:opacity-60'>
+                            {query.isFetching ? t('historyData.loading') : t('historyData.query')}
+                        </button>
+                    </div>
+
                 </div>
 
                 <div className='mt-4 flex flex-wrap items-start gap-x-7 gap-y-3'>
-                    <MetricCheckboxes options={metricOptions} selected={selectedMetrics} onChange={toggleMetric} />
-                    <fieldset className='flex flex-wrap items-center gap-x-4 gap-y-2'>
-                        <legend className='mr-1 text-sm font-medium text-[#4F5A54]'>
-                            {t('historyData.currentGroup')}
-                        </legend>
-                        {currentOptions.map((option) => (
-                            <MetricCheckbox
-                                key={option.key}
-                                option={option}
-                                selected={selectedMetrics}
-                                onChange={toggleMetric}
-                            />
-                        ))}
-                    </fieldset>
-                    <button
-                        type='button'
-                        onClick={() => setSubmitted(true)}
-                        disabled={query.isFetching}
-                        className='h-8 w-32 bg-[#153F31] px-2.5 text-sm font-medium text-white hover:bg-[#1B503D] disabled:cursor-wait disabled:opacity-60'>
-                        {query.isFetching ? t('historyData.loading') : t('historyData.query')}
-                    </button>
-                    {query.isFetching && (
-                        <span role='status' className='self-center text-sm text-[#5F6964]'>
-                            {t('historyData.loading')}
-                        </span>
-                    )}
+                    <div className='flex flex-wrap items-start gap-x-7 gap-y-3'>
+                        <MetricCheckboxes options={metricOptions} selected={selectedMetrics} onChange={toggleMetric} />
+                        {isThreePhase ? (
+                            <fieldset className='flex flex-wrap items-center gap-x-4 gap-y-2'>
+                                <legend className='mr-1 text-sm font-medium text-[#4F5A54]'>
+                                    {t('historyData.currentGroup')}
+                                </legend>
+                                {currentOptions.map((option) => (
+                                    <MetricCheckbox
+                                        key={option.key}
+                                        option={option}
+                                        selected={selectedMetrics}
+                                        onChange={toggleMetric}
+                                    />
+                                ))}
+                            </fieldset>
+                        ) : (
+                            currentOptions.map((option) => (
+                                <MetricCheckbox
+                                    key={option.key}
+                                    option={option}
+                                    selected={selectedMetrics}
+                                    onChange={toggleMetric}
+                                />
+                            ))
+                        )}
+                    </div>
+
                 </div>
             </section>
 
@@ -369,9 +414,10 @@ export function HistoryDataView({ gateways, meters }: Props) {
                                     <td className='px-4 py-3'>{meterId}</td>
                                     <td className='px-4 py-3'>{row.voltage ?? '—'}</td>
                                     <td className='px-4 py-3'>{row.avgCurrent ?? '—'}</td>
-                                    {visibleCurrentColumns.map((metric) => (
-                                        <td key={metric} className='px-4 py-3'>{row[metric] ?? '—'}</td>
-                                    ))}
+                                    {isThreePhase &&
+                                        threePhaseColumns.map((metric) => (
+                                            <td key={metric} className='px-4 py-3'>{row[metric] ?? '—'}</td>
+                                        ))}
                                     <td className='px-4 py-3'>{row.activePower ?? '—'}</td>
                                     <td className='px-4 py-3'>{row.sampleCount ? t('historyData.ok') : '—'}</td>
                                 </tr>

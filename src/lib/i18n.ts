@@ -3,6 +3,7 @@
 import { createContext, createElement, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
 import { useSession } from 'next-auth/react'
 import { getStoredSettings, saveSettings } from '@/lib/settings'
+import { refresh } from 'next/cache'
 
 export type Locale = 'zh-TW' | 'en'
 
@@ -297,9 +298,9 @@ const zhTW: MessageTree = {
         currentGroup: '電流',
         current: '電流',
         averageCurrent: '平均電流',
-        l1Current: 'L1電流',
-        l2Current: 'L2電流',
-        l3Current: 'L3電流',
+        l1Current: 'L1',
+        l2Current: 'L2',
+        l3Current: 'L3',
         selectGateway: '請選擇閘道器',
         selectMeter: '請選擇智慧勾表',
         showThreePhase: '顯示三相電流',
@@ -674,9 +675,9 @@ const en: MessageTree = {
         currentGroup: 'Current',
         current: 'Current',
         averageCurrent: 'Average current',
-        l1Current: 'L1 current',
-        l2Current: 'L2 current',
-        l3Current: 'L3 current',
+        l1Current: 'L1',
+        l2Current: 'L2',
+        l3Current: 'L3',
         selectGateway: 'Select gateway',
         selectMeter: 'Select smart meter',
         showThreePhase: 'Show three-phase current',

@@ -445,10 +445,10 @@ export function CloudTargetList({ initialTargets }: { initialTargets: CloudTarge
                         </colgroup>
                         <thead className='bg-muted text-left sticky top-0 z-10'>
                             <tr>
-                                <th className='whitespace-nowrap p-4'>{t('common.status')}</th>
-                                <th className='whitespace-nowrap p-4'>{t('cloud.server')}</th>
-                                <th className='whitespace-nowrap p-4'>{t('common.settings')}</th>
-                                <th className='whitespace-nowrap p-4'>{t('common.actions')}</th>
+                                <th className='whitespace-nowrap px-4 py-1.5'>{t('common.status')}</th>
+                                <th className='whitespace-nowrap px-4 py-1.5'>{t('cloud.server')}</th>
+                                <th className='whitespace-nowrap px-4 py-1.5'>{t('common.settings')}</th>
+                                <th className='whitespace-nowrap px-4 py-1.5'>{t('common.actions')}</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -703,14 +703,14 @@ export function CloudTargetList({ initialTargets }: { initialTargets: CloudTarge
                 </div>
             </Card>
 
-            {canCreateCloudTarget && <Card className='relative shrink-0 px-4 sm:px-6 pt-4 space-y-4'>
+            {canCreateCloudTarget && <Card className='flex flex-col gap-3 relative shrink-0 px-4 sm:px-6 pt-4 space-y-4'>
                 {createMutation.isPending && (
                     <div className='absolute inset-0 z-10 flex items-center justify-center rounded-xl bg-white/60'>
                         <Loader2 className='h-5 w-5 animate-spin text-muted-foreground' />
                     </div>
                 )}
                 <h2 className='text-lg font-medium mb-0 font-bold'>{t('cloud.add')}</h2>
-                <div className='rounded-lg border border-border/60 bg-muted/30 p-3'>
+                <div className='rounded-lg border border-border/60 bg-muted/30 p-2 mb-0'>
                     <div className='flex flex-col gap-4 lg:flex-row lg:items-start'>
                         <div className='flex items-center gap-3 lg:min-w-64'>
                         <Checkbox
