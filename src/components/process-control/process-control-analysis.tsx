@@ -172,7 +172,6 @@ export function ProcessControlAnalysis({ gateways, meters }: Props) {
                     <span>CL —</span>
                     <span>LCL {lowerLimit}</span>
                 </div>
-                <p className='mt-6 text-center text-sm text-[#8A938E]'>{t('processControl.dataUnavailable')}</p>
             </section>
         </div>
     )

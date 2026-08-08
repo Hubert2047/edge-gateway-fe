@@ -20,7 +20,7 @@ export function OverviewSection({
     return (
         <section className={className}>
             <div className='mb-4 flex items-center justify-between'>
-                <h2 className='text-2xl font-bold'>{title}</h2>
+                <h3 className='text-xl font-bold'>{title}</h3>
                 {canManage && (
                     <Link
                         href={href}

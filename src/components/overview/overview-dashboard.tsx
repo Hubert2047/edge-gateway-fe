@@ -14,16 +14,18 @@ import { StatusDot } from './statusDot'
 import { Metric } from './metric'
 import { formatLastPolledAt, formatValue } from '@/lib/utils'
 import { MeterSparkline } from './meter-spark-line'
+import { ClientRelativeTime } from '../cloud-sync/client-relative-time'
 
 type OverviewDashboardProps = {
     gateways: Gateway[]
     cloudTargets: CloudTarget[]
     meters: Meter[]
+    uploadedToday: number
     canManage: boolean
 }
 
-export function OverviewDashboard({ gateways, cloudTargets, meters, canManage }: OverviewDashboardProps) {
-    const { t } = useI18n()
+export function OverviewDashboard({ gateways, cloudTargets, meters, canManage, uploadedToday }: OverviewDashboardProps) {
+    const { t, locale } = useI18n()
     const router = useRouter()
     const activePowerQuery = useOverviewActivePower()
     const activePowerByMeter = activePowerQuery.data ?? {}
@@ -35,13 +37,13 @@ export function OverviewDashboard({ gateways, cloudTargets, meters, canManage }:
     const gatewayNames = new Map(gateways.map((gateway) => [gateway.uid, getGatewayDisplayName(gateway, t)]))
 
     return (
-        <div className='flex h-full min-h-0 flex-col gap-5 overflow-y-auto pb-6'>
-            <div className='sticky top-0 z-10 flex shrink-0 items-center justify-between border-b border-[#D8DDD9] bg-[#F7F5F0] pt-1 pb-5'>
+        <div className='flex h-full min-h-0 flex-col gap-4 overflow-y-auto pb-6'>
+            <div className='sticky top-0 z-10 flex shrink-0 items-center justify-between bg-[#F7F5F0]'>
                 <h1 className='text-3xl font-bold tracking-tight'>{t('overview.title')}</h1>
                 <button
                     type='button'
                     onClick={() => router.refresh()}
-                    className='flex items-center gap-2 border border-[#BFC8C2] bg-transparent px-4 py-3 text-sm font-medium hover:bg-white'>
+                    className='flex items-center gap-2 border border-[#BFC8C2] bg-transparent px-3 py-1 text-sm font-medium hover:bg-white'>
                     <RefreshCw className='h-4 w-4' />
                     {t('overview.refresh')}
                 </button>
@@ -57,7 +59,7 @@ export function OverviewDashboard({ gateways, cloudTargets, meters, canManage }:
                 <Summary label={t('overview.meterCount')} value={meters.length} />
                 <Summary
                     label={t('overview.uploaded')}
-                    value={cloudTargets.reduce((sum, target) => sum + (target.lastUploadAt ? 1 : 0), 0)}
+                    value={uploadedToday}
                 />
                 <Summary label={t('overview.realtimePending')} value={realtimePending} />
             </section>
@@ -75,7 +77,7 @@ export function OverviewDashboard({ gateways, cloudTargets, meters, canManage }:
                             gateways.map((gateway) => {
                                 const isOnline = gateway.enabled && (gateway.isOnline ?? gateway.isVirtual)
                                 return (
-                                    <div key={gateway.uid} className='flex items-center gap-4 px-5 py-5'>
+                                    <div key={gateway.uid} className='flex items-center gap-4 p-4'>
                                         <StatusDot active={isOnline} />
                                         <div className='min-w-0 flex-1'>
                                             <p className='font-semibold'>{getGatewayDisplayName(gateway, t)}</p>
@@ -83,13 +85,13 @@ export function OverviewDashboard({ gateways, cloudTargets, meters, canManage }:
                                                 {gateway.meterCount} {t('overview.meters')}
                                             </p>
                                         </div>
-                                        <span className='text-sm text-[#7B8580]'>
-                                            {!gateway.enabled
-                                                ? t('common.disabled')
-                                                : isOnline
-                                                ? t('overview.monitoring')
-                                                : t('common.offline')}
-                                        </span>
+                                        <p className='text-xs text-[#7B8580]'>
+                                            <ClientRelativeTime
+                                                value={gateway.lastSeenAt}
+                                                locale={locale}
+                                                fallback={String(t('cloud.notUploaded'))}
+                                            />
+                                        </p>
                                     </div>
                                 )
                             })
@@ -107,23 +109,32 @@ export function OverviewDashboard({ gateways, cloudTargets, meters, canManage }:
                             <EmptyState text={t('overview.noCloudTargets')} />
                         ) : (
                             cloudTargets.map((target) => (
-                                <div key={target.id} className='flex items-center gap-4 px-5 py-5'>
+                                <div key={target.id} className='flex items-center gap-4 p-4'>
                                     <StatusDot active={target.enabled} />
                                     <div className='min-w-0 flex-1'>
                                         <p className='font-semibold'>{target.name}</p>
-                                        <p className='truncate text-sm text-[#7B8580]'>{target.id}</p>
+                                        <p className='truncate text-sm text-[#7B8580]'>{target.apiKey}</p>
                                     </div>
                                     <div className='text-right text-sm'>
-                                        <span
-                                            className={`inline-block rounded-full px-3 py-1 ${target.enabled ? 'bg-[#EAF5EF] text-[#357A59]' : 'bg-[#FAEAE8] text-[#B54E45]'}`}>
-                                            {target.enabled ? t('overview.online') : t('common.disabled')}
-                                        </span>
-                                        <p className='mt-2 text-xs text-[#7B8580]'>
-                                            {t('overview.realtimePending')}: {target.realtimePending ?? 0}
-                                            {target.backfill
-                                                ? ` · ${t('overview.backfill')}: ${target.backfill.createdCount}/${target.backfill.estimatedTotalCount}`
-                                                : ''}
-                                        </p>
+                                        <div className='flex gap-2'>
+                                            <div className='flex gap-2 text-xs text-[#7B8580]'>
+                                                <p className=''>{t('cloud.lastUpload')}</p>
+                                                <ClientRelativeTime
+                                                    value={target.lastUploadAt}
+                                                    locale={locale}
+                                                    fallback={String(t('cloud.notUploaded'))}
+                                                />
+
+                                            </div>
+                                        </div>
+                                        <div className='flex gap-2 mt-2 text-xs text-[#7B8580]'>
+                                            <p>{t('overview.realtimePending')}: {target.realtimePending ?? 0}</p>
+                                            <p>
+                                                {target.backfill
+                                                    ? ` · ${t('overview.backfill')}: ${target.backfill.createdCount}/${target.backfill.estimatedTotalCount}`
+                                                    : ''}
+                                            </p>
+                                        </div>
                                     </div>
                                 </div>
                             ))
@@ -150,9 +161,9 @@ export function OverviewDashboard({ gateways, cloudTargets, meters, canManage }:
                             return (
                                 <div
                                     key={`${meter.gatewayUID}:${meterID}`}
-                                    className={`border-t-4 ${meter.enabled ? 'border-[#64BD91]' : 'border-[#D8665C]'} border-x border-b border-[#D8DDD9] bg-white p-6`}>
-                                    <div className='flex items-start justify-between gap-4'>
-                                        <div className='flex items-center gap-4'>
+                                    className={`border-t-4 ${meter.enabled ? 'border-[#64BD91]' : 'border-[#D8665C]'} flex flex-col gap-3 border-x border-b border-[#D8DDD9] bg-white p-4`}>
+                                    <div className='flex items-start justify-between gap-3'>
+                                        <div className='flex items-center gap-3'>
                                             <StatusDot active={meter.enabled} />
                                             <div>
                                                 <p className='font-semibold'>{meter.name || meterID}</p>
@@ -166,7 +177,7 @@ export function OverviewDashboard({ gateways, cloudTargets, meters, canManage }:
                                             {meter.enabled ? t('overview.online') : t('common.disabled')}
                                         </span>
                                     </div>
-                                    <div className='my-5 grid grid-cols-2 gap-4 border-y border-[#E4E8E5] py-4 text-sm sm:grid-cols-4'>
+                                    <div className='grid grid-cols-2 gap-4 border-y border-[#E4E8E5] py-2 text-sm sm:grid-cols-4'>
                                         <Metric
                                             label={t('overview.voltage')}
                                             value={formatValue(meter.voltage, ' V')}

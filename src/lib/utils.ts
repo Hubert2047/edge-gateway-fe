@@ -25,9 +25,30 @@ export function getErrorMessage(err: unknown, fallback: string) {
 export function formatValue(value: number | null, suffix = '') {
     return value === null ? '—' : `${value.toFixed(2)}${suffix}`
 }
-export function formatLastPolledAt(value: string | null | undefined, t: (key: string) => string) {
-    return value ? value.replace('T', ' ').replace(/([+-]\d\d:\d\d)$/, ' $1') : t('overview.neverPolled')
-}
+export function formatLastPolledAt(
+    value: string | null | undefined,
+    t: (key: string) => string
+  ) {
+    if (!value) {
+      return t('overview.neverPolled')
+    }
+  
+    const date = new Date(value)
+  
+    if (Number.isNaN(date.getTime())) {
+      return value
+    }
+  
+    return new Intl.DateTimeFormat(undefined, {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: false,
+    }).format(date)
+  }
 function parseAsUtcIfNoTimezone(input: string | Date): Date {
     if (input instanceof Date) return input
     const hasTimezone = /Z$|[+-]\d{2}:?\d{2}$/.test(input)

@@ -17,6 +17,7 @@ import { Field } from '../ui/field'
 type Props = { gateways: Gateway[]; meters: Meter[] }
 export type MetricKey = 'voltage' | 'activePower' | 'avgCurrent' | 'ch1Current' | 'ch2Current' | 'ch3Current'
 export type SelectedMetrics = Record<MetricKey, boolean>
+type CurrentColumnKey = 'ch1Current' | 'ch2Current' | 'ch3Current'
 
 export const metricColors: Record<MetricKey, string> = {
     voltage: '#2F6F95',
@@ -29,13 +30,48 @@ export const metricColors: Record<MetricKey, string> = {
 
 const initialSelectedMetrics: SelectedMetrics = {
     voltage: false,
-    activePower: false,
-    avgCurrent: true,
+    activePower: true,
+    avgCurrent: false,
     ch1Current: false,
     ch2Current: false,
     ch3Current: false,
 }
 const DEFAULT_TIME_ZONE = 'Asia/Taipei'
+
+const currentColumnLabelKeys: Record<CurrentColumnKey, string> = {
+    ch1Current: 'l1Current',
+    ch2Current: 'l2Current',
+    ch3Current: 'l3Current',
+}
+
+function formatAxisTick(bucket: string, timeZone: string, axis: TimeseriesAxis) {
+    const date = new Date(bucket)
+    const opts: Intl.DateTimeFormatOptions = { timeZone, hour12: false }
+    switch (axis) {
+        case 'minute':
+            opts.hour = '2-digit'
+            opts.minute = '2-digit'
+            break
+        case 'hour':
+            opts.month = 'numeric'
+            opts.day = 'numeric'
+            opts.hour = '2-digit'
+            break
+        case 'day':
+            opts.month = 'numeric'
+            opts.day = 'numeric'
+            break
+        case 'month':
+            opts.year = 'numeric'
+            opts.month = 'numeric'
+            break
+    }
+    return new Intl.DateTimeFormat('zh-TW', opts).format(date)
+}
+
+function formatYTick(value: number | string) {
+    return typeof value === 'number' ? value.toFixed(2) : value
+}
 
 export function HistoryDataView({ gateways, meters }: Props) {
     const { t } = useI18n()
@@ -53,7 +89,6 @@ export function HistoryDataView({ gateways, meters }: Props) {
     useEffect(() => {
         if (!settingsQuery.data) return
         const range = getDefaultRange(axis, timeZone)
-        // The settings response establishes the backend timezone; align the initial fields once it arrives.
         // eslint-disable-next-line react-hooks/set-state-in-effect
         setDate(range.start)
         setEndDate(range.end)
@@ -109,9 +144,16 @@ export function HistoryDataView({ gateways, meters }: Props) {
     }
     const query = useTimeseries(params, submitted && Boolean(gatewayUid && meterId))
     const rows = query.data ?? []
+    const sortedRows = useMemo(
+        () => [...rows].sort((a, b) => b.bucketTs - a.bucketTs),
+        [rows],
+    )
     const visibleMetrics = (Object.keys(selectedMetrics) as MetricKey[]).filter((metric) => selectedMetrics[metric])
+    const visibleCurrentColumns = (['ch1Current', 'ch2Current', 'ch3Current'] as CurrentColumnKey[]).filter(
+        (metric) => selectedMetrics[metric],
+    )
     const chartData = rows.map((row) => ({
-        time: formatDisplayTime(row.bucket, timeZone),
+        time: formatAxisTick(row.bucket, timeZone, axis),
         voltage: row.voltage,
         activePower: row.activePower,
         avgCurrent: row.avgCurrent,
@@ -127,12 +169,23 @@ export function HistoryDataView({ gateways, meters }: Props) {
     ]
     const currentOptions: { key: MetricKey; label: string }[] = isThreePhase
         ? [
-              { key: 'avgCurrent', label: t('historyData.averageCurrent') },
-              { key: 'ch1Current', label: t('historyData.l1Current') },
-              { key: 'ch2Current', label: t('historyData.l2Current') },
-              { key: 'ch3Current', label: t('historyData.l3Current') },
-          ]
+            { key: 'avgCurrent', label: t('historyData.averageCurrent') },
+            { key: 'ch1Current', label: t('historyData.l1Current') },
+            { key: 'ch2Current', label: t('historyData.l2Current') },
+            { key: 'ch3Current', label: t('historyData.l3Current') },
+        ]
         : [{ key: 'avgCurrent', label: t('historyData.current') }]
+
+    const tableHeaders = [
+        'time',
+        'gateway',
+        'meter',
+        'voltage',
+        'averageCurrent',
+        ...visibleCurrentColumns.map((metric) => currentColumnLabelKeys[metric]),
+        'activePower',
+        'status',
+    ]
 
     return (
         <div className='flex h-full min-h-0 flex-col gap-7 overflow-y-auto pb-8'>
@@ -176,10 +229,10 @@ export function HistoryDataView({ gateways, meters }: Props) {
                             value={axis}
                             onChange={(event) => handleAxisChange(event.target.value as TimeseriesAxis)}
                             className='control-input'>
-                            <option value='minute'>Minute</option>
-                            <option value='hour'>Hour</option>
-                            <option value='day'>Day</option>
-                            <option value='month'>Month</option>
+                            <option value='minute'>{t('historyData.minute')}</option>
+                            <option value='hour'>{t('historyData.hour')}</option>
+                            <option value='day'>{t('historyData.day')}</option>
+                            <option value='month'>{t('historyData.month')}</option>
                         </select>
                     </Field>
                     <Field label={t('historyData.startTime')}>
@@ -256,9 +309,11 @@ export function HistoryDataView({ gateways, meters }: Props) {
                                 tick={{ fill: '#7B8580', fontSize: 12 }}
                                 tickLine={false}
                                 axisLine={false}
+                                minTickGap={24}
                             />
                             <YAxis
                                 domain={yDomain}
+                                tickFormatter={formatYTick}
                                 tick={{ fill: '#7B8580', fontSize: 12 }}
                                 tickLine={false}
                                 axisLine={false}
@@ -282,25 +337,13 @@ export function HistoryDataView({ gateways, meters }: Props) {
                 {query.error instanceof ApiError && (
                     <p className='mt-4 text-center text-sm text-[#B54E45]'>{query.error.message}</p>
                 )}
-                {!query.error && rows.length === 0 && (
-                    <p className='mt-4 text-center text-sm text-[#8A938E]'>{t('historyData.dataUnavailable')}</p>
-                )}
             </section>
 
             <section className='shrink-0 overflow-x-auto border border-[#D8DDD9] bg-white'>
                 <table className='w-full min-w-[980px] text-sm'>
                     <thead className='bg-[#F1F2EF] text-left text-[#4F5A54]'>
                         <tr>
-                            {[
-                                'time',
-                                'gateway',
-                                'meter',
-                                'voltage',
-                                'averageCurrent',
-                                ...(isThreePhase ? ['l1Current', 'l2Current', 'l3Current'] : []),
-                                'activePower',
-                                'status',
-                            ].map((key) => (
+                            {tableHeaders.map((key) => (
                                 <th key={key} className='whitespace-nowrap px-4 py-3 font-medium'>
                                     {t(`historyData.${key}`)}
                                 </th>
@@ -308,16 +351,16 @@ export function HistoryDataView({ gateways, meters }: Props) {
                         </tr>
                     </thead>
                     <tbody>
-                        {rows.length === 0 ? (
+                        {sortedRows.length === 0 ? (
                             <tr>
                                 <td
-                                    colSpan={isThreePhase ? 10 : 7}
+                                    colSpan={tableHeaders.length}
                                     className='px-4 py-8 text-center text-muted-foreground'>
                                     {t('historyData.noData')}
                                 </td>
                             </tr>
                         ) : (
-                            rows.map((row) => (
+                            sortedRows.map((row) => (
                                 <tr key={row.bucketTs} className='border-t border-[#E1E5E2]'>
                                     <td className='px-4 py-3'>{formatDisplayTime(row.bucket, timeZone)}</td>
                                     <td className='px-4 py-3'>
@@ -326,15 +369,11 @@ export function HistoryDataView({ gateways, meters }: Props) {
                                     <td className='px-4 py-3'>{meterId}</td>
                                     <td className='px-4 py-3'>{row.voltage ?? '—'}</td>
                                     <td className='px-4 py-3'>{row.avgCurrent ?? '—'}</td>
-                                    {isThreePhase && (
-                                        <>
-                                            <td className='px-4 py-3'>{row.ch1Current ?? '—'}</td>
-                                            <td className='px-4 py-3'>{row.ch2Current ?? '—'}</td>
-                                            <td className='px-4 py-3'>{row.ch3Current ?? '—'}</td>
-                                        </>
-                                    )}
+                                    {visibleCurrentColumns.map((metric) => (
+                                        <td key={metric} className='px-4 py-3'>{row[metric] ?? '—'}</td>
+                                    ))}
                                     <td className='px-4 py-3'>{row.activePower ?? '—'}</td>
-                                    <td className='px-4 py-3'>{row.sampleCount ? 'OK' : '—'}</td>
+                                    <td className='px-4 py-3'>{row.sampleCount ? t('historyData.ok') : '—'}</td>
                                 </tr>
                             ))
                         )}

@@ -13,15 +13,15 @@ export default async function OverviewPage() {
     const isAdmin = normalizeRole(session?.user?.role) === 'admin'
     const [gateways, cloudTargetList] = isAdmin
         ? await Promise.all([
-              serverApiFetch<Gateway[]>(GATEWAY_ENDPOINT.base),
-              serverApiFetch<CloudTargetListResponse>(CLOUD_TARGET_ENDPOINT.base),
-          ])
+            serverApiFetch<Gateway[]>(GATEWAY_ENDPOINT.base),
+            serverApiFetch<CloudTargetListResponse>(CLOUD_TARGET_ENDPOINT.base),
+        ])
         : [await safeFetch<Gateway[]>(GATEWAY_ENDPOINT.base, []), { targets: [], cloudTargetMax: 0 }]
     const meterResults = await Promise.all(
         gateways.map((gateway) => safeFetch<Meter[]>(GATEWAY_ENDPOINT.getMeters(gateway.uid), [])),
     )
 
-    return <OverviewDashboard gateways={gateways} cloudTargets={cloudTargetList.targets} meters={meterResults.flat()} canManage={isAdmin} />
+    return <OverviewDashboard gateways={gateways} cloudTargets={cloudTargetList.targets} uploadedToday={cloudTargetList.uploadedToday ?? 0} meters={meterResults.flat()} canManage={isAdmin} />
 }
 
 async function safeFetch<T>(path: string, fallback: T): Promise<T> {
