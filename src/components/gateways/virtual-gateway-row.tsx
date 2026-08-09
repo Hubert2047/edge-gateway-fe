@@ -53,7 +53,7 @@ export function VirtualGatewayRow({ gateway }: { gateway: Gateway }) {
                     disabled={saving}
                     onCheckedChange={(checked) => toggleEnabled(checked === true)}
                 />
-                <StatusBadge enabled={enabled} activeLabel={t('gateway.monitoring')} />
+                <StatusBadge status={enabled ? "online" : "offline"} />
             </td>
             <td data-label={t('common.gateway')} className='p-4 space-y-3'>
                 <div className='space-y-1.5'>

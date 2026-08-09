@@ -3,7 +3,9 @@ import { twMerge } from 'tailwind-merge'
 import { mapErrorKey, type Locale } from '@/lib/i18n'
 import { TimeseriesAxis } from '@/types/timeseries'
 import { MetricKey } from '@/components/history-data/history-data-view'
-import { PhaseMode } from '@/types/meter'
+import { Meter, MeterStatus, PhaseMode } from '@/types/meter'
+import { Gateway } from '@/types/gateway'
+import { StatusDotState } from '@/components/overview/statusDot'
 
 export function cn(...inputs: ClassValue[]) {
     return twMerge(clsx(inputs))
@@ -227,4 +229,14 @@ export function getAverageCurrent(
     const { l1, l2, l3 } = data
     if (l1 == null || l2 == null || l3 == null) return null
     return (l1 + l2 + l3) / 3
+}
+export function getMeterStatus(meter: Pick<Meter, 'enabled' | 'isOnline'>): MeterStatus {
+    if (!meter.enabled) return 'disabled'
+    return meter.isOnline ? 'online' : 'offline'
+}
+export function getGatewayStatus(
+    gateway: Pick<Gateway, 'enabled' | 'isOnline' | 'isVirtual'>
+): StatusDotState {
+    if (!gateway.enabled) return 'disabled'
+    return (gateway.isOnline ?? gateway.isVirtual) ? 'online' : 'offline'
 }

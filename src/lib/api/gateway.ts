@@ -5,6 +5,7 @@ import { apiFetch } from './client'
 import type { Gateway, GatewayFormValues } from '@/types/gateway'
 import { GATEWAY_ENDPOINT } from '@/constances/url'
 import { meterKeys } from './meter'
+import { OVERVIEW_REFETCH_TIME } from './overview.queries'
 
 export const gatewayKeys = {
     all: ['gateways'] as const,
@@ -16,7 +17,7 @@ export function useGateways(initialData: Gateway[]) {
         queryKey: gatewayKeys.list(),
         queryFn: getGateways,
         initialData,
-        refetchInterval: 60_000,
+        staleTime: OVERVIEW_REFETCH_TIME, 
     })
 }
 

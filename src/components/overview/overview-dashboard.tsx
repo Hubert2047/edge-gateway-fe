@@ -1,58 +1,72 @@
 'use client'
 import { RefreshCw } from 'lucide-react'
-import { useRouter } from 'next/navigation'
-import { useTransition } from 'react'
 import { getGatewayDisplayName } from '@/lib/gateway'
 import { useI18n } from '@/lib/i18n'
-import { useOverviewActivePower } from '@/lib/api/overview.queries'
+import { OVERVIEW_REFETCH_TIME, useOverviewActivePower, useOverviewMeters } from '@/lib/api/overview.queries'
 import { useCloudTargets } from '@/lib/api/cloud-target'
+import { useGateways } from '@/lib/api/gateway'
 import type { CloudTargetListResponse } from '@/types/cloud-target'
 import type { Gateway } from '@/types/gateway'
-import type { Meter } from '@/types/meter'
+import type { Meter, MeterStatus } from '@/types/meter'
 import { Summary } from './summary'
 import { OverviewSection } from './overview-section'
 import { EmptyState } from './empty-state'
 import { StatusDot } from './statusDot'
 import { Metric } from './metric'
-import { formatLastPolledAt, formatValue, getAverageCurrent, transformPhaseMode } from '@/lib/utils'
+import { formatLastPolledAt, formatValue, getAverageCurrent, getGatewayStatus, getMeterStatus, transformPhaseMode } from '@/lib/utils'
 import { MeterSparkline } from './meter-spark-line'
 import { ClientRelativeTime } from '../cloud-sync/client-relative-time'
+import { useEffect } from 'react'
 
 type OverviewDashboardProps = {
-    gateways: Gateway[]
+    initialGateways: Gateway[]
     cloudTargetList: CloudTargetListResponse
-    meters: Meter[]
+    initialMeters: Meter[]
     canManage: boolean
 }
 
-export function OverviewDashboard({ gateways, cloudTargetList, meters, canManage }: OverviewDashboardProps) {
+export const STATUS_STYLE: Record<MeterStatus, { border: string; badgeBg: string; badgeText: string }> = {
+    online: { border: 'border-[#64BD91]', badgeBg: 'bg-[#EAF5EF]', badgeText: 'text-[#357A59]' },
+    offline: { border: 'border-[#D8665C]', badgeBg: 'bg-[#FAEAE8]', badgeText: 'text-[#B54E45]' },
+    disabled: { border: 'border-[#BFC8C2]', badgeBg: 'bg-[#EDEEEC]', badgeText: 'text-[#7B8580]' },
+}
+
+export function OverviewDashboard({ initialGateways, cloudTargetList, initialMeters, canManage }: OverviewDashboardProps) {
     const { t, locale } = useI18n()
-    const router = useRouter()
-    const [isRefreshing, startTransition] = useTransition()
     const activePowerQuery = useOverviewActivePower()
     const cloudTargetsQuery = useCloudTargets(cloudTargetList)
+    const gatewaysQuery = useGateways(initialGateways)
+    const gateways = gatewaysQuery.data
+    const metersQuery = useOverviewMeters(initialMeters)
+    const meters = metersQuery.data
+
     const activePowerByMeter = activePowerQuery.data ?? {}
     const cloudTargets = cloudTargetsQuery.data?.targets ?? []
     const uploadedToday = cloudTargetsQuery.data?.uploadedToday ?? 0
-    const isReloading = isRefreshing || activePowerQuery.isFetching || cloudTargetsQuery.isFetching
+    const isReloading =
+        gatewaysQuery.isFetching ||
+        metersQuery.isFetching ||
+        activePowerQuery.isFetching ||
+        cloudTargetsQuery.isFetching
 
-    async function handleRefresh() {
+    async function refetchAll() {
         await Promise.all([
+            gatewaysQuery.refetch(),
+            metersQuery.refetch(),
             activePowerQuery.refetch(),
             cloudTargetsQuery.refetch(),
         ])
-        startTransition(() => {
-            router.refresh()
-        })
     }
 
-    const enabledGateways = gateways.filter(
-        (gateway) => gateway.enabled && (gateway.isOnline ?? gateway.isVirtual)
-    ).length
+    useEffect(() => {
+        const id = setInterval(refetchAll, OVERVIEW_REFETCH_TIME)
+        return () => clearInterval(id)
+    }, [])
+
+    const enabledGateways = gateways.filter((gateway) => getGatewayStatus(gateway) === 'online').length
     const enabledCloudTargets = cloudTargets.filter((target) => target.enabled).length
     const realtimePending = cloudTargets.reduce((sum, target) => sum + (target.realtimePending ?? 0), 0)
     const gatewayNames = new Map(gateways.map((gateway) => [gateway.uid, getGatewayDisplayName(gateway, t)]))
-
     return (
         <div className='flex h-full min-h-0 flex-col gap-4'>
             <div className='sticky top-0 z-10 flex shrink-0 flex-col gap-4 bg-[#F7F5F0] pb-1'>
@@ -60,7 +74,7 @@ export function OverviewDashboard({ gateways, cloudTargetList, meters, canManage
                     <h1 className='text-3xl font-bold tracking-tight'>{t('overview.title')}</h1>
                     <button
                         type='button'
-                        onClick={handleRefresh}
+                        onClick={refetchAll}
                         disabled={isReloading}
                         className='flex items-center gap-2 border border-[#BFC8C2] bg-transparent px-3 py-1 text-sm font-medium hover:bg-white disabled:cursor-wait disabled:opacity-60'>
                         <RefreshCw className={`h-4 w-4 ${isReloading ? 'animate-spin' : ''}`} />
@@ -76,10 +90,7 @@ export function OverviewDashboard({ gateways, cloudTargetList, meters, canManage
                         suffix={`/ ${cloudTargets.length}`}
                     />
                     <Summary label={t('overview.meterCount')} value={meters.length} />
-                    <Summary
-                        label={t('overview.uploaded')}
-                        value={uploadedToday}
-                    />
+                    <Summary label={t('overview.uploaded')} value={uploadedToday} />
                     <Summary label={t('overview.realtimePending')} value={realtimePending} />
                 </section>
             </div>
@@ -96,10 +107,11 @@ export function OverviewDashboard({ gateways, cloudTargetList, meters, canManage
                                 <EmptyState text={t('overview.noGateways')} />
                             ) : (
                                 gateways.map((gateway) => {
-                                    const isOnline = gateway.enabled && (gateway.isOnline ?? gateway.isVirtual)
+                                    const status = getGatewayStatus(gateway)
+                                    const style = STATUS_STYLE[status]
                                     return (
                                         <div key={gateway.uid} className='flex items-center gap-4 p-4'>
-                                            <StatusDot active={isOnline} />
+                                            <StatusDot status={status} />
                                             <div className='min-w-0 flex-1'>
                                                 <p className='font-semibold'>{getGatewayDisplayName(gateway, t)}</p>
                                                 <p className='text-xs text-[#7B8580]'>
@@ -113,6 +125,13 @@ export function OverviewDashboard({ gateways, cloudTargetList, meters, canManage
                                                     fallback={String(t('cloud.notUploaded'))}
                                                 />
                                             </p>
+                                            <span className={`rounded-full px-3 py-1 text-sm ${style.badgeBg} ${style.badgeText}`}>
+                                                {status === 'online'
+                                                    ? t('overview.online')
+                                                    : status === 'offline'
+                                                        ? t('common.offline')
+                                                        : t('common.disabled')}
+                                            </span>
                                         </div>
                                     )
                                 })
@@ -129,9 +148,15 @@ export function OverviewDashboard({ gateways, cloudTargetList, meters, canManage
                             {cloudTargets.length === 0 ? (
                                 <EmptyState text={t('overview.noCloudTargets')} />
                             ) : (
-                                cloudTargets.map((target) => (
-                                    <div key={target.id} className='flex items-center gap-4 p-4'>
-                                        <StatusDot active={target.enabled} />
+                                cloudTargets.map((target) => {
+                                    const status =
+                                        target.connectionStatus === "offline"
+                                            ? 'offline'
+                                            : !target.enabled
+                                                ? 'disabled'
+                                                : "online"
+                                    return <div key={target.id} className='flex items-center gap-4 p-4'>
+                                        <StatusDot status={status} />
                                         <div className='min-w-0 flex-1'>
                                             <p className='font-semibold'>{target.name}</p>
                                             <p className='truncate text-xs text-[#7B8580]'>{target.apiKey}</p>
@@ -145,7 +170,6 @@ export function OverviewDashboard({ gateways, cloudTargetList, meters, canManage
                                                         locale={locale}
                                                         fallback={String(t('cloud.notUploaded'))}
                                                     />
-
                                                 </div>
                                             </div>
                                             <div className='flex gap-2 mt-2 text-xs text-[#7B8580]'>
@@ -158,7 +182,9 @@ export function OverviewDashboard({ gateways, cloudTargetList, meters, canManage
                                             </div>
                                         </div>
                                     </div>
-                                ))
+                                }
+
+                                )
                             )}
                         </div>
                     </OverviewSection>
@@ -179,14 +205,25 @@ export function OverviewDashboard({ gateways, cloudTargetList, meters, canManage
                             meters.map((meter: Meter) => {
                                 const meterID = meter.meterId ?? meter.macId
                                 const overviewData = activePowerByMeter[`${meter.gatewayUID}:${meterID}`]
-                                const isOnline = meter.isOnline ?? meter.enabled
+
+                                const gateway = gateways.find((gateway) => gateway.uid === meter.gatewayUID)
+                                const gatewayStatus = gateway ? getGatewayStatus(gateway) : 'offline'
+                                const meterStatus = getMeterStatus(meter)
+
+                                const status =
+                                    gatewayStatus === 'disabled'
+                                        ? 'disabled'
+                                        : gatewayStatus === 'offline'
+                                            ? 'offline'
+                                            : meterStatus
+                                const style = STATUS_STYLE[status]
                                 return (
                                     <div
                                         key={`${meter.gatewayUID}:${meterID}`}
-                                        className={`border-t-4 ${isOnline ? 'border-[#64BD91]' : 'border-[#D8665C]'} flex flex-col gap-3 border-x border-b border-[#D8DDD9] bg-white p-4`}>
+                                        className={`border-t-4 ${style.border} flex flex-col gap-3 border-x border-b border-[#D8DDD9] bg-white p-4`}>
                                         <div className='flex items-start justify-between gap-3'>
                                             <div className='flex items-center gap-3'>
-                                                <StatusDot active={isOnline} />
+                                                <StatusDot status={status} />
                                                 <div>
                                                     <div className='flex gap-2 items-center'>
                                                         <p className='font-semibold'>{meter.name || meterID}</p>
@@ -198,40 +235,29 @@ export function OverviewDashboard({ gateways, cloudTargetList, meters, canManage
                                                     </p>
                                                 </div>
                                             </div>
-                                            <span
-                                                className={`rounded-full px-3 py-1 text-sm ${isOnline ? 'bg-[#EAF5EF] text-[#357A59]' : 'bg-[#FAEAE8] text-[#B54E45]'}`}>
-                                                {isOnline ? t('overview.online') : t('common.disabled')}
+                                            <span className={`rounded-full px-3 py-1 text-sm ${style.badgeBg} ${style.badgeText}`}>
+                                                {status === 'online'
+                                                    ? t('overview.online')
+                                                    : status === 'offline'
+                                                        ? t('common.offline')
+                                                        : t('common.disabled')}
                                             </span>
                                         </div>
                                         <div className='grid grid-cols-2 gap-1 border-y border-[#E4E8E5] py-2 text-sm sm:grid-cols-5'>
-                                            <Metric
-                                                label={t('overview.voltage')}
-                                                value={formatValue(overviewData?.voltage, ' V')}
-                                            />
+                                            <Metric label={t('overview.voltage')} value={formatValue(overviewData?.voltage, ' V')} />
                                             <Metric
                                                 label={t('overview.averageCurrent')}
                                                 value={formatValue(getAverageCurrent(overviewData, meter.phaseMode), ' A')}
                                             />
-
                                             <Metric label='L1' value={formatValue(overviewData?.l1, ' A')} />
-                                            <Metric
-                                                label='L2'
-                                                value={formatValue(overviewData?.l2, ' A')}
-                                            />
-                                            <Metric
-                                                label='L3'
-                                                value={formatValue(overviewData?.l3, ' A')}
-                                            />
+                                            <Metric label='L2' value={formatValue(overviewData?.l2, ' A')} />
+                                            <Metric label='L3' value={formatValue(overviewData?.l3, ' A')} />
                                         </div>
                                         <div className='space-y-2'>
                                             <p className='text-xs text-[#8A938E]'>{t('overview.activePower')}</p>
-                                            <MeterSparkline
-                                                points={overviewData?.activePower ?? []}
-                                                loading={activePowerQuery.isLoading}
-                                            />
+                                            <MeterSparkline points={overviewData?.activePower ?? []} loading={activePowerQuery.isLoading} />
                                             <p className='text-xs text-[#8A938E]'>
-                                                {t('overview.lastPolled')}:{' '}
-                                                {formatLastPolledAt(overviewData?.lastPolledAt, t)}
+                                                {t('overview.lastPolled')}: {formatLastPolledAt(overviewData?.lastPolledAt, t)}
                                             </p>
                                         </div>
                                     </div>

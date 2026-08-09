@@ -4,7 +4,7 @@ export type HardwareMeterType = string
 export interface MeterCreateValues extends MeterFormValues {
     meterType: HardwareMeterType
 }
-
+export type MeterStatus = 'online' | 'offline' | 'disabled'
 export interface Meter {
     meterId: string
     macId: string

@@ -20,11 +20,12 @@ import {
 } from '@/components/ui/alert-dialog'
 import type { Meter, MeterBatchUpdateValues, MeterFormValues, PhaseMode } from '@/types/meter'
 import type { Gateway } from '@/types/gateway'
-import { getErrorMessage } from '@/lib/utils'
+import { getErrorMessage, getGatewayStatus } from '@/lib/utils'
 import { StatusBadge } from '../status-badge'
 import { useDeleteMeter, useMeters, useUpdateMeter, useUpdateMetersBulk } from '@/lib/api/meter'
 import { useI18n } from '@/lib/i18n'
 import { GatewaySwitcher } from './gateway-switcher'
+import { StatusDot, StatusDotState } from '../overview/statusDot'
 
 function toBatchUpdate(meter: Meter, form: MeterFormValues): MeterBatchUpdateValues {
     return {
@@ -292,6 +293,8 @@ export function MeterList({
                                     updateMeterMutation.variables?.macId === meter.macId
                                 const deleting = deletingMacId === meter.macId
                                 const rowBusy = saving || deleting || bulkMutation.isPending || isFetching
+                                const currentGateway = gateways.find((g) => g.uid === gatewayUid)
+                                const gatewayStatus = currentGateway ? getGatewayStatus(currentGateway) : 'offline'
                                 return (
                                     <tr
                                         key={meter.macId}
@@ -381,15 +384,25 @@ export function MeterList({
                                                     updateRowForm(meter.macId, { enabled: checked === true })
                                                 }
                                             />
-                                            {!form.enabled ? (
-                                                <StatusBadge enabled={false} activeLabel={t('common.enabled')} />
-                                            ) : meter.isOnline ?? false ? (
-                                                <StatusBadge enabled={true} activeLabel={t('gateway.monitoring')} />
-                                            ) : (
-                                                <span className='inline-flex items-center rounded-md bg-rose-100 px-2.5 py-0.5 text-xs font-semibold text-rose-600 border border-rose-200'>
-                                                    {t('common.offline')}
-                                                </span>
-                                            )}
+                                            {(() => {
+                                                const meterStatus: StatusDotState = !form.enabled
+                                                    ? 'disabled'
+                                                    : meter.isOnline ?? false
+                                                        ? 'online'
+                                                        : 'offline'
+
+                                                const status: StatusDotState =
+                                                    gatewayStatus === 'offline'
+                                                        ? 'offline'
+                                                        : gatewayStatus === 'disabled'
+                                                            ? meterStatus === 'offline'
+                                                                ? 'offline'
+                                                                : 'disabled'
+                                                            : meterStatus
+
+                                                return <StatusBadge status={status} />
+
+                                            })()}
                                         </td>
                                         <td data-label={t('common.actions')} data-role='actions' className='p-2'>
                                             <div className='flex items-end gap-1.5'>

@@ -474,6 +474,12 @@ export function CloudTargetList({ initialTargets }: { initialTargets: CloudTarge
                                     const deleting = deletingId === target.id
                                     const rowBusy = saving || deleting
                                     const testResult = testResults[target.id]
+                                    const status =
+                                        target.connectionStatus === "offline"
+                                            ? 'offline'
+                                            : !target.enabled
+                                                ? 'disabled'
+                                                : "online"
                                     return (
                                         <tr
                                             key={target.id}
@@ -486,7 +492,7 @@ export function CloudTargetList({ initialTargets }: { initialTargets: CloudTarge
                                                         toggleEnabled(target, checked === true)
                                                     }
                                                 />
-                                                <StatusBadge enabled={form.enabled} activeLabel={t('cloud.online')} />
+                                               <StatusBadge status={status} />
                                             </td>
                                             <td data-label={t('cloud.server')} className='p-4 space-y-3'>
                                                 <div className='space-y-1.5'>

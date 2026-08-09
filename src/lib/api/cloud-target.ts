@@ -4,6 +4,7 @@ import { CloudTarget, CloudTargetFormValues, CloudTargetListResponse, TestConnec
 import { apiFetch } from './client'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { CLOUD_TARGET_ENDPOINT } from '@/constances/url'
+import { OVERVIEW_REFETCH_TIME } from './overview.queries'
 
 export const cloudTargetKeys = {
     all: ['cloud-targets'] as const,
@@ -15,7 +16,7 @@ export function useCloudTargets(initialData: CloudTargetListResponse) {
         queryKey: cloudTargetKeys.list(),
         queryFn: getCloudTargets,
         initialData,
-        refetchInterval: 60_000,
+        refetchInterval: OVERVIEW_REFETCH_TIME,
     })
 }
 

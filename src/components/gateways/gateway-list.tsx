@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -19,7 +19,7 @@ import {
     AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
 import type { Gateway, GatewayFormValues } from '@/types/gateway'
-import { getErrorMessage } from '@/lib/utils'
+import { getErrorMessage, getGatewayStatus } from '@/lib/utils'
 import { StatusBadge } from '../status-badge'
 import {
     useCreateGateway,
@@ -79,6 +79,51 @@ export function GatewayList({ initialGateways: initialGateways }: { initialGatew
     const [rowFormState, setRowFormState] = useState<Record<string, RowFormState>>({})
     const [collectingUids, setCollectingUids] = useState<Set<string>>(new Set())
 
+    // ---- "connecting" state after turning a gateway on ----
+    // Simple rule: mark pending immediately when the user flips the switch on,
+    // clear it as soon as the polled data confirms online (or gets disabled),
+    // and always clear it with a hard timeout so it can never spin forever.
+    const [pendingEnableUids, setPendingEnableUids] = useState<Set<string>>(new Set())
+    const pendingTimers = useRef<Record<string, ReturnType<typeof setTimeout>>>({})
+
+    function clearPendingEnable(uid: string) {
+        if (pendingTimers.current[uid]) {
+            clearTimeout(pendingTimers.current[uid])
+            delete pendingTimers.current[uid]
+        }
+        setPendingEnableUids((prev) => {
+            if (!prev.has(uid)) return prev
+            const next = new Set(prev)
+            next.delete(uid)
+            return next
+        })
+    }
+
+    function markPendingEnable(uid: string, pollIntervalSeconds: number) {
+        setPendingEnableUids((prev) => new Set(prev).add(uid))
+        if (pendingTimers.current[uid]) clearTimeout(pendingTimers.current[uid])
+        const maxWaitMs = Math.max(pollIntervalSeconds, 5) * 1000 + 5000
+        pendingTimers.current[uid] = setTimeout(() => clearPendingEnable(uid), maxWaitMs)
+    }
+
+    // Clear pending as soon as polled data confirms the gateway is online,
+    // or if it got disabled again while we were waiting.
+    useEffect(() => {
+        for (const uid of pendingEnableUids) {
+            const gw = gateways.find((g) => g.uid === uid)
+            if (!gw || !gw.enabled || gw.isOnline) {
+                clearPendingEnable(uid)
+            }
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [gateways])
+
+    useEffect(() => {
+        return () => {
+            Object.values(pendingTimers.current).forEach(clearTimeout)
+        }
+    }, [])
+
     function getRowForm(gateway: Gateway): RowFormState {
         return rowFormState[gateway.uid] ?? { form: gatewayToForm(gateway), errors: {} }
     }
@@ -122,7 +167,19 @@ export function GatewayList({ initialGateways: initialGateways }: { initialGatew
 
     function toggleEnabled(gateway: Gateway, checked: boolean) {
         const { form } = getRowForm(gateway)
-        updateGatewayMutation.mutate({ uid: gateway.uid, form: { ...form, enabled: checked } })
+
+        if (checked) {
+            markPendingEnable(gateway.uid, gateway.pollIntervalSeconds)
+        } else {
+            clearPendingEnable(gateway.uid)
+        }
+
+        updateGatewayMutation.mutate(
+            { uid: gateway.uid, form: { ...form, enabled: checked } },
+            {
+                onError: () => clearPendingEnable(gateway.uid),
+            },
+        )
         clearRowForm(gateway.uid)
     }
 
@@ -201,7 +258,7 @@ export function GatewayList({ initialGateways: initialGateways }: { initialGatew
                 setNewErrors({})
                 toast.success(t('toast.added'))
             },
-            onError: (err) =>  toast.error(t(getErrorMessage(err, 'toast.addFailed'))) ,
+            onError: (err) => toast.error(t(getErrorMessage(err, 'toast.addFailed'))),
         })
     }
 
@@ -261,6 +318,7 @@ export function GatewayList({ initialGateways: initialGateways }: { initialGatew
                                     const collecting = collectingUids.has(gateway.uid)
                                     const deleting = deletingUid === gateway.uid
                                     const rowBusy = saving || collecting || deleting
+                                    const connecting = form.enabled && pendingEnableUids.has(gateway.uid)
                                     return (
                                         <tr
                                             key={gateway.uid}
@@ -273,21 +331,18 @@ export function GatewayList({ initialGateways: initialGateways }: { initialGatew
                                                         toggleEnabled(gateway, checked === true)
                                                     }
                                                 />
-                                                {!form.enabled ? (
-                                                    <StatusBadge
-                                                        enabled={false}
-                                                        activeLabel={t('gateway.monitoring')}
-                                                    />
-                                                ) : gateway.isOnline ?? false ? (
-                                                    <StatusBadge
-                                                        enabled={true}
-                                                        activeLabel={t('gateway.monitoring')}
-                                                    />
-                                                ) : (
-                                                    <span className='inline-flex items-center rounded-md bg-rose-100 px-2.5 py-0.5 text-xs font-semibold text-rose-600 border border-rose-200'>
-                                                        {t('common.offline')}
-                                                    </span>
-                                                )}
+                                                <div className='flex items-center gap-2'>
+                                                    {connecting ? (
+                                                        <>
+                                                            <Loader2 className='h-3 w-3 animate-spin text-muted-foreground' />
+                                                            <span className='text-xs text-muted-foreground'>
+                                                                {t('common.connecting')}
+                                                            </span>
+                                                        </>
+                                                    ) : (
+                                                        <StatusBadge status={getGatewayStatus(gateway)} />
+                                                    )}
+                                                </div>
                                             </td>
                                             <td data-label={t('common.gateway')} className='p-4 space-y-3'>
                                                 <div className='space-y-1.5'>
@@ -502,15 +557,6 @@ export function GatewayList({ initialGateways: initialGateways }: { initialGatew
                         )}
                     </div>
                 </div>
-                {/* <div className="space-y-1.5 mb-0">
-                    <Label htmlFor="new-note" className="text-xs text-muted-foreground">{t('common.info')}</Label>
-                    <Input
-                        id="new-note"
-                        placeholder={t('gateway.optional')}
-                        value={newForm.note}
-                        onChange={(e) => updateNewForm({ note: e.target.value })}
-                    />
-                </div> */}
                 <Button
                     disabled={createGatewayMutation.isPending}
                     onClick={createGateway}
