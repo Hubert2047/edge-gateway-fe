@@ -277,6 +277,7 @@ const zhTW: MessageTree = {
     },
 
     historyData: {
+        maxBuckets: "分鐘範圍超過 1,500 個資料點的上限。",
         ok: "ok",
         minute: "分鐘",
         hour: "小時",
@@ -654,6 +655,7 @@ const en: MessageTree = {
     },
 
     historyData: {
+        maxBuckets: "Minute range exceeds the 1,500-bucket limit.",
         ok: "ok",
         minute: "Minute",
         hour: "Hour",
@@ -855,14 +857,22 @@ export function useI18n() {
     return context
 }
 
-const ERROR_KEYS: Record<string, string> = {
-    'invalid username or password': 'login.invalidCredentials',
-    'unable to reach gateway': 'gateway.unableToReach',
-    'gateway admin login do not match, reset it manually': 'gateway.resetManually',
-    'this IP is already registered to another gateway': 'gateway.alreadyRegistered',
+type ErrorRule = {
+    test: (message: string) => boolean
+    key: string
 }
+
+const ERROR_RULES: ErrorRule[] = [
+    { test: (m) => m === 'invalid username or password', key: 'login.invalidCredentials' },
+    { test: (m) => m === 'unable to reach gateway', key: 'gateway.unableToReach' },
+    { test: (m) => m === 'gateway admin login do not match, reset it manually', key: 'gateway.resetManually' },
+    { test: (m) => m === 'this IP is already registered to another gateway', key: 'gateway.alreadyRegistered' },
+    { test: (m) => m.toLowerCase().includes('minute_axis_max_buckets'), key: 'historyData.maxBuckets' },
+]
 
 export function mapErrorKey(message?: string | null): string {
     if (!message) return 'login.errorGeneric'
-    return ERROR_KEYS[message.trim()] ?? 'login.errorGeneric'
+    const trimmed = message.trim()
+    const matched = ERROR_RULES.find((rule) => rule.test(trimmed))
+    return matched?.key ?? 'login.errorGeneric'
 }

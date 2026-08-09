@@ -2,14 +2,22 @@
 import { useEffect, useMemo, useState } from 'react'
 import { CartesianGrid, Legend, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import { getGatewayDisplayName } from '@/lib/gateway'
-import { useI18n } from '@/lib/i18n'
+import { mapErrorKey, useI18n } from '@/lib/i18n'
 import { ApiError } from '@/lib/api/client'
 import { useTimeseries } from '@/lib/api/timeseries'
 import { useSettings } from '@/lib/api/settings.queries'
 import type { Gateway } from '@/types/gateway'
 import type { Meter } from '@/types/meter'
 import type { TimeseriesAxis } from '@/types/timeseries'
-import { formatDisplayTime, getDefaultRange, getMetricLabel, getYDomain, parseDateTimeLocal } from '@/lib/utils'
+import {
+    formatDisplayTime,
+    formatValue,
+    getAverageCurrent,
+    getDefaultRange,
+    getMetricLabel,
+    getYDomain,
+    parseDateTimeLocal,
+} from '@/lib/utils'
 import { MetricCheckboxes } from './metric-check-boxes'
 import { MetricCheckbox } from './metric-checkbox'
 import { Field } from '../ui/field'
@@ -90,7 +98,6 @@ export function HistoryDataView({ gateways, meters }: Props) {
     useEffect(() => {
         if (!settingsQuery.data) return
         const range = getDefaultRange(axis, timeZone)
-        // eslint-disable-next-line react-hooks/set-state-in-effect
         setDate(range.start)
         setEndDate(range.end)
     }, [axis, settingsQuery.data, timeZone])
@@ -100,8 +107,8 @@ export function HistoryDataView({ gateways, meters }: Props) {
         [gatewayUid, meters],
     )
     const selectedMeter = meters.find((meter) => meter.macId === meterId)
-    const isThreePhase =
-        selectedMeter?.phaseMode === 'three_phase' || selectedMeter?.phaseMode === 'three_phase_balanced'
+    const phaseMode = selectedMeter?.phaseMode ?? 'single_phase'
+    const isThreePhase = phaseMode === 'three_phase' || phaseMode === 'three_phase_balanced'
 
     function resetCurrentMetrics() {
         setSelectedMetrics((current) => ({
@@ -118,15 +125,13 @@ export function HistoryDataView({ gateways, meters }: Props) {
         const nextMeter = meters.find((meter) => meter.gatewayUID === value)
         setMeterId(nextMeter?.macId ?? '')
         resetCurrentMetrics()
+        setSubmitted(false)
     }
 
     function handleMeterChange(value: string) {
         setMeterId(value)
         resetCurrentMetrics()
-    }
-
-    function toggleMetric(metric: MetricKey, checked: boolean) {
-        setSelectedMetrics((current) => ({ ...current, [metric]: checked }))
+        setSubmitted(false)
     }
 
     function handleAxisChange(value: TimeseriesAxis) {
@@ -134,7 +139,14 @@ export function HistoryDataView({ gateways, meters }: Props) {
         const range = getDefaultRange(value, timeZone)
         setDate(range.start)
         setEndDate(range.end)
+        setSubmitted(false)
     }
+
+    function toggleMetric(metric: MetricKey, checked: boolean) {
+        setSelectedMetrics((current) => ({ ...current, [metric]: checked }))
+    }
+
+
 
     const params = {
         gatewayUid,
@@ -154,7 +166,7 @@ export function HistoryDataView({ gateways, meters }: Props) {
         time: formatAxisTick(row.bucket, timeZone, axis),
         voltage: row.voltage,
         activePower: row.activePower,
-        avgCurrent: row.avgCurrent,
+        avgCurrent: getAverageCurrent(row, phaseMode),
         l1: row.l1,
         l2: row.l2,
         l3: row.l3,
@@ -272,7 +284,10 @@ export function HistoryDataView({ gateways, meters }: Props) {
                         <input
                             type='datetime-local'
                             value={date}
-                            onChange={(event) => setDate(event.target.value)}
+                            onChange={(event) => {
+                                setDate(event.target.value)
+                                setSubmitted(false)
+                            }}
                             className='control-input'
                         />
                     </Field>
@@ -280,7 +295,10 @@ export function HistoryDataView({ gateways, meters }: Props) {
                         <input
                             type='datetime-local'
                             value={endDate}
-                            onChange={(event) => setEndDate(event.target.value)}
+                            onChange={(event) => {
+                                setEndDate(event.target.value)
+                                setSubmitted(false)
+                            }}
                             className='control-input'
                         />
                     </Field>
@@ -380,7 +398,9 @@ export function HistoryDataView({ gateways, meters }: Props) {
                     </ResponsiveContainer>
                 </div>
                 {query.error instanceof ApiError && (
-                    <p className='mt-4 text-center text-sm text-[#B54E45]'>{query.error.message}</p>
+                    <p className='mt-4 text-center text-sm text-[#B54E45]'>
+                        {t(mapErrorKey(query.error.message))}
+                    </p>
                 )}
             </section>
 
@@ -413,7 +433,7 @@ export function HistoryDataView({ gateways, meters }: Props) {
                                     </td>
                                     <td className='p-2'>{meterId}</td>
                                     <td className='p-2'>{row.voltage ?? '—'}</td>
-                                    <td className='p-2'>{row.avgCurrent ?? '—'}</td>
+                                    <td className='p-2'>{formatValue(getAverageCurrent(row, phaseMode))}</td>
                                     {isThreePhase &&
                                         threePhaseColumns.map((metric) => (
                                             <td key={metric} className='p-2'>{row[metric] ?? '—'}</td>

@@ -14,7 +14,7 @@ import { OverviewSection } from './overview-section'
 import { EmptyState } from './empty-state'
 import { StatusDot } from './statusDot'
 import { Metric } from './metric'
-import { formatLastPolledAt, formatValue, transformPhaseMode } from '@/lib/utils'
+import { formatLastPolledAt, formatValue, getAverageCurrent, transformPhaseMode } from '@/lib/utils'
 import { MeterSparkline } from './meter-spark-line'
 import { ClientRelativeTime } from '../cloud-sync/client-relative-time'
 
@@ -210,21 +210,18 @@ export function OverviewDashboard({ gateways, cloudTargetList, meters, canManage
                                             />
                                             <Metric
                                                 label={t('overview.averageCurrent')}
-                                                value={formatValue(overviewData?.avgCurrent, ' A')}
+                                                value={formatValue(getAverageCurrent(overviewData, meter.phaseMode), ' A')}
                                             />
-                                            {
-                                                meter.phaseMode !== 'single_phase' && <>
-                                                    <Metric label='L1' value={formatValue(overviewData?.l1, ' A')} />
-                                                    <Metric
-                                                        label='L2'
-                                                        value={formatValue(overviewData?.l2, ' A')}
-                                                    />
-                                                    <Metric
-                                                        label='L3'
-                                                        value={formatValue(overviewData?.l3, ' A')}
-                                                    />
-                                                </>
-                                            }
+
+                                            <Metric label='L1' value={formatValue(overviewData?.l1, ' A')} />
+                                            <Metric
+                                                label='L2'
+                                                value={formatValue(overviewData?.l2, ' A')}
+                                            />
+                                            <Metric
+                                                label='L3'
+                                                value={formatValue(overviewData?.l3, ' A')}
+                                            />
                                         </div>
                                         <div className='space-y-2'>
                                             <p className='text-xs text-[#8A938E]'>{t('overview.activePower')}</p>

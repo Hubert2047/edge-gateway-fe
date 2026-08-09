@@ -400,14 +400,14 @@ export function MeterList({
                                                     onClick={() => requestSave(meter)}>
                                                     {saving ? <Loader2 className='h-4 w-4 animate-spin' /> : t('common.save')}
                                                 </Button>
-                                                <Button
+                                                {/* <Button
                                                     size='sm'
                                                     className='w-16 bg-rose-50 text-rose-600 hover:bg-rose-100 border border-rose-200'
                                                     variant='ghost'
                                                     disabled={rowBusy}
                                                     onClick={() => requestDelete(meter)}>
                                                     {deleting ? <Loader2 className='h-4 w-4 animate-spin' /> : t('common.delete')}
-                                                </Button>
+                                                </Button> */}
                                             </div>
                                         </td>
                                     </tr>
