@@ -11,7 +11,7 @@ export type TimeseriesPoint = {
     powerFactor: number | null
     activePower: number | null
     avgCurrent: number | null
-    ch1Current: number | null
-    ch2Current: number | null
-    ch3Current: number | null
+    l1: number | null
+    l2: number | null
+    l3: number | null
 }

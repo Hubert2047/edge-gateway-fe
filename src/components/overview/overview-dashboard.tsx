@@ -214,14 +214,14 @@ export function OverviewDashboard({ gateways, cloudTargetList, meters, canManage
                                             />
                                             {
                                                 meter.phaseMode !== 'single_phase' && <>
-                                                    <Metric label='L1' value={formatValue(overviewData?.ch1Current, ' A')} />
+                                                    <Metric label='L1' value={formatValue(overviewData?.l1, ' A')} />
                                                     <Metric
                                                         label='L2'
-                                                        value={formatValue(overviewData?.ch2Current, ' A')}
+                                                        value={formatValue(overviewData?.l2, ' A')}
                                                     />
                                                     <Metric
                                                         label='L3'
-                                                        value={formatValue(overviewData?.ch3Current, ' A')}
+                                                        value={formatValue(overviewData?.l3, ' A')}
                                                     />
                                                 </>
                                             }

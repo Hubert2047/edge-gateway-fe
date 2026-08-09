@@ -16,33 +16,33 @@ import { Field } from '../ui/field'
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '../ui/select'
 
 type Props = { gateways: Gateway[]; meters: Meter[] }
-export type MetricKey = 'voltage' | 'activePower' | 'avgCurrent' | 'ch1Current' | 'ch2Current' | 'ch3Current'
+export type MetricKey = 'voltage' | 'activePower' | 'avgCurrent' | 'l1' | 'l2' | 'l3'
 export type SelectedMetrics = Record<MetricKey, boolean>
-type CurrentColumnKey = 'ch1Current' | 'ch2Current' | 'ch3Current'
+type CurrentColumnKey = 'l1' | 'l2' | 'l3'
 
 export const metricColors: Record<MetricKey, string> = {
     voltage: '#2F6F95',
     activePower: '#C46A3A',
     avgCurrent: '#4E8B74',
-    ch1Current: '#8B5E9E',
-    ch2Current: '#B38A2E',
-    ch3Current: '#B54E45',
+    l1: '#8B5E9E',
+    l2: '#B38A2E',
+    l3: '#B54E45',
 }
 
 const initialSelectedMetrics: SelectedMetrics = {
     voltage: false,
     activePower: true,
     avgCurrent: false,
-    ch1Current: false,
-    ch2Current: false,
-    ch3Current: false,
+    l1: false,
+    l2: false,
+    l3: false,
 }
 const DEFAULT_TIME_ZONE = 'Asia/Taipei'
 
 const currentColumnLabelKeys: Record<CurrentColumnKey, string> = {
-    ch1Current: 'l1Current',
-    ch2Current: 'l2Current',
-    ch3Current: 'l3Current',
+    l1: 'l1Current',
+    l2: 'l2Current',
+    l3: 'l3Current',
 }
 
 function formatAxisTick(bucket: string, timeZone: string, axis: TimeseriesAxis) {
@@ -107,9 +107,9 @@ export function HistoryDataView({ gateways, meters }: Props) {
         setSelectedMetrics((current) => ({
             ...current,
             avgCurrent: false,
-            ch1Current: false,
-            ch2Current: false,
-            ch3Current: false,
+            l1: false,
+            l2: false,
+            l3: false,
         }))
     }
 
@@ -155,9 +155,9 @@ export function HistoryDataView({ gateways, meters }: Props) {
         voltage: row.voltage,
         activePower: row.activePower,
         avgCurrent: row.avgCurrent,
-        ch1Current: row.ch1Current,
-        ch2Current: row.ch2Current,
-        ch3Current: row.ch3Current,
+        l1: row.l1,
+        l2: row.l2,
+        l3: row.l3,
     }))
     const yDomain = useMemo(() => getYDomain(chartData, visibleMetrics), [chartData, visibleMetrics])
 
@@ -168,13 +168,13 @@ export function HistoryDataView({ gateways, meters }: Props) {
     const currentOptions: { key: MetricKey; label: string }[] = isThreePhase
         ? [
             { key: 'avgCurrent', label: t('historyData.averageCurrent') },
-            { key: 'ch1Current', label: t('historyData.l1Current') },
-            { key: 'ch2Current', label: t('historyData.l2Current') },
-            { key: 'ch3Current', label: t('historyData.l3Current') },
+            { key: 'l1', label: t('historyData.l1Current') },
+            { key: 'l2', label: t('historyData.l2Current') },
+            { key: 'l3', label: t('historyData.l3Current') },
         ]
         : [{ key: 'avgCurrent', label: t('historyData.current') }]
 
-    const threePhaseColumns: CurrentColumnKey[] = ['ch1Current', 'ch2Current', 'ch3Current']
+    const threePhaseColumns: CurrentColumnKey[] = ['l1', 'l2', 'l3']
 
     const tableHeaders = [
         'time',
@@ -328,9 +328,9 @@ export function HistoryDataView({ gateways, meters }: Props) {
                 </div>
             </section>
 
-            <section className='shrink-0 border border-[#D8DDD9] bg-white p-7'>
-                <div className='mb-8 flex items-center justify-between'>
-                    <h2 className='text-2xl font-bold'>{t('historyData.chartTitle')}</h2>
+            <section className='shrink-0 border border-[#D8DDD9] bg-white p-4'>
+                <div className='flex items-center justify-between'>
+                    <h2 className='text-xl font-bold'>{t('historyData.chartTitle')}</h2>
                     <span className='text-sm text-[#7B8580]'>
                         {rows.length} {t('historyData.samples')}
                     </span>
@@ -400,26 +400,26 @@ export function HistoryDataView({ gateways, meters }: Props) {
                             <tr>
                                 <td
                                     colSpan={tableHeaders.length}
-                                    className='px-4 py-8 text-center text-muted-foreground'>
+                                    className='px-2 py-4 text-center text-muted-foreground'>
                                     {t('historyData.noData')}
                                 </td>
                             </tr>
                         ) : (
                             sortedRows.map((row) => (
                                 <tr key={row.bucketTs} className='border-t border-[#E1E5E2]'>
-                                    <td className='px-4 py-3'>{formatDisplayTime(row.bucket, timeZone)}</td>
-                                    <td className='px-4 py-3'>
+                                    <td className='p-2'>{formatDisplayTime(row.bucket, timeZone)}</td>
+                                    <td className='p-2'>
                                         {getGatewayDisplayName(gateways.find((g) => g.uid === gatewayUid)!, t)}
                                     </td>
-                                    <td className='px-4 py-3'>{meterId}</td>
-                                    <td className='px-4 py-3'>{row.voltage ?? '—'}</td>
-                                    <td className='px-4 py-3'>{row.avgCurrent ?? '—'}</td>
+                                    <td className='p-2'>{meterId}</td>
+                                    <td className='p-2'>{row.voltage ?? '—'}</td>
+                                    <td className='p-2'>{row.avgCurrent ?? '—'}</td>
                                     {isThreePhase &&
                                         threePhaseColumns.map((metric) => (
-                                            <td key={metric} className='px-4 py-3'>{row[metric] ?? '—'}</td>
+                                            <td key={metric} className='p-2'>{row[metric] ?? '—'}</td>
                                         ))}
-                                    <td className='px-4 py-3'>{row.activePower ?? '—'}</td>
-                                    <td className='px-4 py-3'>{row.sampleCount ? t('historyData.ok') : '—'}</td>
+                                    <td className='p-2'>{row.activePower ?? '—'}</td>
+                                    <td className='p-2'>{row.sampleCount ? t('historyData.ok') : '—'}</td>
                                 </tr>
                             ))
                         )}

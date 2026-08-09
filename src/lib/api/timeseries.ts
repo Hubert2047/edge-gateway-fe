@@ -23,7 +23,7 @@ export function useTimeseries(params: TimeseriesParams, enabled: boolean) {
 function getTimeseriesStaleTime(axis: TimeseriesAxis) {
     if (axis === 'minute') return 5_000
     if (axis === 'hour') return 30_000
-    return 60_000
+    return 5 * 60_000
 }
 
 function getTimeseries(params: TimeseriesParams) {

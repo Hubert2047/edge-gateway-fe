@@ -8,8 +8,8 @@ export type MeterOverviewData = {
     lastPolledAt: string | null
     voltage: number | null
     avgCurrent: number | null
-    ch1Current: number | null
-    ch2Current: number | null
-    ch3Current: number | null
+    l1: number | null
+    l2: number | null
+    l3: number | null
 }
 export type OverviewActivePower = Record<string, MeterOverviewData>

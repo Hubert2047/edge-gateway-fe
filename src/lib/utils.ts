@@ -112,12 +112,14 @@ function formatDateTimeLocal(date: Date, timeZone: string) {
 export function getDefaultRange(axis: TimeseriesAxis, timeZone: string) {
     const now = new Date()
     const end = formatDateTimeLocal(now, timeZone)
-    if (axis === 'minute') {
-        return { start: formatDateTimeLocal(new Date(now.getTime() - 60 * 60 * 1000), timeZone), end }
-    }
 
     const parts = getLocalDateParts(now, timeZone)
     const localDay = Date.UTC(parts.year, parts.month - 1, parts.day)
+
+    if (axis === 'minute') {
+        return { start: formatWallClockDate(new Date(localDay)), end }
+    }
+
     let start = localDay
     if (axis === 'hour') {
         const daysSinceMonday = (new Date(localDay).getUTCDay() + 6) % 7
@@ -196,9 +198,9 @@ export function getMetricLabel(metric: MetricKey, t: (key: string) => string) {
         voltage: 'historyData.voltage',
         activePower: 'historyData.activePower',
         avgCurrent: 'historyData.averageCurrent',
-        ch1Current: 'historyData.l1Current',
-        ch2Current: 'historyData.l2Current',
-        ch3Current: 'historyData.l3Current',
+        l1: 'historyData.l1Current',
+        l2: 'historyData.l2Current',
+        l3: 'historyData.l3Current',
     }
     return t(labels[metric])
 }

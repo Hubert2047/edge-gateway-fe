@@ -15,7 +15,7 @@ export function useCloudTargets(initialData: CloudTargetListResponse) {
         queryKey: cloudTargetKeys.list(),
         queryFn: getCloudTargets,
         initialData,
-        refetchInterval: 60_000,
+        refetchInterval: 2 * 60_000,
     })
 }
 
@@ -44,11 +44,11 @@ export function useUpdateCloudTarget() {
             queryClient.setQueryData<CloudTargetListResponse>(cloudTargetKeys.list(), (old) =>
                 old
                     ? {
-                          ...old,
-                          targets: old.targets.map((target) =>
-                              target.id === id ? { ...target, ...form } : target,
-                          ),
-                      }
+                        ...old,
+                        targets: old.targets.map((target) =>
+                            target.id === id ? { ...target, ...form } : target,
+                        ),
+                    }
                     : old,
             )
             return { previous }

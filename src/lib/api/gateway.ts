@@ -16,7 +16,7 @@ export function useGateways(initialData: Gateway[]) {
         queryKey: gatewayKeys.list(),
         queryFn: getGateways,
         initialData,
-        refetchInterval: 30_000,
+        refetchInterval: 2 * 60_000,
     })
 }
 
