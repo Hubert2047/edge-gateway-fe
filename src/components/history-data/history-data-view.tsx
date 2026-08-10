@@ -306,7 +306,7 @@ export function HistoryDataView({ gateways, meters }: Props) {
                             type='button'
                             onClick={() => setSubmitted(true)}
                             disabled={query.isFetching}
-                            className='h-8 w-32 bg-[#153F31] px-2.5 text-sm font-medium text-white hover:bg-[#1B503D] disabled:cursor-wait disabled:opacity-60'>
+                            className='h-8 w-32 bg-[#153F31] px-2.5 text-sm font-medium text-white hover:bg-[#1B503D]  disabled:opacity-60'>
                             {query.isFetching ? t('historyData.loading') : t('historyData.query')}
                         </button>
                     </div>
