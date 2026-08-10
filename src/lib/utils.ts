@@ -28,10 +28,7 @@ export function getErrorMessage(err: unknown, fallback: string) {
 export function formatValue(value: number | null, suffix = '') {
     return value === null || value === undefined ? '—' : `${value.toFixed(2)}${suffix}`
 }
-export function formatLastPolledAt(
-    value: string | null | undefined,
-    t: (key: string) => string
-) {
+export function formatLastPolledAt(value: string | null | undefined, t: (key: string) => string) {
     if (!value) {
         return t('overview.neverPolled')
     }
@@ -215,7 +212,7 @@ export function transformPhaseMode(phaseMode: PhaseMode) {
         case 'three_phase_balanced':
             return '3P-Bal'
         default:
-            return ""
+            return ''
     }
 }
 export function getAverageCurrent(
@@ -223,7 +220,7 @@ export function getAverageCurrent(
     phaseMode: PhaseMode,
 ): number | null {
     if (!data) return null
-    if (phaseMode === 'single_phase') {
+    if (phaseMode === 'single_phase' || phaseMode === 'three_phase_balanced') {
         return data.l1 ?? null
     }
     const { l1, l2, l3 } = data
@@ -234,9 +231,14 @@ export function getMeterStatus(meter: Pick<Meter, 'enabled' | 'isOnline'>): Mete
     if (!meter.enabled) return 'disabled'
     return meter.isOnline ? 'online' : 'offline'
 }
-export function getGatewayStatus(
-    gateway: Pick<Gateway, 'enabled' | 'isOnline' | 'isVirtual'>
-): StatusDotState {
+export function getGatewayStatus(gateway: Pick<Gateway, 'enabled' | 'isOnline' | 'isVirtual'>): StatusDotState {
     if (!gateway.enabled) return 'disabled'
     return (gateway.isOnline ?? gateway.isVirtual) ? 'online' : 'offline'
+}
+export function normalizeCurrents<T extends { l1: number | null; l2: number | null; l3: number | null }>(
+    row: T,
+    phaseMode: string,
+): T {
+    if (phaseMode !== 'three_phase_balanced') return row
+    return { ...row, l2: row.l1, l3: row.l1 }
 }

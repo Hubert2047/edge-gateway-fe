@@ -16,6 +16,7 @@ import {
     getDefaultRange,
     getMetricLabel,
     getYDomain,
+    normalizeCurrents,
     parseDateTimeLocal,
 } from '@/lib/utils'
 import { MetricCheckboxes } from './metric-check-boxes'
@@ -146,8 +147,6 @@ export function HistoryDataView({ gateways, meters }: Props) {
         setSelectedMetrics((current) => ({ ...current, [metric]: checked }))
     }
 
-
-
     const params = {
         gatewayUid,
         meterId,
@@ -157,12 +156,10 @@ export function HistoryDataView({ gateways, meters }: Props) {
     }
     const query = useTimeseries(params, submitted && Boolean(gatewayUid && meterId))
     const rows = query.data ?? []
-    const sortedRows = useMemo(
-        () => [...rows].sort((a, b) => b.bucketTs - a.bucketTs),
-        [rows],
-    )
+    const normalizedRows = useMemo(() => rows.map((row) => normalizeCurrents(row, phaseMode)), [rows, phaseMode])
+    const sortedRows = useMemo(() => [...normalizedRows].sort((a, b) => b.bucketTs - a.bucketTs), [normalizedRows])
     const visibleMetrics = (Object.keys(selectedMetrics) as MetricKey[]).filter((metric) => selectedMetrics[metric])
-    const chartData = rows.map((row) => ({
+    const chartData = normalizedRows.map((row) => ({
         time: formatAxisTick(row.bucket, timeZone, axis),
         voltage: row.voltage,
         activePower: row.activePower,
@@ -179,11 +176,11 @@ export function HistoryDataView({ gateways, meters }: Props) {
     ]
     const currentOptions: { key: MetricKey; label: string }[] = isThreePhase
         ? [
-            { key: 'avgCurrent', label: t('historyData.averageCurrent') },
-            { key: 'l1', label: t('historyData.l1Current') },
-            { key: 'l2', label: t('historyData.l2Current') },
-            { key: 'l3', label: t('historyData.l3Current') },
-        ]
+              { key: 'avgCurrent', label: t('historyData.averageCurrent') },
+              { key: 'l1', label: t('historyData.l1Current') },
+              { key: 'l2', label: t('historyData.l2Current') },
+              { key: 'l3', label: t('historyData.l3Current') },
+          ]
         : [{ key: 'avgCurrent', label: t('historyData.current') }]
 
     const threePhaseColumns: CurrentColumnKey[] = ['l1', 'l2', 'l3']
@@ -225,7 +222,9 @@ export function HistoryDataView({ gateways, meters }: Props) {
                                 <SelectValue placeholder={t('historyData.selectGateway')}>
                                     {() => {
                                         const gateway = gateways.find((g) => g.uid === gatewayUid)
-                                        return gateway ? getGatewayDisplayName(gateway, t) : t('historyData.selectGateway')
+                                        return gateway
+                                            ? getGatewayDisplayName(gateway, t)
+                                            : t('historyData.selectGateway')
                                     }}
                                 </SelectValue>
                             </SelectTrigger>
@@ -248,7 +247,7 @@ export function HistoryDataView({ gateways, meters }: Props) {
                                 <SelectValue placeholder={t('historyData.selectMeter')}>
                                     {() => {
                                         const meter = availableMeters.find((m) => m.macId === meterId)
-                                        return meter ? (meter.name || meter.macId) : t('historyData.selectMeter')
+                                        return meter ? meter.name || meter.macId : t('historyData.selectMeter')
                                     }}
                                 </SelectValue>
                             </SelectTrigger>
@@ -311,7 +310,6 @@ export function HistoryDataView({ gateways, meters }: Props) {
                             {query.isFetching ? t('historyData.loading') : t('historyData.query')}
                         </button>
                     </div>
-
                 </div>
 
                 <div className='mt-4 flex flex-wrap items-start gap-x-7 gap-y-3'>
@@ -342,7 +340,6 @@ export function HistoryDataView({ gateways, meters }: Props) {
                             ))
                         )}
                     </div>
-
                 </div>
             </section>
 
@@ -398,9 +395,7 @@ export function HistoryDataView({ gateways, meters }: Props) {
                     </ResponsiveContainer>
                 </div>
                 {query.error instanceof ApiError && (
-                    <p className='mt-4 text-center text-sm text-[#B54E45]'>
-                        {t(mapErrorKey(query.error.message))}
-                    </p>
+                    <p className='mt-4 text-center text-sm text-[#B54E45]'>{t(mapErrorKey(query.error.message))}</p>
                 )}
             </section>
 
@@ -436,7 +431,9 @@ export function HistoryDataView({ gateways, meters }: Props) {
                                     <td className='p-2'>{formatValue(getAverageCurrent(row, phaseMode))}</td>
                                     {isThreePhase &&
                                         threePhaseColumns.map((metric) => (
-                                            <td key={metric} className='p-2'>{row[metric] ?? '—'}</td>
+                                            <td key={metric} className='p-2'>
+                                                {row[metric] ?? '—'}
+                                            </td>
                                         ))}
                                     <td className='p-2'>{row.activePower ?? '—'}</td>
                                     <td className='p-2'>{row.sampleCount ? t('historyData.ok') : '—'}</td>

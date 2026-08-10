@@ -13,7 +13,14 @@ import { OverviewSection } from './overview-section'
 import { EmptyState } from './empty-state'
 import { StatusDot } from './statusDot'
 import { Metric } from './metric'
-import { formatLastPolledAt, formatValue, getAverageCurrent, getGatewayStatus, getMeterStatus, transformPhaseMode } from '@/lib/utils'
+import {
+    formatLastPolledAt,
+    formatValue,
+    getAverageCurrent,
+    getGatewayStatus,
+    getMeterStatus,
+    transformPhaseMode,
+} from '@/lib/utils'
 import { MeterSparkline } from './meter-spark-line'
 import { ClientRelativeTime } from '../cloud-sync/client-relative-time'
 import { useEffect } from 'react'
@@ -31,7 +38,12 @@ export const STATUS_STYLE: Record<MeterStatus, { border: string; badgeBg: string
     disabled: { border: 'border-[#BFC8C2]', badgeBg: 'bg-[#EDEEEC]', badgeText: 'text-[#7B8580]' },
 }
 
-export function OverviewDashboard({ initialGateways, cloudTargetList, initialMeters, canManage }: OverviewDashboardProps) {
+export function OverviewDashboard({
+    initialGateways,
+    cloudTargetList,
+    initialMeters,
+    canManage,
+}: OverviewDashboardProps) {
     const { t, locale } = useI18n()
     const activePowerQuery = useOverviewActivePower()
     const cloudTargetsQuery = useCloudTargets(cloudTargetList)
@@ -83,7 +95,11 @@ export function OverviewDashboard({ initialGateways, cloudTargetList, initialMet
                 </div>
 
                 <section className='grid grid-cols-2 border border-[#D8DDD9] bg-white md:grid-cols-5'>
-                    <Summary label={t('overview.gatewayOnline')} value={enabledGateways} suffix={`/ ${gateways.length}`} />
+                    <Summary
+                        label={t('overview.gatewayOnline')}
+                        value={enabledGateways}
+                        suffix={`/ ${gateways.length}`}
+                    />
                     <Summary
                         label={t('overview.cloudOnline')}
                         value={enabledCloudTargets}
@@ -125,12 +141,13 @@ export function OverviewDashboard({ initialGateways, cloudTargetList, initialMet
                                                     fallback={String(t('cloud.notUploaded'))}
                                                 />
                                             </p>
-                                            <span className={`rounded-full px-3 py-1 text-sm ${style.badgeBg} ${style.badgeText}`}>
+                                            <span
+                                                className={`rounded-full px-3 py-1 text-sm ${style.badgeBg} ${style.badgeText}`}>
                                                 {status === 'online'
                                                     ? t('overview.online')
                                                     : status === 'offline'
-                                                        ? t('common.offline')
-                                                        : t('common.disabled')}
+                                                      ? t('common.offline')
+                                                      : t('common.disabled')}
                                             </span>
                                         </div>
                                     )
@@ -150,41 +167,43 @@ export function OverviewDashboard({ initialGateways, cloudTargetList, initialMet
                             ) : (
                                 cloudTargets.map((target) => {
                                     const status =
-                                        target.connectionStatus === "offline"
+                                        target.connectionStatus === 'offline'
                                             ? 'offline'
                                             : !target.enabled
-                                                ? 'disabled'
-                                                : "online"
-                                    return <div key={target.id} className='flex items-center gap-4 p-4'>
-                                        <StatusDot status={status} />
-                                        <div className='min-w-0 flex-1'>
-                                            <p className='font-semibold'>{target.name}</p>
-                                            <p className='truncate text-xs text-[#7B8580]'>{target.apiKey}</p>
-                                        </div>
-                                        <div className='text-right text-sm'>
-                                            <div className='flex gap-2'>
-                                                <div className='flex gap-2 text-xs text-[#7B8580]'>
-                                                    <p className=''>{t('cloud.lastUpload')}</p>
-                                                    <ClientRelativeTime
-                                                        value={target.lastUploadAt}
-                                                        locale={locale}
-                                                        fallback={String(t('cloud.notUploaded'))}
-                                                    />
+                                              ? 'disabled'
+                                              : 'online'
+                                    return (
+                                        <div key={target.id} className='flex items-center gap-4 p-4'>
+                                            <StatusDot status={status} />
+                                            <div className='min-w-0 flex-1'>
+                                                <p className='font-semibold'>{target.name}</p>
+                                                <p className='truncate text-xs text-[#7B8580]'>{target.apiKey}</p>
+                                            </div>
+                                            <div className='text-right text-sm'>
+                                                <div className='flex gap-2'>
+                                                    <div className='flex gap-2 text-xs text-[#7B8580]'>
+                                                        <p className=''>{t('cloud.lastUpload')}</p>
+                                                        <ClientRelativeTime
+                                                            value={target.lastUploadAt}
+                                                            locale={locale}
+                                                            fallback={String(t('cloud.notUploaded'))}
+                                                        />
+                                                    </div>
+                                                </div>
+                                                <div className='flex gap-2 mt-2 text-xs text-[#7B8580]'>
+                                                    <p>
+                                                        {t('overview.realtimePending')}: {target.realtimePending ?? 0}
+                                                    </p>
+                                                    <p>
+                                                        {target.backfill
+                                                            ? ` · ${t('overview.backfill')}: ${target.backfill.createdCount}/${target.backfill.estimatedTotalCount}`
+                                                            : ''}
+                                                    </p>
                                                 </div>
                                             </div>
-                                            <div className='flex gap-2 mt-2 text-xs text-[#7B8580]'>
-                                                <p>{t('overview.realtimePending')}: {target.realtimePending ?? 0}</p>
-                                                <p>
-                                                    {target.backfill
-                                                        ? ` · ${t('overview.backfill')}: ${target.backfill.createdCount}/${target.backfill.estimatedTotalCount}`
-                                                        : ''}
-                                                </p>
-                                            </div>
                                         </div>
-                                    </div>
-                                }
-
-                                )
+                                    )
+                                })
                             )}
                         </div>
                     </OverviewSection>
@@ -214,8 +233,8 @@ export function OverviewDashboard({ initialGateways, cloudTargetList, initialMet
                                     gatewayStatus === 'disabled'
                                         ? 'disabled'
                                         : gatewayStatus === 'offline'
-                                            ? 'offline'
-                                            : meterStatus
+                                          ? 'offline'
+                                          : meterStatus
                                 const style = STATUS_STYLE[status]
                                 return (
                                     <div
@@ -227,7 +246,9 @@ export function OverviewDashboard({ initialGateways, cloudTargetList, initialMet
                                                 <div>
                                                     <div className='flex gap-2 items-center'>
                                                         <p className='font-semibold'>{meter.name || meterID}</p>
-                                                        <p className='text-sm font-semibold'>({transformPhaseMode(meter.phaseMode)})</p>
+                                                        <p className='text-sm font-semibold'>
+                                                            ({transformPhaseMode(meter.phaseMode)})
+                                                        </p>
                                                         <p className='text-xs text-[#7B8580] mt-0.5'>{meter.macId}</p>
                                                     </div>
                                                     <p className='text-xs text-[#7B8580]'>
@@ -235,29 +256,56 @@ export function OverviewDashboard({ initialGateways, cloudTargetList, initialMet
                                                     </p>
                                                 </div>
                                             </div>
-                                            <span className={`rounded-full px-3 py-1 text-sm ${style.badgeBg} ${style.badgeText}`}>
+                                            <span
+                                                className={`rounded-full px-3 py-1 text-sm ${style.badgeBg} ${style.badgeText}`}>
                                                 {status === 'online'
                                                     ? t('overview.online')
                                                     : status === 'offline'
-                                                        ? t('common.offline')
-                                                        : t('common.disabled')}
+                                                      ? t('common.offline')
+                                                      : t('common.disabled')}
                                             </span>
                                         </div>
                                         <div className='grid grid-cols-2 gap-1 border-y border-[#E4E8E5] py-2 text-sm sm:grid-cols-5'>
-                                            <Metric label={t('overview.voltage')} value={formatValue(overviewData?.voltage, ' V')} />
+                                            <Metric
+                                                label={t('overview.voltage')}
+                                                value={formatValue(overviewData?.voltage, ' V')}
+                                            />
                                             <Metric
                                                 label={t('overview.averageCurrent')}
-                                                value={formatValue(getAverageCurrent(overviewData, meter.phaseMode), ' A')}
+                                                value={formatValue(
+                                                    getAverageCurrent(overviewData, meter.phaseMode),
+                                                    ' A',
+                                                )}
                                             />
                                             <Metric label='L1' value={formatValue(overviewData?.l1, ' A')} />
-                                            <Metric label='L2' value={formatValue(overviewData?.l2, ' A')} />
-                                            <Metric label='L3' value={formatValue(overviewData?.l3, ' A')} />
+                                            <Metric
+                                                label='L2'
+                                                value={formatValue(
+                                                    meter.phaseMode === 'three_phase_balanced'
+                                                        ? overviewData?.l1
+                                                        : overviewData?.l2,
+                                                    ' A',
+                                                )}
+                                            />
+                                            <Metric
+                                                label='L3'
+                                                value={formatValue(
+                                                    meter.phaseMode === 'three_phase_balanced'
+                                                        ? overviewData?.l1
+                                                        : overviewData?.l3,
+                                                    ' A',
+                                                )}
+                                            />
                                         </div>
                                         <div className='space-y-2'>
                                             <p className='text-xs text-[#8A938E]'>{t('overview.activePower')}</p>
-                                            <MeterSparkline points={overviewData?.activePower ?? []} loading={activePowerQuery.isLoading} />
+                                            <MeterSparkline
+                                                points={overviewData?.activePower ?? []}
+                                                loading={activePowerQuery.isLoading}
+                                            />
                                             <p className='text-xs text-[#8A938E]'>
-                                                {t('overview.lastPolled')}: {formatLastPolledAt(overviewData?.lastPolledAt, t)}
+                                                {t('overview.lastPolled')}:{' '}
+                                                {formatLastPolledAt(overviewData?.lastPolledAt, t)}
                                             </p>
                                         </div>
                                     </div>
