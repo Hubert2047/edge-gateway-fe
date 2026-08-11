@@ -1,6 +1,7 @@
 'use client'
 import { useEffect, useMemo, useState } from 'react'
 import { CartesianGrid, Legend, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
+import { RefreshCw } from 'lucide-react'
 import { getGatewayDisplayName } from '@/lib/gateway'
 import { mapErrorKey, useI18n } from '@/lib/i18n'
 import { ApiError } from '@/lib/api/client'
@@ -141,6 +142,13 @@ export function HistoryDataView({ gateways, meters }: Props) {
         setDate(range.start)
         setEndDate(range.end)
         setSubmitted(false)
+    }
+
+    function handleRefresh() {
+        const range = getDefaultRange(axis, timeZone)
+        setDate(range.start)
+        setEndDate(range.end)
+        setSubmitted(true)
     }
 
     function toggleMetric(metric: MetricKey, checked: boolean) {
@@ -291,15 +299,26 @@ export function HistoryDataView({ gateways, meters }: Props) {
                         />
                     </Field>
                     <Field label={t('historyData.endTime')}>
-                        <input
-                            type='datetime-local'
-                            value={endDate}
-                            onChange={(event) => {
-                                setEndDate(event.target.value)
-                                setSubmitted(false)
-                            }}
-                            className='control-input'
-                        />
+                        <div className='flex gap-2'>
+                            <input
+                                type='datetime-local'
+                                value={endDate}
+                                onChange={(event) => {
+                                    setEndDate(event.target.value)
+                                    setSubmitted(false)
+                                }}
+                                className='control-input min-w-0 flex-1'
+                            />
+                            <button
+                                type='button'
+                                onClick={handleRefresh}
+                                disabled={query.isFetching}
+                                aria-label={t('historyData.refresh')}
+                                title={t('historyData.refresh')}
+                                className='inline-flex h-8 w-8 shrink-0 items-center justify-center border border-[#BFC8C2] text-[#153F31] hover:bg-[#F1F2EF] disabled:opacity-60'>
+                                <RefreshCw className={`h-4 w-4 ${query.isFetching ? 'animate-spin' : ''}`} />
+                            </button>
+                        </div>
                     </Field>
                     <div className='flex justify-center items-center mt-6'>
                         <button
