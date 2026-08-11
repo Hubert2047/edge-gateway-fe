@@ -302,6 +302,7 @@ export function OverviewDashboard({
                                             <MeterSparkline
                                                 points={overviewData?.activePower ?? []}
                                                 loading={activePowerQuery.isLoading}
+                                                rangeEnd={activePowerQuery.dataUpdatedAt}
                                             />
                                             <p className='text-xs text-[#8A938E]'>
                                                 {t('overview.lastPolled')}:{' '}
