@@ -116,7 +116,8 @@ export function getDefaultRange(axis: TimeseriesAxis, timeZone: string) {
     const localDay = Date.UTC(parts.year, parts.month - 1, parts.day)
 
     if (axis === 'minute') {
-        return { start: formatWallClockDate(new Date(localDay)), end }
+        const start = formatDateTimeLocal(new Date(now.getTime() - 60 * 60 * 1000), timeZone)
+        return { start, end }
     }
 
     let start = localDay

@@ -4,6 +4,7 @@ import { CartesianGrid, Legend, Line, LineChart, ResponsiveContainer, Tooltip, X
 import { RefreshCw } from 'lucide-react'
 import { getGatewayDisplayName } from '@/lib/gateway'
 import { mapErrorKey, useI18n } from '@/lib/i18n'
+import { fillTimeseriesBuckets } from '@/lib/timeseries'
 import { ApiError } from '@/lib/api/client'
 import { useTimeseries } from '@/lib/api/timeseries'
 import { useSettings } from '@/lib/api/settings.queries'
@@ -165,9 +166,16 @@ export function HistoryDataView({ gateways, meters }: Props) {
     const query = useTimeseries(params, submitted && Boolean(gatewayUid && meterId))
     const rows = query.data ?? []
     const normalizedRows = useMemo(() => rows.map((row) => normalizeCurrents(row, phaseMode)), [rows, phaseMode])
-    const sortedRows = useMemo(() => [...normalizedRows].sort((a, b) => b.bucketTs - a.bucketTs), [normalizedRows])
+    const tableRows = useMemo(
+        () =>
+            submitted
+                ? fillTimeseriesBuckets(normalizedRows, axis, date, endDate, timeZone, phaseMode)
+                : [],
+        [axis, date, endDate, normalizedRows, phaseMode, submitted, timeZone],
+    )
+    const sortedRows = useMemo(() => [...tableRows].sort((a, b) => b.bucketTs - a.bucketTs), [tableRows])
     const visibleMetrics = (Object.keys(selectedMetrics) as MetricKey[]).filter((metric) => selectedMetrics[metric])
-    const chartData = normalizedRows.map((row) => ({
+    const chartData = tableRows.map((row) => ({
         time: formatAxisTick(row.bucket, timeZone, axis),
         voltage: row.voltage,
         activePower: row.activePower,
@@ -408,6 +416,7 @@ export function HistoryDataView({ gateways, meters }: Props) {
                                     stroke={metricColors[metric]}
                                     dot={false}
                                     connectNulls={false}
+                                    isAnimationActive={false}
                                 />
                             ))}
                         </LineChart>

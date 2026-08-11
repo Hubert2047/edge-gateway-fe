@@ -260,8 +260,10 @@ src/
 ## History data
 - `/history-data` uses the gateway → meter → axis → range flow and calls the
   internal Next.js `/api/v1/readings/timeseries` proxy through the feature
-  query hook. The backend returns a dense grid; null measurement values remain
-  null so Recharts renders gaps rather than invented zeroes.
+  query hook. The backend returns only buckets backed by data. The frontend
+  builds the complete minute/hour/day/month grid locally for both the chart and
+  result table, keeping missing values null so charts show gaps and tables show
+  empty buckets without inventing zeroes.
 - A minute-axis request over `minute_axis_max_buckets` surfaces the backend's
   400 error message without silently changing the requested range or axis.
 

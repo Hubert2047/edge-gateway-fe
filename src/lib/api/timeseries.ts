@@ -1,6 +1,6 @@
 'use client'
 
-import { keepPreviousData, useQuery } from '@tanstack/react-query'
+import { useQuery } from '@tanstack/react-query'
 import { TIMESERIES_ENDPOINT } from '@/constances/url'
 import type { TimeseriesAxis, TimeseriesPoint } from '@/types/timeseries'
 import { apiFetch } from './client'
@@ -13,7 +13,6 @@ export function useTimeseries(params: TimeseriesParams, enabled: boolean) {
         queryKey: timeseriesKeys.get(params),
         queryFn: () => getTimeseries(params),
         enabled,
-        placeholderData: keepPreviousData,
         staleTime: getTimeseriesStaleTime(params.axis),
         gcTime: 60 * 1000,
         retry: false,
