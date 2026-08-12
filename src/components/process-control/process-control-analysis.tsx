@@ -15,7 +15,7 @@ const emptyChartData = Array.from({ length: 13 }, (_, index) => ({ time: `${inde
 
 export function ProcessControlAnalysis({ gateways, meters }: Props) {
     const { t } = useI18n()
-    const [gatewayUid, setGatewayUid] = useState(gateways[0]?.uid ?? '')
+    const [gatewayId, setGatewayId] = useState(gateways[0]?.id ? String(gateways[0].id) : '')
     const [meterId, setMeterId] = useState(meters[0]?.macId ?? '')
     const [metric, setMetric] = useState('active-power')
     const [range, setRange] = useState('daily')
@@ -24,13 +24,13 @@ export function ProcessControlAnalysis({ gateways, meters }: Props) {
     const [upperLimit, setUpperLimit] = useState('647.21')
 
     const availableMeters = useMemo(
-        () => meters.filter((meter) => !gatewayUid || meter.gatewayUID === gatewayUid),
-        [gatewayUid, meters],
+        () => meters.filter((meter) => !gatewayId || meter.gatewayId === Number(gatewayId)),
+        [gatewayId, meters],
     )
 
     function handleGatewayChange(value: string) {
-        setGatewayUid(value)
-        const firstMeter = meters.find((meter) => meter.gatewayUID === value)
+        setGatewayId(value)
+        const firstMeter = meters.find((meter) => meter.gatewayId === Number(value))
         setMeterId(firstMeter?.macId ?? '')
     }
 
@@ -65,12 +65,12 @@ export function ProcessControlAnalysis({ gateways, meters }: Props) {
                     </Field>
                     <Field label={t('processControl.gateway')}>
                         <select
-                            value={gatewayUid}
+                            value={gatewayId}
                             onChange={(event) => handleGatewayChange(event.target.value)}
                             className='control-input'>
                             <option value=''>{t('processControl.selectGateway')}</option>
                             {gateways.map((gateway) => (
-                                <option key={gateway.uid} value={gateway.uid}>
+                                <option key={gateway.id} value={gateway.id}>
                                     {getGatewayDisplayName(gateway, t)}
                                 </option>
                             ))}

@@ -34,12 +34,12 @@ export function useCreateGateway() {
 export function useUpdateGateway() {
     const queryClient = useQueryClient()
     return useMutation({
-        mutationFn: ({ uid, form }: { uid: string; form: GatewayFormValues }) => updateGateway(uid, form),
-        onMutate: async ({ uid, form }) => {
+        mutationFn: ({ id, form }: { id: number; form: GatewayFormValues }) => updateGateway(id, form),
+        onMutate: async ({ id, form }) => {
             await queryClient.cancelQueries({ queryKey: gatewayKeys.list() })
             const previous = queryClient.getQueryData<Gateway[]>(gatewayKeys.list())
             queryClient.setQueryData<Gateway[]>(gatewayKeys.list(), (old) =>
-                old?.map((gateway) => (gateway.uid === uid ? { ...gateway, ...form } : gateway)),
+                old?.map((gateway) => (gateway.id === id ? { ...gateway, ...form } : gateway)),
             )
             return { previous }
         },
@@ -55,7 +55,7 @@ export function useUpdateGateway() {
 export function useDeleteGateway() {
     const queryClient = useQueryClient()
     return useMutation({
-        mutationFn: (uid: string) => deleteGateway(uid),
+        mutationFn: (id: number) => deleteGateway(id),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: gatewayKeys.list() })
         },
@@ -64,10 +64,10 @@ export function useDeleteGateway() {
 export function useSyncGatewayMeters() {
     const queryClient = useQueryClient()
     return useMutation({
-        mutationFn: (uid: string) => syncGatewayMeters(uid),
-        onSuccess: (_data, uid) => {
+        mutationFn: (id: number) => syncGatewayMeters(id),
+        onSuccess: (_data, id) => {
             queryClient.invalidateQueries({ queryKey: gatewayKeys.list() })
-            queryClient.invalidateQueries({ queryKey: meterKeys.list(uid) })
+            queryClient.invalidateQueries({ queryKey: meterKeys.list(id) })
         },
     })
 }
@@ -79,13 +79,13 @@ function createGateway(form: GatewayFormValues) {
     return apiFetch<Gateway>(GATEWAY_ENDPOINT.base, { method: 'POST', body: JSON.stringify(form) })
 }
 
-function updateGateway(uid: string, form: GatewayFormValues) {
-    return apiFetch<Gateway>(`${GATEWAY_ENDPOINT.base}/${uid}`, { method: 'PUT', body: JSON.stringify(form) })
+function updateGateway(id: number, form: GatewayFormValues) {
+    return apiFetch<Gateway>(`${GATEWAY_ENDPOINT.base}/${id}`, { method: 'PUT', body: JSON.stringify(form) })
 }
 
-function deleteGateway(uid: string) {
-    return apiFetch<void>(`${GATEWAY_ENDPOINT.base}/${uid}`, { method: 'DELETE' })
+function deleteGateway(id: number) {
+    return apiFetch<void>(`${GATEWAY_ENDPOINT.base}/${id}`, { method: 'DELETE' })
 }
-async function syncGatewayMeters(uid: string): Promise<void> {
-    return apiFetch(GATEWAY_ENDPOINT.syncMeter(uid), { method: 'PUT' })
+async function syncGatewayMeters(id: number): Promise<void> {
+    return apiFetch(GATEWAY_ENDPOINT.syncMeter(id), { method: 'PUT' })
 }

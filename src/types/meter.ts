@@ -8,7 +8,7 @@ export type MeterStatus = 'online' | 'offline' | 'disabled'
 export interface Meter {
     meterId: string
     macId: string
-    gatewayUID: string
+    gatewayId: number
     name: string | null
     meterType: HardwareMeterType
     phaseMode: PhaseMode
@@ -51,7 +51,7 @@ export interface MeterBulkSaveResult {
 
 export interface MeterBatchUpdateValues extends MeterUpdateValues {
     meterId: string
-    gatewayUID: string
+    gatewayId: number
     meterType: HardwareMeterType
     connectionType: string
     config: unknown

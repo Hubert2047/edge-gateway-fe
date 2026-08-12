@@ -8,7 +8,7 @@ import { hu } from 'zod/locales'
 export default async function HistoryEventsPage() {
     const gateways = await serverApiFetch<Gateway[]>(GATEWAY_ENDPOINT.base)
     const meterResults = await Promise.all(
-        gateways.map((gateway) => serverApiFetch<Meter[]>(GATEWAY_ENDPOINT.getMeters(gateway.uid))),
+        gateways.map((gateway) => serverApiFetch<Meter[]>(GATEWAY_ENDPOINT.getMeters(gateway.id))),
     )
 
     return <HistoryEventsView gateways={gateways} meters={meterResults.flat()} />

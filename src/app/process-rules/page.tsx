@@ -9,7 +9,7 @@ export default async function ProcessRulesPage() {
     await requireAdmin()
     const gateways = await serverApiFetch<Gateway[]>(GATEWAY_ENDPOINT.base)
     const meterResults = await Promise.all(
-        gateways.map((gateway) => serverApiFetch<Meter[]>(GATEWAY_ENDPOINT.getMeters(gateway.uid))),
+        gateways.map((gateway) => serverApiFetch<Meter[]>(GATEWAY_ENDPOINT.getMeters(gateway.id))),
     )
 
     return <ProcessRulesView gateways={gateways} meters={meterResults.flat()} />

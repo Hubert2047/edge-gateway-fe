@@ -93,7 +93,7 @@ export function HistoryDataView({ gateways, meters }: Props) {
     const initialRange = getDefaultRange('minute', DEFAULT_TIME_ZONE)
     const [date, setDate] = useState(initialRange.start)
     const [endDate, setEndDate] = useState(initialRange.end)
-    const [gatewayUid, setGatewayUid] = useState(gateways[0]?.uid ?? '')
+    const [gatewayId, setGatewayId] = useState(gateways[0]?.id ?? 0)
     const [meterId, setMeterId] = useState(meters[0]?.macId ?? '')
     const [selectedMetrics, setSelectedMetrics] = useState<SelectedMetrics>(initialSelectedMetrics)
     const [submitted, setSubmitted] = useState(false)
@@ -106,8 +106,8 @@ export function HistoryDataView({ gateways, meters }: Props) {
     }, [axis, settingsQuery.data, timeZone])
 
     const availableMeters = useMemo(
-        () => meters.filter((meter) => !gatewayUid || meter.gatewayUID === gatewayUid),
-        [gatewayUid, meters],
+        () => meters.filter((meter) => !gatewayId || meter.gatewayId === gatewayId),
+        [gatewayId, meters],
     )
     const selectedMeter = meters.find((meter) => meter.macId === meterId)
     const phaseMode = selectedMeter?.phaseMode ?? 'single_phase'
@@ -124,8 +124,9 @@ export function HistoryDataView({ gateways, meters }: Props) {
     }
 
     function handleGatewayChange(value: string) {
-        setGatewayUid(value)
-        const nextMeter = meters.find((meter) => meter.gatewayUID === value)
+        const id = Number(value)
+        setGatewayId(id)
+        const nextMeter = meters.find((meter) => meter.gatewayId === id)
         setMeterId(nextMeter?.macId ?? '')
         resetCurrentMetrics()
         setSubmitted(false)
@@ -157,13 +158,13 @@ export function HistoryDataView({ gateways, meters }: Props) {
     }
 
     const params = {
-        gatewayUid,
+        gatewayId,
         meterId,
         axis,
         start: parseDateTimeLocal(date, timeZone),
         end: parseDateTimeLocal(endDate, timeZone),
     }
-    const query = useTimeseries(params, submitted && Boolean(gatewayUid && meterId))
+    const query = useTimeseries(params, submitted && Boolean(gatewayId && meterId))
     const rows = query.data ?? []
     const normalizedRows = useMemo(() => rows.map((row) => normalizeCurrents(row, phaseMode)), [rows, phaseMode])
     const tableRows = useMemo(
@@ -230,14 +231,14 @@ export function HistoryDataView({ gateways, meters }: Props) {
                 <div className='grid gap-3 xl:grid-cols-6'>
                     <Field label={t('historyData.gateway')}>
                         <Select
-                            value={gatewayUid || undefined}
+                            value={gatewayId ? String(gatewayId) : undefined}
                             onValueChange={(value) => {
                                 if (value) handleGatewayChange(value)
                             }}>
                             <SelectTrigger className='w-full'>
                                 <SelectValue placeholder={t('historyData.selectGateway')}>
                                     {() => {
-                                        const gateway = gateways.find((g) => g.uid === gatewayUid)
+                                        const gateway = gateways.find((g) => g.id === gatewayId)
                                         return gateway
                                             ? getGatewayDisplayName(gateway, t)
                                             : t('historyData.selectGateway')
@@ -246,7 +247,7 @@ export function HistoryDataView({ gateways, meters }: Props) {
                             </SelectTrigger>
                             <SelectContent>
                                 {gateways.map((gateway) => (
-                                    <SelectItem key={gateway.uid} value={gateway.uid}>
+                                    <SelectItem key={gateway.id} value={String(gateway.id)}>
                                         {getGatewayDisplayName(gateway, t)}
                                     </SelectItem>
                                 ))}
@@ -452,7 +453,7 @@ export function HistoryDataView({ gateways, meters }: Props) {
                                 <tr key={row.bucketTs} className='border-t border-[#E1E5E2]'>
                                     <td className='p-2'>{formatDisplayTime(row.bucket, timeZone)}</td>
                                     <td className='p-2'>
-                                        {getGatewayDisplayName(gateways.find((g) => g.uid === gatewayUid)!, t)}
+                                        {getGatewayDisplayName(gateways.find((g) => g.id === gatewayId)!, t)}
                                     </td>
                                     <td className='p-2'>{meterId}</td>
                                     <td className='p-2'>{row.voltage ?? '—'}</td>

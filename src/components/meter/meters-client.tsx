@@ -7,40 +7,40 @@ import type { Meter } from '@/types/meter'
 
 export function MetersClient({
     gateways: gateways,
-    initialGatewayUid: initialGatewayUid,
+    initialGatewayId,
     initialMeters,
 }: {
     gateways: Gateway[]
-    initialGatewayUid: string
+    initialGatewayId: number
     initialMeters: Meter[]
 }) {
-    const [gatewayUid, setGatewayUid] = useState(initialGatewayUid)
+    const [gatewayId, setGatewayId] = useState(initialGatewayId)
 
     useEffect(() => {
         const url = new URL(window.location.href)
-        if (url.searchParams.get('gatewayUid') !== initialGatewayUid) {
-            url.searchParams.set('gatewayUid', initialGatewayUid)
+        if (url.searchParams.get('gatewayId') !== String(initialGatewayId)) {
+            url.searchParams.set('gatewayId', String(initialGatewayId))
             window.history.replaceState(null, '', url.toString())
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [])
 
-    function handleHubChange(nextGatewayUid: string) {
-        if (nextGatewayUid === gatewayUid) return
-        setGatewayUid(nextGatewayUid)
+    function handleGatewayChange(nextGatewayId: number) {
+        if (nextGatewayId === gatewayId) return
+        setGatewayId(nextGatewayId)
         const url = new URL(window.location.href)
-        url.searchParams.set('gatewayUid', nextGatewayUid)
+        url.searchParams.set('gatewayId', String(nextGatewayId))
         window.history.replaceState(null, '', url.toString())
     }
 
     return (
         <div className='flex-1 min-h-0'>
             <MeterList
-                key={gatewayUid}
+                key={gatewayId}
                 gateways={gateways}
-                gatewayUid={gatewayUid}
-                initialMeters={gatewayUid === initialGatewayUid ? initialMeters : undefined}
-                onHubChange={handleHubChange}
+                gatewayId={gatewayId}
+                initialMeters={gatewayId === initialGatewayId ? initialMeters : undefined}
+                onGatewayChange={handleGatewayChange}
             />
         </div>
     )

@@ -17,7 +17,7 @@ export function VirtualGatewayRow({ gateway }: { gateway: Gateway }) {
     const updateGateway = useUpdateGateway()
     const [enabled, setEnabled] = useState(gateway.enabled)
     const [pollIntervalSeconds, setPollIntervalSeconds] = useState(gateway.pollIntervalSeconds)
-    const saving = updateGateway.isPending && updateGateway.variables?.uid === gateway.uid
+    const saving = updateGateway.isPending && updateGateway.variables?.id === gateway.id
 
     function saveSettings(nextEnabled = enabled, nextPollIntervalSeconds = pollIntervalSeconds) {
         const form: GatewayFormValues = {
@@ -29,7 +29,7 @@ export function VirtualGatewayRow({ gateway }: { gateway: Gateway }) {
             note: gateway.note,
         }
         updateGateway.mutate(
-            { uid: gateway.uid, form },
+            { id: gateway.id, form },
             {
                 onSuccess: () => toast.success(t('gateway.virtualSaved')),
                 onError: () => {

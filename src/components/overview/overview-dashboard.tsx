@@ -78,7 +78,7 @@ export function OverviewDashboard({
     const enabledGateways = gateways.filter((gateway) => getGatewayStatus(gateway) === 'online').length
     const enabledCloudTargets = cloudTargets.filter((target) => target.enabled).length
     const realtimePending = cloudTargets.reduce((sum, target) => sum + (target.realtimePending ?? 0), 0)
-    const gatewayNames = new Map(gateways.map((gateway) => [gateway.uid, getGatewayDisplayName(gateway, t)]))
+    const gatewayNames = new Map(gateways.map((gateway) => [gateway.id, getGatewayDisplayName(gateway, t)]))
     return (
         <div className='flex h-full min-h-0 flex-col gap-4'>
             <div className='sticky top-0 z-10 flex shrink-0 flex-col gap-4 bg-[#F7F5F0] pb-1'>
@@ -126,7 +126,7 @@ export function OverviewDashboard({
                                     const status = getGatewayStatus(gateway)
                                     const style = STATUS_STYLE[status]
                                     return (
-                                        <div key={gateway.uid} className='flex items-center gap-4 p-4'>
+                                        <div key={gateway.id} className='flex items-center gap-4 p-4'>
                                             <StatusDot status={status} />
                                             <div className='min-w-0 flex-1'>
                                                 <p className='font-semibold'>{getGatewayDisplayName(gateway, t)}</p>
@@ -223,9 +223,9 @@ export function OverviewDashboard({
                         ) : (
                             meters.map((meter: Meter) => {
                                 const meterID = meter.meterId ?? meter.macId
-                                const overviewData = activePowerByMeter[`${meter.gatewayUID}:${meterID}`]
+                                const overviewData = activePowerByMeter[`${meter.gatewayId}:${meterID}`]
 
-                                const gateway = gateways.find((gateway) => gateway.uid === meter.gatewayUID)
+                                const gateway = gateways.find((gateway) => gateway.id === meter.gatewayId)
                                 const gatewayStatus = gateway ? getGatewayStatus(gateway) : 'offline'
                                 const meterStatus = getMeterStatus(meter)
 
@@ -238,7 +238,7 @@ export function OverviewDashboard({
                                 const style = STATUS_STYLE[status]
                                 return (
                                     <div
-                                        key={`${meter.gatewayUID}:${meterID}`}
+                                        key={`${meter.gatewayId}:${meterID}`}
                                         className={`border-t-4 ${style.border} flex flex-col gap-3 border-x border-b border-[#D8DDD9] bg-white p-4`}>
                                         <div className='flex items-start justify-between gap-3'>
                                             <div className='flex items-center gap-3'>
@@ -252,7 +252,7 @@ export function OverviewDashboard({
                                                         <p className='text-xs text-[#7B8580] mt-0.5'>{meter.macId}</p>
                                                     </div>
                                                     <p className='text-xs text-[#7B8580]'>
-                                                        {gatewayNames.get(meter.gatewayUID) ?? '—'}
+                                                        {gatewayNames.get(meter.gatewayId) ?? '—'}
                                                     </p>
                                                 </div>
                                             </div>

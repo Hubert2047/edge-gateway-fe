@@ -11,7 +11,7 @@ type Props = { gateways: Gateway[]; meters: Meter[] }
 type ProcessRule = {
     id: string
     name: string
-    gatewayUid: string
+    gatewayId: string
     meterId: string
     metric: string
     lower: string
@@ -24,7 +24,7 @@ export function ProcessRulesView({ gateways, meters }: Props) {
     const [rules, setRules] = useState<ProcessRule[]>([])
     const [newRule, setNewRule] = useState<Omit<ProcessRule, 'id' | 'enabled'>>({
         name: '',
-        gatewayUid: gateways[0]?.uid ?? '',
+        gatewayId: gateways[0]?.id ? String(gateways[0].id) : '',
         meterId: '',
         metric: 'active-power',
         lower: '',
@@ -32,8 +32,8 @@ export function ProcessRulesView({ gateways, meters }: Props) {
     })
 
     const availableMeters = useMemo(
-        () => meters.filter((meter) => !newRule.gatewayUid || meter.gatewayUID === newRule.gatewayUid),
-        [meters, newRule.gatewayUid],
+        () => meters.filter((meter) => !newRule.gatewayId || meter.gatewayId === Number(newRule.gatewayId)),
+        [meters, newRule.gatewayId],
     )
 
     function updateRule(id: string, patch: Partial<ProcessRule>) {
@@ -108,13 +108,13 @@ export function ProcessRulesView({ gateways, meters }: Props) {
                                     <td className='space-y-3 px-4 py-4'>
                                         <Field label={t('processRules.gateway')}>
                                             <select
-                                                value={rule.gatewayUid}
+                                                value={rule.gatewayId}
                                                 onChange={(event) =>
-                                                    updateRule(rule.id, { gatewayUid: event.target.value })
+                                                    updateRule(rule.id, { gatewayId: event.target.value })
                                                 }
                                                 className='control-input'>
                                                 {gateways.map((gateway) => (
-                                                    <option key={gateway.uid} value={gateway.uid}>
+                                                    <option key={gateway.id} value={gateway.id}>
                                                         {getGatewayDisplayName(gateway, t)}
                                                     </option>
                                                 ))}
@@ -143,7 +143,7 @@ export function ProcessRulesView({ gateways, meters }: Props) {
                                                 className='control-input'>
                                                 <option value=''>{t('processRules.allMeters')}</option>
                                                 {meters
-                                                    .filter((meter) => meter.gatewayUID === rule.gatewayUid)
+                                                    .filter((meter) => meter.gatewayId === Number(rule.gatewayId))
                                                     .map((meter) => (
                                                         <option key={meter.macId} value={meter.macId}>
                                                             {meter.name || meter.macId}
@@ -205,14 +205,14 @@ export function ProcessRulesView({ gateways, meters }: Props) {
                     </Field>
                     <Field label={t('processRules.gateway')}>
                         <select
-                            value={newRule.gatewayUid}
+                            value={newRule.gatewayId}
                             onChange={(event) =>
-                                setNewRule({ ...newRule, gatewayUid: event.target.value, meterId: '' })
+                                setNewRule({ ...newRule, gatewayId: event.target.value, meterId: '' })
                             }
                             className='control-input'>
                             <option value=''>{t('processRules.selectGateway')}</option>
                             {gateways.map((gateway) => (
-                                <option key={gateway.uid} value={gateway.uid}>
+                                <option key={gateway.id} value={gateway.id}>
                                     {getGatewayDisplayName(gateway, t)}
                                 </option>
                             ))}

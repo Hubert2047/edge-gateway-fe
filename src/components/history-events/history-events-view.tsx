@@ -23,18 +23,18 @@ export function HistoryEventsView({ gateways, meters }: Props) {
     const { t } = useI18n()
     const [range, setRange] = useState('daily')
     const [date, setDate] = useState('2026-07-23')
-    const [gatewayUid, setGatewayUid] = useState('')
+    const [gatewayId, setGatewayId] = useState('')
     const [meterId, setMeterId] = useState('')
     const [rule, setRule] = useState('')
     const [rows, setRows] = useState<EventRow[]>([])
 
     const availableMeters = useMemo(
-        () => meters.filter((meter) => !gatewayUid || meter.gatewayUID === gatewayUid),
-        [gatewayUid, meters],
+        () => meters.filter((meter) => !gatewayId || meter.gatewayId === Number(gatewayId)),
+        [gatewayId, meters],
     )
 
     function handleGatewayChange(value: string) {
-        setGatewayUid(value)
+        setGatewayId(value)
         setMeterId('')
     }
 
@@ -69,12 +69,12 @@ export function HistoryEventsView({ gateways, meters }: Props) {
                     </Field>
                     <Field label={t('historyEvents.gateway')}>
                         <select
-                            value={gatewayUid}
+                            value={gatewayId}
                             onChange={(event) => handleGatewayChange(event.target.value)}
                             className='control-input'>
                             <option value=''>{t('historyEvents.allGateways')}</option>
                             {gateways.map((gateway) => (
-                                <option key={gateway.uid} value={gateway.uid}>
+                                <option key={gateway.id} value={gateway.id}>
                                     {getGatewayDisplayName(gateway, t)}
                                 </option>
                             ))}

@@ -105,7 +105,7 @@ The Go backend (`edge-gateway`) is migrating all endpoints to a consistent envel
   functions, which still go through `apiFetch()`; auth-redirect behavior is unaffected.
 
 ## Confirm dialogs
-List components use a single `pendingAction` state (`{ type, id/uid, displayName } | null`) +
+List components use a single `pendingAction` state (`{ type, id, displayName } | null`) +
 one shared `<AlertDialog>` at the bottom of the component, with per-type title/description
 text (see `dialogText` map in `gateway-list.tsx` / `cloud-target-list.tsx`). Reuse this exact
 pattern for new features. Actions that don't need confirmation (e.g. toggling `enabled` via
@@ -119,8 +119,8 @@ src/
   app/
     api/
       auth/[...nextauth]/route.ts
-      hubs/
-        [uid]/route.ts
+      v1/gateways/
+        [id]/route.ts
         route.ts
       cloud-targets/
         [id]/
@@ -209,6 +209,10 @@ src/
 - Avoid code comments unless truly necessary.
 - Prefer rewriting the whole file on major changes, rather than small diffs (per your own preference).
 - Keep feature container/list components focused on data flow and orchestration. Extract self-contained UI sections or rows with their own state and actions into sibling components within the same feature folder instead of accumulating them in one large component.
+- A gateway is identified everywhere by its numeric `id`; do not introduce a
+  separate gateway UID or new `hub` identifier. Meter payloads expose numeric
+  `gatewayId`. Soft-deleted meters are intentionally absent from list/get
+  responses and must not be fabricated by the frontend.
 - A gateway with `isVirtual: true` is a backend-managed virtual gateway. Render
   it with `VirtualGatewayRow`, separate from physical gateways. That UI may
   update only its enabled state and polling interval; do not fabricate a
@@ -239,8 +243,8 @@ src/
   upload-status calculation and may change while new readings are collected.
 
 ## Operations overview API gaps
-- The overview page currently uses the existing `/api/hubs`, `/api/cloud-targets`, and
-  `/api/hubs/{uid}/meters` endpoints, plus the aggregated
+- The overview page currently uses `/api/v1/gateways`, `/api/v1/cloud-targets`, and
+  `/api/v1/gateways/{id}/meters`, plus the aggregated
   `/api/v1/overview/meters-active-power` proxy for enabled-meter hourly active power.
   Counts and enabled/disabled states are real data.
 - The screenshot includes gateway health/last-seen status, current readings (average current,

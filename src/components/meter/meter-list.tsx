@@ -31,7 +31,7 @@ function toBatchUpdate(meter: Meter, form: MeterFormValues): MeterBatchUpdateVal
     return {
         ...form,
         meterId: meter.meterId,
-        gatewayUID: meter.gatewayUID,
+        gatewayId: meter.gatewayId,
         meterType: meter.meterType,
         connectionType: meter.connectionType,
         config: meter.config,
@@ -87,20 +87,20 @@ type RowFormState = { form: MeterFormValues; errors: FormErrors }
 
 export function MeterList({
     gateways: gateways,
-    gatewayUid: gatewayUid,
+    gatewayId,
     initialMeters,
-    onHubChange,
+    onGatewayChange,
 }: {
     gateways: Gateway[]
-    gatewayUid: string
+    gatewayId: number
     initialMeters?: Meter[]
-    onHubChange: (gatewayUid: string) => void
+    onGatewayChange: (gatewayId: number) => void
 }) {
     const { t } = useI18n()
-    const { data: meters = initialMeters ?? [], isFetching } = useMeters(gatewayUid, initialMeters)
-    const updateMeterMutation = useUpdateMeter(gatewayUid)
-    const deleteMeterMutation = useDeleteMeter(gatewayUid)
-    const bulkMutation = useUpdateMetersBulk(gatewayUid)
+    const { data: meters = initialMeters ?? [], isFetching } = useMeters(gatewayId, initialMeters)
+    const updateMeterMutation = useUpdateMeter(gatewayId)
+    const deleteMeterMutation = useDeleteMeter(gatewayId)
+    const bulkMutation = useUpdateMetersBulk(gatewayId)
 
     const [rowFormState, setRowFormState] = useState<Record<string, RowFormState>>({})
     const [deletingMacId, setDeletingMacId] = useState<string | null>(null)
@@ -240,7 +240,7 @@ export function MeterList({
             <div className='flex shrink-0 items-center justify-between gap-4 max-sm:flex-wrap'>
                 <h1 className='text-xl font-bold sm:text-3xl'>{t('page.meters')}</h1>
                 <div className='flex items-center gap-3 max-sm:w-full max-sm:justify-between'>
-                    <GatewaySwitcher gateways={gateways} currentGatewayUid={gatewayUid} onGatewayChange={onHubChange} />
+                    <GatewaySwitcher gateways={gateways} currentGatewayId={gatewayId} onGatewayChange={onGatewayChange} />
                     <span className='flex items-center gap-1.5 whitespace-nowrap text-sm font-medium text-muted-foreground'>
                         {isFetching && <Loader2 className='h-3.5 w-3.5 animate-spin' />}
                         {t('gateway.meterCount', { count: meters.length })}
@@ -293,7 +293,7 @@ export function MeterList({
                                     updateMeterMutation.variables?.macId === meter.macId
                                 const deleting = deletingMacId === meter.macId
                                 const rowBusy = saving || deleting || bulkMutation.isPending || isFetching
-                                const currentGateway = gateways.find((g) => g.uid === gatewayUid)
+                                const currentGateway = gateways.find((g) => g.id === gatewayId)
                                 const gatewayStatus = currentGateway ? getGatewayStatus(currentGateway) : 'offline'
                                 return (
                                     <tr

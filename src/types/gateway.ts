@@ -1,5 +1,5 @@
 export interface Gateway {
-    uid: string
+    id: number
     name: string
     ip: string
     port: number

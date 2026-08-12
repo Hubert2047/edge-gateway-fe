@@ -66,7 +66,7 @@ function validateForm(form: GatewayFormValues): FormErrors {
     return errors
 }
 
-type PendingAction = { type: 'save' | 'delete' | 'collect'; uid: string; displayName: string } | null
+type PendingAction = { type: 'save' | 'delete' | 'collect'; id: number; displayName: string } | null
 type RowFormState = { form: GatewayFormValues; errors: FormErrors }
 
 export function GatewayList({ initialGateways: initialGateways }: { initialGateways: Gateway[] }) {
@@ -77,42 +77,42 @@ export function GatewayList({ initialGateways: initialGateways }: { initialGatew
     const createGatewayMutation = useCreateGateway()
     const syncGatewayMetersMutation = useSyncGatewayMeters()
     const [rowFormState, setRowFormState] = useState<Record<string, RowFormState>>({})
-    const [collectingUids, setCollectingUids] = useState<Set<string>>(new Set())
+    const [collectingIds, setCollectingIds] = useState<Set<number>>(new Set())
 
     // ---- "connecting" state after turning a gateway on ----
     // Simple rule: mark pending immediately when the user flips the switch on,
     // clear it as soon as the polled data confirms online (or gets disabled),
     // and always clear it with a hard timeout so it can never spin forever.
-    const [pendingEnableUids, setPendingEnableUids] = useState<Set<string>>(new Set())
+    const [pendingEnableIds, setPendingEnableIds] = useState<Set<number>>(new Set())
     const pendingTimers = useRef<Record<string, ReturnType<typeof setTimeout>>>({})
 
-    function clearPendingEnable(uid: string) {
-        if (pendingTimers.current[uid]) {
-            clearTimeout(pendingTimers.current[uid])
-            delete pendingTimers.current[uid]
+    function clearPendingEnable(id: number) {
+        if (pendingTimers.current[id]) {
+            clearTimeout(pendingTimers.current[id])
+            delete pendingTimers.current[id]
         }
-        setPendingEnableUids((prev) => {
-            if (!prev.has(uid)) return prev
+        setPendingEnableIds((prev) => {
+            if (!prev.has(id)) return prev
             const next = new Set(prev)
-            next.delete(uid)
+            next.delete(id)
             return next
         })
     }
 
-    function markPendingEnable(uid: string, pollIntervalSeconds: number) {
-        setPendingEnableUids((prev) => new Set(prev).add(uid))
-        if (pendingTimers.current[uid]) clearTimeout(pendingTimers.current[uid])
+    function markPendingEnable(id: number, pollIntervalSeconds: number) {
+        setPendingEnableIds((prev) => new Set(prev).add(id))
+        if (pendingTimers.current[id]) clearTimeout(pendingTimers.current[id])
         const maxWaitMs = Math.max(pollIntervalSeconds, 5) * 1000 + 5000
-        pendingTimers.current[uid] = setTimeout(() => clearPendingEnable(uid), maxWaitMs)
+        pendingTimers.current[id] = setTimeout(() => clearPendingEnable(id), maxWaitMs)
     }
 
     // Clear pending as soon as polled data confirms the gateway is online,
     // or if it got disabled again while we were waiting.
     useEffect(() => {
-        for (const uid of pendingEnableUids) {
-            const gw = gateways.find((g) => g.uid === uid)
+        for (const id of pendingEnableIds) {
+            const gw = gateways.find((g) => g.id === id)
             if (!gw || !gw.enabled || gw.isOnline) {
-                clearPendingEnable(uid)
+                clearPendingEnable(id)
             }
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -125,25 +125,25 @@ export function GatewayList({ initialGateways: initialGateways }: { initialGatew
     }, [])
 
     function getRowForm(gateway: Gateway): RowFormState {
-        return rowFormState[gateway.uid] ?? { form: gatewayToForm(gateway), errors: {} }
+        return rowFormState[gateway.id] ?? { form: gatewayToForm(gateway), errors: {} }
     }
 
-    function updateRowForm(uid: string, patch: Partial<GatewayFormValues>) {
+    function updateRowForm(id: number, patch: Partial<GatewayFormValues>) {
         setRowFormState((prev) => {
-            const current = prev[uid]?.form ?? gatewayToForm(gateways.find((h) => h.uid === uid)!)
-            const prevErrors = prev[uid]?.errors ?? {}
+            const current = prev[id]?.form ?? gatewayToForm(gateways.find((h) => h.id === id)!)
+            const prevErrors = prev[id]?.errors ?? {}
             const nextErrors = { ...prevErrors }
             for (const key of Object.keys(patch)) {
                 delete nextErrors[key as keyof FormErrors]
             }
-            return { ...prev, [uid]: { form: { ...current, ...patch }, errors: nextErrors } }
+            return { ...prev, [id]: { form: { ...current, ...patch }, errors: nextErrors } }
         })
     }
 
-    function clearRowForm(uid: string) {
+    function clearRowForm(id: number) {
         setRowFormState((prev) => {
             const next = { ...prev }
-            delete next[uid]
+            delete next[id]
             return next
         })
     }
@@ -163,81 +163,81 @@ export function GatewayList({ initialGateways: initialGateways }: { initialGatew
     }
 
     const [pendingAction, setPendingAction] = useState<PendingAction>(null)
-    const [deletingUid, setDeletingUid] = useState<string | null>(null)
+    const [deletingId, setDeletingId] = useState<number | null>(null)
 
     function toggleEnabled(gateway: Gateway, checked: boolean) {
         const { form } = getRowForm(gateway)
 
         if (checked) {
-            markPendingEnable(gateway.uid, gateway.pollIntervalSeconds)
+            markPendingEnable(gateway.id, gateway.pollIntervalSeconds)
         } else {
-            clearPendingEnable(gateway.uid)
+            clearPendingEnable(gateway.id)
         }
 
         updateGatewayMutation.mutate(
-            { uid: gateway.uid, form: { ...form, enabled: checked } },
+            { id: gateway.id, form: { ...form, enabled: checked } },
             {
-                onError: () => clearPendingEnable(gateway.uid),
+                onError: () => clearPendingEnable(gateway.id),
             },
         )
-        clearRowForm(gateway.uid)
+        clearRowForm(gateway.id)
     }
 
     function requestSave(gateway: Gateway) {
         const { form } = getRowForm(gateway)
         const errors = validateForm(form)
         if (Object.keys(errors).length > 0) {
-            setRowFormState((prev) => ({ ...prev, [gateway.uid]: { form, errors } }))
+            setRowFormState((prev) => ({ ...prev, [gateway.id]: { form, errors } }))
             return
         }
 
-        setPendingAction({ type: 'save', uid: gateway.uid, displayName: form.name || gateway.uid })
+        setPendingAction({ type: 'save', id: gateway.id, displayName: form.name || String(gateway.id) })
     }
 
     function requestDelete(gateway: Gateway) {
         const { form } = getRowForm(gateway)
-        setPendingAction({ type: 'delete', uid: gateway.uid, displayName: form.name || gateway.uid })
+        setPendingAction({ type: 'delete', id: gateway.id, displayName: form.name || String(gateway.id) })
     }
 
     function requestCollect(gateway: Gateway) {
         const { form } = getRowForm(gateway)
-        setPendingAction({ type: 'collect', uid: gateway.uid, displayName: form.name || gateway.uid })
+        setPendingAction({ type: 'collect', id: gateway.id, displayName: form.name || String(gateway.id) })
     }
 
     async function confirmPendingAction() {
         if (!pendingAction) return
-        const { type, uid } = pendingAction
+        const { type, id } = pendingAction
         setPendingAction(null)
-        const gateway = gateways.find((h) => h.uid === uid)
+        const gateway = gateways.find((h) => h.id === id)
         if (!gateway) return
 
         if (type === 'save') {
             const { form } = getRowForm(gateway)
             updateGatewayMutation.mutate(
-                { uid, form },
+                { id, form },
                 {
-                    onSuccess: () => clearRowForm(uid),
+                    onSuccess: () => clearRowForm(id),
                     onError: (err) => toast.error(getErrorMessage(err, t('toast.saveFailed'))),
                 },
             )
         }
 
         if (type === 'delete') {
-            setDeletingUid(uid)
-            deleteGatewayMutation.mutate(uid, {
-                onSettled: () => setDeletingUid((prev) => (prev === uid ? null : prev)),
+            setDeletingId(id)
+            deleteGatewayMutation.mutate(id, {
+                onSettled: () => setDeletingId((prev) => (prev === id ? null : prev)),
                 onError: (err) => toast.error(getErrorMessage(err, t('toast.deleteFailed'))),
             })
         }
 
         if (type === 'collect') {
-            setCollectingUids((prev) => new Set(prev).add(uid))
-            syncGatewayMetersMutation.mutate(uid, {
+            setCollectingIds((prev) => new Set(prev).add(id))
+            syncGatewayMetersMutation.mutate(id, {
                 onError: (err) => toast.error(getErrorMessage(err, t('toast.collectFailed'))),
                 onSettled: () => {
-                    setCollectingUids((prev) => {
+                    setCollectingIds((prev) => {
                         const next = new Set(prev)
-                        next.delete(uid)
+                        next.delete(id)
                         return next
                     })
                 },
@@ -314,14 +314,14 @@ export function GatewayList({ initialGateways: initialGateways }: { initialGatew
                                     const { form, errors } = getRowForm(gateway)
                                     const saving =
                                         updateGatewayMutation.isPending &&
-                                        updateGatewayMutation.variables?.uid === gateway.uid
-                                    const collecting = collectingUids.has(gateway.uid)
-                                    const deleting = deletingUid === gateway.uid
+                                        updateGatewayMutation.variables?.id === gateway.id
+                                    const collecting = collectingIds.has(gateway.id)
+                                    const deleting = deletingId === gateway.id
                                     const rowBusy = saving || collecting || deleting
-                                    const connecting = form.enabled && pendingEnableUids.has(gateway.uid)
+                                    const connecting = form.enabled && pendingEnableIds.has(gateway.id)
                                     return (
                                         <tr
-                                            key={gateway.uid}
+                                            key={gateway.id}
                                             className={`border-t align-top transition-colors ${rowBusy ? 'opacity-50 pointer-events-none' : ''}`}>
                                             <td data-label={t('common.status')} className='p-4 space-y-2'>
                                                 <Checkbox
@@ -347,16 +347,16 @@ export function GatewayList({ initialGateways: initialGateways }: { initialGatew
                                             <td data-label={t('common.gateway')} className='p-4 space-y-3'>
                                                 <div className='space-y-1.5'>
                                                     <Label
-                                                        htmlFor={`name-${gateway.uid}`}
+                                                        htmlFor={`name-${gateway.id}`}
                                                         className='text-xs text-muted-foreground'>
                                                         {t('common.displayName')}
                                                     </Label>
                                                     <Input
-                                                        id={`name-${gateway.uid}`}
+                                                        id={`name-${gateway.id}`}
                                                         value={form.name}
                                                         disabled={rowBusy}
                                                         onChange={(e) =>
-                                                            updateRowForm(gateway.uid, { name: e.target.value })
+                                                            updateRowForm(gateway.id, { name: e.target.value })
                                                         }
                                                         className={errors.name ? 'border-destructive' : ''}
                                                     />
@@ -367,16 +367,16 @@ export function GatewayList({ initialGateways: initialGateways }: { initialGatew
                                                 <div className='flex gap-2'>
                                                     <div className='flex-1 space-y-1.5'>
                                                         <Label
-                                                            htmlFor={`ip-${gateway.uid}`}
+                                                            htmlFor={`ip-${gateway.id}`}
                                                             className='text-xs text-muted-foreground'>
                                                             IP
                                                         </Label>
                                                         <Input
-                                                            id={`ip-${gateway.uid}`}
+                                                            id={`ip-${gateway.id}`}
                                                             value={form.ip}
                                                             disabled={rowBusy}
                                                             onChange={(e) =>
-                                                                updateRowForm(gateway.uid, { ip: e.target.value })
+                                                                updateRowForm(gateway.id, { ip: e.target.value })
                                                             }
                                                             className={errors.ip ? 'border-destructive' : ''}
                                                         />
@@ -386,17 +386,17 @@ export function GatewayList({ initialGateways: initialGateways }: { initialGatew
                                                     </div>
                                                     <div className='w-28 space-y-1.5'>
                                                         <Label
-                                                            htmlFor={`port-${gateway.uid}`}
+                                                            htmlFor={`port-${gateway.id}`}
                                                             className='text-xs text-muted-foreground'>
                                                             PORT
                                                         </Label>
                                                         <Input
-                                                            id={`port-${gateway.uid}`}
+                                                            id={`port-${gateway.id}`}
                                                             type='number'
                                                             value={form.port}
                                                             disabled={rowBusy}
                                                             onChange={(e) =>
-                                                                updateRowForm(gateway.uid, {
+                                                                updateRowForm(gateway.id, {
                                                                     port: Number(e.target.value),
                                                                 })
                                                             }
@@ -409,17 +409,17 @@ export function GatewayList({ initialGateways: initialGateways }: { initialGatew
                                                 </div>
                                                 <div className='space-y-1.5'>
                                                     <Label
-                                                        htmlFor={`poll-${gateway.uid}`}
+                                                        htmlFor={`poll-${gateway.id}`}
                                                         className='text-xs text-muted-foreground'>
                                                         {t('common.interval')}
                                                     </Label>
                                                     <Input
-                                                        id={`poll-${gateway.uid}`}
+                                                        id={`poll-${gateway.id}`}
                                                         type='number'
                                                         value={form.pollIntervalSeconds}
                                                         disabled={rowBusy}
                                                         onChange={(e) =>
-                                                            updateRowForm(gateway.uid, {
+                                                            updateRowForm(gateway.id, {
                                                                 pollIntervalSeconds: Number(e.target.value),
                                                             })
                                                         }

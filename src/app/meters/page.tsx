@@ -6,7 +6,7 @@ import { LocalizedText } from '@/components/i18n/localized-text'
 import { requireAdmin } from '@/lib/auth-guard'
 import { GATEWAY_ENDPOINT } from '@/constances/url'
 
-export default async function MetersPage({ searchParams }: { searchParams: Promise<{ gatewayUid?: string }> }) {
+export default async function MetersPage({ searchParams }: { searchParams: Promise<{ gatewayId?: string }> }) {
     await requireAdmin()
     const gateways = await serverApiFetch<Gateway[]>(GATEWAY_ENDPOINT.base)
 
@@ -23,14 +23,15 @@ export default async function MetersPage({ searchParams }: { searchParams: Promi
         )
     }
 
-    const { gatewayUid: requestedUid } = await searchParams
-    const uid = requestedUid && gateways.some((g) => g.uid === requestedUid) ? requestedUid : gateways[0].uid
+    const { gatewayId: requestedId } = await searchParams
+    const parsedId = Number(requestedId)
+    const gatewayId = Number.isInteger(parsedId) && gateways.some((g) => g.id === parsedId) ? parsedId : gateways[0].id
 
-    const initialMeters = await serverApiFetch<Meter[]>(GATEWAY_ENDPOINT.getMeters(uid))
+    const initialMeters = await serverApiFetch<Meter[]>(GATEWAY_ENDPOINT.getMeters(gatewayId))
 
     return (
         <div className='h-full flex flex-col gap-6'>
-            <MetersClient gateways={gateways} initialGatewayUid={uid} initialMeters={initialMeters} />
+            <MetersClient gateways={gateways} initialGatewayId={gatewayId} initialMeters={initialMeters} />
         </div>
     )
 }

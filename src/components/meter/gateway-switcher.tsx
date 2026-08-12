@@ -7,24 +7,24 @@ import type { Gateway } from '@/types/gateway'
 
 export function GatewaySwitcher({
     gateways,
-    currentGatewayUid,
+    currentGatewayId,
     onGatewayChange,
 }: {
     gateways: Gateway[]
-    currentGatewayUid: string
-    onGatewayChange: (gatewayUid: string) => void
+    currentGatewayId: number
+    onGatewayChange: (gatewayId: number) => void
 }) {
     const { t } = useI18n()
-    const current = gateways.find((gateway) => gateway.uid === currentGatewayUid)
+    const current = gateways.find((gateway) => gateway.id === currentGatewayId)
 
     return (
-        <Select value={currentGatewayUid} onValueChange={(value) => value && onGatewayChange(value)}>
+        <Select value={String(currentGatewayId)} onValueChange={(value) => value && onGatewayChange(Number(value))}>
             <SelectTrigger className='w-48 max-sm:w-full'>
                 <SelectValue>{current ? getGatewayDisplayName(current, t) : ''}</SelectValue>
             </SelectTrigger>
             <SelectContent>
                 {gateways.map((gateway) => (
-                    <SelectItem key={gateway.uid} value={gateway.uid}>
+                    <SelectItem key={gateway.id} value={String(gateway.id)}>
                         {getGatewayDisplayName(gateway, t)}
                     </SelectItem>
                 ))}
