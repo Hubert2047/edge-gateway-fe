@@ -166,13 +166,12 @@ export function HistoryDataView({ gateways, meters }: Props) {
     }
     const query = useTimeseries(params, submitted && Boolean(gatewayId && meterId))
     const rows = query.data ?? []
-    const normalizedRows = useMemo(() => rows.map((row) => normalizeCurrents(row, phaseMode)), [rows, phaseMode])
     const tableRows = useMemo(
         () =>
             submitted
-                ? fillTimeseriesBuckets(normalizedRows, axis, date, endDate, timeZone, phaseMode)
+                ? fillTimeseriesBuckets(rows, axis, date, endDate, timeZone, phaseMode)
                 : [],
-        [axis, date, endDate, normalizedRows, phaseMode, submitted, timeZone],
+        [axis, date, endDate, phaseMode, submitted, timeZone],
     )
     const sortedRows = useMemo(() => [...tableRows].sort((a, b) => b.bucketTs - a.bucketTs), [tableRows])
     const visibleMetrics = (Object.keys(selectedMetrics) as MetricKey[]).filter((metric) => selectedMetrics[metric])

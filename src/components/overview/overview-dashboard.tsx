@@ -146,8 +146,8 @@ export function OverviewDashboard({
                                                 {status === 'online'
                                                     ? t('overview.online')
                                                     : status === 'offline'
-                                                      ? t('common.offline')
-                                                      : t('common.disabled')}
+                                                        ? t('common.offline')
+                                                        : t('common.disabled')}
                                             </span>
                                         </div>
                                     )
@@ -170,8 +170,8 @@ export function OverviewDashboard({
                                         target.connectionStatus === 'offline'
                                             ? 'offline'
                                             : !target.enabled
-                                              ? 'disabled'
-                                              : 'online'
+                                                ? 'disabled'
+                                                : 'online'
                                     return (
                                         <div key={target.id} className='flex items-center gap-4 p-4'>
                                             <StatusDot status={status} />
@@ -233,8 +233,8 @@ export function OverviewDashboard({
                                     gatewayStatus === 'disabled'
                                         ? 'disabled'
                                         : gatewayStatus === 'offline'
-                                          ? 'offline'
-                                          : meterStatus
+                                            ? 'offline'
+                                            : meterStatus
                                 const style = STATUS_STYLE[status]
                                 return (
                                     <div
@@ -261,8 +261,8 @@ export function OverviewDashboard({
                                                 {status === 'online'
                                                     ? t('overview.online')
                                                     : status === 'offline'
-                                                      ? t('common.offline')
-                                                      : t('common.disabled')}
+                                                        ? t('common.offline')
+                                                        : t('common.disabled')}
                                             </span>
                                         </div>
                                         <div className='grid grid-cols-2 gap-1 border-y border-[#E4E8E5] py-2 text-sm sm:grid-cols-5'>
@@ -280,21 +280,11 @@ export function OverviewDashboard({
                                             <Metric label='L1' value={formatValue(overviewData?.l1, ' A')} />
                                             <Metric
                                                 label='L2'
-                                                value={formatValue(
-                                                    meter.phaseMode === 'three_phase_balanced'
-                                                        ? overviewData?.l1
-                                                        : overviewData?.l2,
-                                                    ' A',
-                                                )}
+                                                value={formatValue(overviewData?.l2, ' A',)}
                                             />
                                             <Metric
                                                 label='L3'
-                                                value={formatValue(
-                                                    meter.phaseMode === 'three_phase_balanced'
-                                                        ? overviewData?.l1
-                                                        : overviewData?.l3,
-                                                    ' A',
-                                                )}
+                                                value={formatValue(overviewData?.l3, ' A',)}
                                             />
                                         </div>
                                         <div className='space-y-2'>
