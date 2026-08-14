@@ -40,6 +40,7 @@ function emptyForm(): CloudTargetFormValues {
         apiKey: '',
         apiSecret: '',
         uploadIntervalSec: 60,
+        uploadBatchSize: 100,
         enabled: false,
         backfillEnabled: false,
         backfillFromTs: '',
@@ -55,6 +56,7 @@ function targetToForm(target: CloudTarget): CloudTargetFormValues {
         apiKey: target.apiKey ?? '',
         apiSecret: target.apiSecretMasked ?? '',
         uploadIntervalSec: target.uploadIntervalSec ?? 0,
+        uploadBatchSize: target.uploadBatchSize ?? 100,
         enabled: target.enabled ?? false,
     }
 }
@@ -66,6 +68,7 @@ type FormErrors = Partial<
         | 'apiKey'
         | 'cloudServerSecret'
         | 'uploadIntervalSec'
+        | 'uploadBatchSize'
         | 'backfillFromTs'
         | 'backfillToTs',
         string
@@ -80,6 +83,8 @@ function validateForm(form: CloudTargetFormValues): FormErrors {
     if (!form.apiSecret.trim()) errors.cloudServerSecret = 'validation.secretRequired'
     if (!form.uploadIntervalSec || form.uploadIntervalSec <= 0)
         errors.uploadIntervalSec = 'validation.intervalInvalid'
+    if (!form.uploadBatchSize || form.uploadBatchSize < 1 || form.uploadBatchSize > 500)
+        errors.uploadBatchSize = 'validation.batchSizeInvalid'
     if (form.backfillEnabled) {
         if (!form.backfillFromTs) errors.backfillFromTs = 'validation.backfillStartRequired'
         if (!form.backfillToTs) errors.backfillToTs = 'validation.backfillEndRequired'
@@ -286,9 +291,16 @@ export function CloudTargetList({ initialTargets }: { initialTargets: CloudTarge
         testMutation.mutate(id, {
             onSuccess: (result) => {
                 setTestResults((prev) => ({ ...prev, [id]: result }))
+                if (!result.success) {
+                    toast.error(result.message ?? t('toast.connectionFailed'))
+                }
                 void refetch()
             },
-            onError: () => setTestResults((prev) => ({ ...prev, [id]: { success: false, message: t('cloud.failure') } })),
+            onError: (err) => {
+                const message = mapCloudTargetError(err, t, t('toast.connectionFailed'))
+                toast.error(message)
+                setTestResults((prev) => ({ ...prev, [id]: { success: false, message } }))
+            },
         })
     }
 
@@ -409,7 +421,7 @@ export function CloudTargetList({ initialTargets }: { initialTargets: CloudTarge
                                                         toggleEnabled(target, checked === true)
                                                     }
                                                 />
-                                               <StatusBadge status={status} />
+                                                <StatusBadge status={status} />
                                             </td>
                                             <td data-label={t('cloud.server')} className='p-4 space-y-3'>
                                                 <div className='space-y-1.5'>
@@ -494,14 +506,14 @@ export function CloudTargetList({ initialTargets }: { initialTargets: CloudTarge
                                                         <p className='text-xs text-destructive'>{t(errors.apiBaseUrl)}</p>
                                                     )}
                                                 </div>
-                                                <div className='flex gap-3 flex-col'>
-                                                    <div className='w-28 shrink-0 space-y-1.5'>
+                                                <div className='flex flex-wrap items-start gap-x-2 gap-y-3'>
+                                                    <div className='w-[9rem] shrink-0 space-y-1.5'>
                                                         <Label
                                                             htmlFor={`interval-${target.id}`}
-                                                            className='text-xs text-muted-foreground'>
+                                                            className='whitespace-nowrap text-xs text-muted-foreground'>
                                                             {t('cloud.uploadInterval')}
                                                         </Label>
-                                                        <div className='flex items-center gap-1.5'>
+                                                        <div className='flex items-center gap-1'>
                                                             <Input
                                                                 id={`interval-${target.id}`}
                                                                 type='number'
@@ -515,7 +527,7 @@ export function CloudTargetList({ initialTargets }: { initialTargets: CloudTarge
                                                                 className={
                                                                     errors.uploadIntervalSec
                                                                         ? 'border-destructive'
-                                                                        : ''
+                                                                        : 'w-16'
                                                                 }
                                                             />
                                                             <span className='text-xs text-muted-foreground'>{t('common.seconds')}</span>
@@ -526,7 +538,31 @@ export function CloudTargetList({ initialTargets }: { initialTargets: CloudTarge
                                                             </p>
                                                         )}
                                                     </div>
-                                                    <div className='min-w-0 flex-1 pt-4 space-y-1 text-xs text-muted-foreground'>
+                                                    <div className='w-[8.5rem] shrink-0 space-y-1.5'>
+                                                        <Label
+                                                            htmlFor={`batch-size-${target.id}`}
+                                                            className='whitespace-nowrap text-xs text-muted-foreground'>
+                                                            {t('cloud.uploadBatchSize')}
+                                                        </Label>
+                                                        <Input
+                                                            id={`batch-size-${target.id}`}
+                                                            type='number'
+                                                            min={1}
+                                                            max={500}
+                                                            value={form.uploadBatchSize}
+                                                            disabled={rowBusy}
+                                                            onChange={(e) =>
+                                                                updateRowForm(target.id, {
+                                                                    uploadBatchSize: Number(e.target.value),
+                                                                })
+                                                            }
+                                                            className={errors.uploadBatchSize ? 'border-destructive' : 'w-20'}
+                                                        />
+                                                        {errors.uploadBatchSize && (
+                                                            <p className='text-xs text-destructive'>{t(errors.uploadBatchSize)}</p>
+                                                        )}
+                                                    </div>
+                                                    <div className='min-w-[14rem] flex-1 space-y-1 pt-1 text-xs text-muted-foreground'>
                                                         <div className='flex gap-4'>
                                                             <p className='leading-snug'>{t('cloud.lastUpload')}</p>
                                                             <p className='font-bold'>
@@ -636,59 +672,59 @@ export function CloudTargetList({ initialTargets }: { initialTargets: CloudTarge
                 <div className='rounded-lg border border-border/60 bg-muted/30 p-2 mb-0'>
                     <div className='flex flex-col gap-4 lg:flex-row lg:items-start'>
                         <div className='flex items-center gap-3 lg:min-w-64'>
-                        <Checkbox
-                            id='new-backfill-enabled'
-                            checked={newForm.backfillEnabled === true}
-                            disabled={createMutation.isPending}
-                            onCheckedChange={(checked) => updateNewForm({ backfillEnabled: checked === true })}
-                        />
+                            <Checkbox
+                                id='new-backfill-enabled'
+                                checked={newForm.backfillEnabled === true}
+                                disabled={createMutation.isPending}
+                                onCheckedChange={(checked) => updateNewForm({ backfillEnabled: checked === true })}
+                            />
                             <Label htmlFor='new-backfill-enabled' className='font-medium'>
                                 {t('cloud.backfillEnabled')}
                             </Label>
                         </div>
                         {newForm.backfillEnabled && (
                             <div className='flex flex-1 flex-col gap-4 sm:flex-row'>
-                        <div className='w-full space-y-1.5 sm:w-48'>
-                            <Label htmlFor='new-backfill-start' className='text-xs text-muted-foreground'>
-                                {t('cloud.backfillStart')}
-                            </Label>
-                            <Input
-                                id='new-backfill-start'
-                                type='date'
-                                value={newForm.backfillFromTs ?? ''}
-                                min={earliestBackfillDate}
-                                max={newForm.backfillToTs || latestBackfillDate}
-                                disabled={createMutation.isPending}
-                                onChange={(e) => updateNewForm({ backfillFromTs: e.target.value })}
-                                className={newErrors.backfillFromTs ? 'border-destructive' : ''}
-                            />
-                            {newErrors.backfillFromTs && (
-                                <p className='text-xs text-destructive'>{t(newErrors.backfillFromTs)}</p>
-                            )}
-                        </div>
-                        <div className='w-full space-y-1.5 sm:w-48'>
-                            <Label htmlFor='new-backfill-end' className='text-xs text-muted-foreground'>
-                                {t('cloud.backfillEnd')}
-                            </Label>
-                            <Input
-                                id='new-backfill-end'
-                                type='date'
-                                value={newForm.backfillToTs ?? ''}
-                                min={newForm.backfillFromTs || earliestBackfillDate}
-                                max={latestBackfillDate}
-                                disabled={createMutation.isPending}
-                                onChange={(e) => updateNewForm({ backfillToTs: e.target.value })}
-                                className={newErrors.backfillToTs ? 'border-destructive' : ''}
-                            />
-                            {newErrors.backfillToTs && (
-                                <p className='text-xs text-destructive'>{t(newErrors.backfillToTs)}</p>
-                            )}
-                        </div>
+                                <div className='w-full space-y-1.5 sm:w-48'>
+                                    <Label htmlFor='new-backfill-start' className='text-xs text-muted-foreground'>
+                                        {t('cloud.backfillStart')}
+                                    </Label>
+                                    <Input
+                                        id='new-backfill-start'
+                                        type='date'
+                                        value={newForm.backfillFromTs ?? ''}
+                                        min={earliestBackfillDate}
+                                        max={newForm.backfillToTs || latestBackfillDate}
+                                        disabled={createMutation.isPending}
+                                        onChange={(e) => updateNewForm({ backfillFromTs: e.target.value })}
+                                        className={newErrors.backfillFromTs ? 'border-destructive' : ''}
+                                    />
+                                    {newErrors.backfillFromTs && (
+                                        <p className='text-xs text-destructive'>{t(newErrors.backfillFromTs)}</p>
+                                    )}
+                                </div>
+                                <div className='w-full space-y-1.5 sm:w-48'>
+                                    <Label htmlFor='new-backfill-end' className='text-xs text-muted-foreground'>
+                                        {t('cloud.backfillEnd')}
+                                    </Label>
+                                    <Input
+                                        id='new-backfill-end'
+                                        type='date'
+                                        value={newForm.backfillToTs ?? ''}
+                                        min={newForm.backfillFromTs || earliestBackfillDate}
+                                        max={latestBackfillDate}
+                                        disabled={createMutation.isPending}
+                                        onChange={(e) => updateNewForm({ backfillToTs: e.target.value })}
+                                        className={newErrors.backfillToTs ? 'border-destructive' : ''}
+                                    />
+                                    {newErrors.backfillToTs && (
+                                        <p className='text-xs text-destructive'>{t(newErrors.backfillToTs)}</p>
+                                    )}
+                                </div>
                             </div>
                         )}
                     </div>
                 </div>
-                <div className='grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 mb-0'>
+                <div className='grid grid-cols-1 gap-4 mb-0 sm:grid-cols-2 xl:grid-cols-4'>
                     <div className='space-y-1.5'>
                         <Label htmlFor='new-name' className='text-xs text-muted-foreground'>
                             {t('common.displayName')}
@@ -699,7 +735,7 @@ export function CloudTargetList({ initialTargets }: { initialTargets: CloudTarge
                             value={newForm.name}
                             disabled={createMutation.isPending}
                             onChange={(e) => updateNewForm({ name: e.target.value })}
-                            className={newErrors.name ? 'border-destructive' : ''}
+                            className={`w-full ${newErrors.name ? 'border-destructive' : ''}`}
                         />
                         {newErrors.name && <p className='text-xs text-destructive'>{t(newErrors.name)}</p>}
                     </div>
@@ -713,25 +749,26 @@ export function CloudTargetList({ initialTargets }: { initialTargets: CloudTarge
                             value={newForm.apiBaseUrl}
                             disabled={createMutation.isPending}
                             onChange={(e) => updateNewForm({ apiBaseUrl: e.target.value })}
-                            className={newErrors.apiBaseUrl ? 'border-destructive' : ''}
+                            className={`w-full ${newErrors.apiBaseUrl ? 'border-destructive' : ''}`}
                         />
                         {newErrors.apiBaseUrl && <p className='text-xs text-destructive'>{t(newErrors.apiBaseUrl)}</p>}
                     </div>
                 </div>
-                <div className='grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 mb-0'>
+                <div className='grid grid-cols-1 gap-4 mb-0 sm:grid-cols-2 xl:grid-cols-4'>
                     <div className='space-y-1.5'>
                         <Label htmlFor='new-serverid' className='text-xs text-muted-foreground'>
                             {t('cloud.id')}
                         </Label>
                         <Input
                             id='new-serverid'
-                            className={`font-mono ${newErrors.apiKey ? 'border-destructive' : ''}`}
+                            className={`w-full font-mono ${newErrors.apiKey ? 'border-destructive' : ''}`}
                             value={newForm.apiKey}
                             disabled={createMutation.isPending}
                             onChange={(e) => updateNewForm({ apiKey: e.target.value })}
                         />
                         {newErrors.apiKey && <p className='text-xs text-destructive'>{t(newErrors.apiKey)}</p>}
                     </div>
+
                     <div className='space-y-1.5'>
                         <Label htmlFor='new-secret' className='text-xs text-muted-foreground'>
                             {t('cloud.secret')}
@@ -739,7 +776,7 @@ export function CloudTargetList({ initialTargets }: { initialTargets: CloudTarge
                         <Input
                             id='new-secret'
                             type='password'
-                            className={newErrors.cloudServerSecret ? 'border-destructive' : ''}
+                            className={`w-full ${newErrors.cloudServerSecret ? 'border-destructive' : ''}`}
                             value={newForm.apiSecret}
                             disabled={createMutation.isPending}
                             onChange={(e) => updateNewForm({ apiSecret: e.target.value })}
@@ -748,22 +785,45 @@ export function CloudTargetList({ initialTargets }: { initialTargets: CloudTarge
                             <p className='text-xs text-destructive'>{t(newErrors.cloudServerSecret)}</p>
                         )}
                     </div>
-                    <div className='space-y-1.5'>
-                        <Label htmlFor='new-interval' className='text-xs text-muted-foreground'>
-                            {t('cloud.uploadInterval')}
-                        </Label>
-                        <Input
-                            id='new-interval'
-                            type='number'
-                            placeholder='60'
-                            value={newForm.uploadIntervalSec}
-                            disabled={createMutation.isPending}
-                            onChange={(e) => updateNewForm({ uploadIntervalSec: Number(e.target.value) })}
-                            className={newErrors.uploadIntervalSec ? 'border-destructive' : ''}
-                        />
-                        {newErrors.uploadIntervalSec && (
-                            <p className='text-xs text-destructive'>{t(newErrors.uploadIntervalSec)}</p>
-                        )}
+
+                    <div className='xl:col-span-2 flex gap-2'>
+                        <div className='space-y-1.5'>
+                            <Label htmlFor='new-interval' className='text-xs text-muted-foreground'>
+                                {t('cloud.uploadInterval')}
+                            </Label>
+                            <Input
+                                id='new-interval'
+                                type='number'
+                                placeholder='60'
+                                value={newForm.uploadIntervalSec}
+                                disabled={createMutation.isPending}
+                                onChange={(e) => updateNewForm({ uploadIntervalSec: Number(e.target.value) })}
+                                className={`w-24 ${newErrors.uploadIntervalSec ? 'border-destructive' : ''}`}
+                            />
+                            {newErrors.uploadIntervalSec && (
+                                <p className='text-xs text-destructive'>{t(newErrors.uploadIntervalSec)}</p>
+                            )}
+                        </div>
+
+                        <div className='space-y-1.5'>
+                            <Label htmlFor='new-batch-size' className='text-xs text-muted-foreground'>
+                                {t('cloud.uploadBatchSize')}
+                            </Label>
+                            <Input
+                                id='new-batch-size'
+                                type='number'
+                                min={1}
+                                max={500}
+                                placeholder='100'
+                                value={newForm.uploadBatchSize}
+                                disabled={createMutation.isPending}
+                                onChange={(e) => updateNewForm({ uploadBatchSize: Number(e.target.value) })}
+                                className={`w-28 ${newErrors.uploadBatchSize ? 'border-destructive' : ''}`}
+                            />
+                            {newErrors.uploadBatchSize && (
+                                <p className='text-xs text-destructive'>{t(newErrors.uploadBatchSize)}</p>
+                            )}
+                        </div>
                     </div>
                 </div>
                 <Button
