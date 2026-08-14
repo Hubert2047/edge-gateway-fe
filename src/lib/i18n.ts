@@ -128,6 +128,11 @@ const zhTW: MessageTree = {
         backfillEnabled: '上傳既有歷史資料',
         backfillStart: '開始日期',
         backfillEnd: '結束日期',
+        authConfigRateLimited: '雲端 API 設定剛剛已更改，請等待 {duration} 後再更改',
+        authRateLimited: '雲端認證請求過於頻繁，請等待 5 分鐘後再試',
+        enableAuthFailed: '無法啟用雲端目標：認證失敗，請檢查 API 設定後再試',
+        tokenRequired: '雲端目標沒有有效 token，請先啟用以完成認證',
+        testRateLimited: '連線測試已限流，請等待 {duration} 後再試',
     },
 
     meter: {
@@ -314,6 +319,8 @@ const zhTW: MessageTree = {
         voltage: '電壓',
         activePower: '有效功率',
         status: '狀態',
+        online: '在線',
+        offline: '離線',
     },
 
     historyEvents: {
@@ -507,6 +514,11 @@ const en: MessageTree = {
         backfillEnabled: 'Upload existing historical data',
         backfillStart: 'Start date',
         backfillEnd: 'End date',
+        authConfigRateLimited: 'Cloud API settings were recently changed. Try again in {duration}.',
+        authRateLimited: 'Cloud authentication is temporarily rate-limited. Try again in 5 minutes.',
+        enableAuthFailed: 'The cloud target could not be enabled because authentication failed. Check the API settings and try again.',
+        tokenRequired: 'The cloud target has no valid token. Enable it first to authenticate.',
+        testRateLimited: 'Connection tests are rate-limited. Try again in {duration}.',
     },
 
     meter: {
@@ -693,6 +705,8 @@ const en: MessageTree = {
         voltage: 'Voltage',
         activePower: 'Active power',
         status: 'Status',
+        online: 'Online',
+        offline: 'Offline',
     },
 
     historyEvents: {
@@ -871,6 +885,30 @@ const ERROR_RULES: ErrorRule[] = [
     { test: (m) => m === 'this IP is already registered to another gateway', key: 'gateway.alreadyRegistered' },
     { test: (m) => m.toLowerCase().includes('minute_axis_max_buckets'), key: 'historyData.maxBuckets' },
 ]
+
+type Translator = (key: string, values?: Record<string, string | number>) => string
+
+export function mapCloudTargetError(err: unknown, t: Translator, fallback: string): string {
+    const message = err instanceof Error ? err.message.trim() : ''
+    const duration = message.match(/(?:again in|try again in)\s+([^:]+?)(?:\.|$)/i)?.[1]?.trim()
+
+    if (/api credentials or endpoint can be changed again in/i.test(message)) {
+        return t('cloud.authConfigRateLimited', { duration: duration ?? '5 minutes' })
+    }
+    if (/connection test is rate-limited/i.test(message)) {
+        return t('cloud.testRateLimited', { duration: duration ?? '1 minute' })
+    }
+    if (/authentication cooldown active|unexpected status 429/i.test(message)) {
+        return t('cloud.authRateLimited')
+    }
+    if (/no valid cached token/i.test(message)) {
+        return t('cloud.tokenRequired')
+    }
+    if (/cannot enable cloud target/i.test(message)) {
+        return t('cloud.enableAuthFailed')
+    }
+    return message || fallback
+}
 
 export function mapErrorKey(message?: string | null): string {
     if (!message) return 'login.errorGeneric'

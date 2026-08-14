@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useSyncExternalStore } from 'react'
+import { useState, useSyncExternalStore } from 'react'
 import { Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -31,7 +31,7 @@ import {
     useTestCloudTargetConnection,
     useUpdateCloudTarget,
 } from '@/lib/api/cloud-target'
-import { useI18n } from '@/lib/i18n'
+import { mapCloudTargetError, useI18n } from '@/lib/i18n'
 
 function emptyForm(): CloudTargetFormValues {
     return {
@@ -144,7 +144,7 @@ const getServerSnapshot = () => false
 
 export function CloudTargetList({ initialTargets }: { initialTargets: CloudTargetListResponse }) {
     const { t, locale } = useI18n()
-    const { data: cloudTargetList = initialTargets, refetch } = useCloudTargets(initialTargets)
+    const { data: cloudTargetList = initialTargets, refetch } = useCloudTargets(initialTargets, { refetchInterval: false })
     const targets = cloudTargetList.targets
     const canCreateCloudTarget = targets.length < cloudTargetList.cloudTargetMax
     const updateMutation = useUpdateCloudTarget()
@@ -156,54 +156,10 @@ export function CloudTargetList({ initialTargets }: { initialTargets: CloudTarge
 
     const [rowFormState, setRowFormState] = useState<Record<string, RowFormState>>({})
     const [testResults, setTestResults] = useState<Record<string, TestResult>>({})
-    const [flushStates, setFlushStates] = useState<Record<string, { realtimePending: number; backfillCreatedCount: number; delayMs: number }>>({})
     const [deletingId, setDeletingId] = useState<string | null>(null)
     const isHydrated = useSyncExternalStore(emptySubscribe, getClientSnapshot, getServerSnapshot)
     const earliestBackfillDate = isHydrated ? earliestDateInput() : undefined
     const latestBackfillDate = isHydrated ? todayDateInput() : undefined
-
-    const hasFlushInProgress = Object.keys(flushStates).length > 0
-
-    useEffect(() => {
-        if (!hasFlushInProgress) return
-
-        let disposed = false
-        let timer: number | undefined
-        const pollFlushStatus = async () => {
-            const result = await refetch()
-            if (disposed || !result.data) return
-
-            let nextDelay = 2_000
-            setFlushStates((previous) => {
-                const next = { ...previous }
-                for (const [id, state] of Object.entries(previous)) {
-                    const target = result.data.targets.find((item) => String(item.id) === id)
-                    if (!target) {
-                        continue
-                    }
-                    const currentRealtimePending = Number(target.realtimePending)
-                    const currentBackfillCreatedCount = Number(target.backfill?.createdCount ?? 0)
-                    if (!Number.isFinite(currentRealtimePending) || !Number.isFinite(currentBackfillCreatedCount)) continue
-                    const changed = currentRealtimePending !== state.realtimePending || currentBackfillCreatedCount !== state.backfillCreatedCount
-                    if (changed) {
-                        delete next[id]
-                        continue
-                    }
-                    const delayMs = Math.min(state.delayMs * 2, 15_000)
-                    next[id] = { realtimePending: currentRealtimePending, backfillCreatedCount: currentBackfillCreatedCount, delayMs }
-                    nextDelay = Math.max(nextDelay, delayMs)
-                }
-                return next
-            })
-            timer = window.setTimeout(pollFlushStatus, nextDelay)
-        }
-
-        timer = window.setTimeout(pollFlushStatus, 2_000)
-        return () => {
-            disposed = true
-            if (timer !== undefined) window.clearTimeout(timer)
-        }
-    }, [hasFlushInProgress, refetch])
 
     function getRowForm(target: CloudTarget): RowFormState {
         return rowFormState[target.id] ?? { form: targetToForm(target), errors: {} }
@@ -282,27 +238,18 @@ export function CloudTargetList({ initialTargets }: { initialTargets: CloudTarge
         setPendingAction(null)
 
         if (type === 'flushAll') {
-            const ids = targets.filter((target) => target.enabled).map((target) => String(target.id))
-            beginFlush(ids)
             flushAllMutation.mutate(undefined, {
                 onSuccess: () => toast.success(t('toast.flushStarted')),
-                onError: (err) => {
-                    clearFlush(ids)
-                    toast.error(getErrorMessage(err, t('toast.flushFailed')))
-                },
+                onError: (err) => toast.error(mapCloudTargetError(err, t, t('toast.flushFailed'))),
             })
             return
         }
 
         if (type === 'flush') {
             const id = String(pendingAction.id)
-            beginFlush([id])
             flushMutation.mutate(id, {
                 onSuccess: () => toast.success(t('toast.flushStarted')),
-                onError: (err) => {
-                    clearFlush([id])
-                    toast.error(getErrorMessage(err, t('toast.flushFailed')))
-                },
+                onError: (err) => toast.error(mapCloudTargetError(err, t, t('toast.flushFailed'))),
             })
             return
         }
@@ -317,7 +264,7 @@ export function CloudTargetList({ initialTargets }: { initialTargets: CloudTarge
                 { id, form },
                 {
                     onSuccess: () => clearRowForm(id),
-                    onError: (err) => toast.error(getErrorMessage(err, t('toast.saveFailed'))),
+                    onError: (err) => toast.error(mapCloudTargetError(err, t, t('toast.saveFailed'))),
                 },
             )
         }
@@ -367,7 +314,7 @@ export function CloudTargetList({ initialTargets }: { initialTargets: CloudTarge
                 setNewErrors({})
                 toast.success(t('toast.added'))
             },
-            onError: (err) => toast.error(getErrorMessage(err, t('toast.addFailed'))),
+            onError: (err) => toast.error(mapCloudTargetError(err, t, t('toast.addFailed'))),
         })
     }
 
@@ -377,35 +324,6 @@ export function CloudTargetList({ initialTargets }: { initialTargets: CloudTarge
 
     function requestFlush(target: CloudTarget) {
         setPendingAction({ type: 'flush', id: target.id, name: target.name })
-    }
-
-    function beginFlush(ids: string[]) {
-        const normalizedIds = ids.map(String)
-        const initialStates = normalizedIds.reduce<Record<string, { realtimePending: number; backfillCreatedCount: number; delayMs: number }>>(
-            (states, id) => {
-                const target = targets.find((item) => String(item.id) === id)
-                if (target) {
-                    states[id] = {
-                        realtimePending: Number(target.realtimePending),
-                        backfillCreatedCount: Number(target.backfill?.createdCount ?? 0),
-                        delayMs: 2_000,
-                    }
-                }
-                return states
-            },
-            {},
-        )
-        setFlushStates((previous) => {
-            return { ...previous, ...initialStates }
-        })
-    }
-
-    function clearFlush(ids: string[]) {
-        setFlushStates((previous) => {
-            const next = { ...previous }
-            for (const id of ids) delete next[id]
-            return next
-        })
     }
 
     const dialogText = {
@@ -421,9 +339,9 @@ export function CloudTargetList({ initialTargets }: { initialTargets: CloudTarge
                 <h1 className='md:text-3xl font-bold'>{t('page.cloudSync')}</h1>
                 <Button
                     className='max-sm:w-full'
-                    disabled={flushAllMutation.isPending || hasFlushInProgress}
+                    disabled={flushAllMutation.isPending}
                     onClick={runQueuedUploads}>
-                    {flushAllMutation.isPending || hasFlushInProgress ? (
+                    {flushAllMutation.isPending ? (
                         <>
                             <Loader2 className='h-4 w-4 animate-spin' />
                             {t('cloud.running')}
@@ -468,9 +386,8 @@ export function CloudTargetList({ initialTargets }: { initialTargets: CloudTarge
                                         updateMutation.isPending && updateMutation.variables?.id === target.id
                                     const testing = testMutation.isPending && testMutation.variables === target.id
                                     const flushing =
-                                        (flushMutation.isPending &&
-                                            String(flushMutation.variables) === String(target.id)) ||
-                                        Boolean(flushStates[String(target.id)])
+                                        flushMutation.isPending &&
+                                        String(flushMutation.variables) === String(target.id)
                                     const deleting = deletingId === target.id
                                     const rowBusy = saving || deleting
                                     const testResult = testResults[target.id]

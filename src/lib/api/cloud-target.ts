@@ -11,12 +11,12 @@ export const cloudTargetKeys = {
     list: () => [...cloudTargetKeys.all, 'list'] as const,
 }
 
-export function useCloudTargets(initialData: CloudTargetListResponse) {
+export function useCloudTargets(initialData: CloudTargetListResponse, options?: { refetchInterval?: number | false }) {
     return useQuery({
         queryKey: cloudTargetKeys.list(),
         queryFn: getCloudTargets,
         initialData,
-        refetchInterval: OVERVIEW_REFETCH_TIME,
+        refetchInterval: options?.refetchInterval ?? OVERVIEW_REFETCH_TIME,
     })
 }
 
@@ -80,22 +80,14 @@ export function useTestCloudTargetConnection() {
 }
 
 export function useFlushAllCloudTargets() {
-    const queryClient = useQueryClient()
     return useMutation({
         mutationFn: flushAllCloudTargets,
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: cloudTargetKeys.list() })
-        },
     })
 }
 
 export function useFlushCloudTarget() {
-    const queryClient = useQueryClient()
     return useMutation({
         mutationFn: (id: string) => flushCloudTarget(id),
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: cloudTargetKeys.list() })
-        },
     })
 }
 

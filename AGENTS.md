@@ -236,9 +236,10 @@ src/
   `user`, and `readonly` only.
 
 ## Known TODOs / not yet implemented
-- Cloud-sync flush actions start the existing asynchronous uploader worker and
-  the UI polls the cloud-target list at a low frequency while displaying live
-  pending counts.
+- Cloud-sync flush actions start the existing asynchronous uploader worker. The
+  UI only shows the mutation progress and a success/failure toast; it does not
+  poll or repeatedly refresh cloud-target status to track the asynchronous
+  drain.
 - `pendingReadings` / queue count on `CloudTarget` is provided by the backend
   upload-status calculation and may change while new readings are collected.
 

@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { CartesianGrid, Legend, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import { RefreshCw } from 'lucide-react'
 import { getGatewayDisplayName } from '@/lib/gateway'
@@ -97,13 +97,19 @@ export function HistoryDataView({ gateways, meters }: Props) {
     const [meterId, setMeterId] = useState(meters[0]?.macId ?? '')
     const [selectedMetrics, setSelectedMetrics] = useState<SelectedMetrics>(initialSelectedMetrics)
     const [submitted, setSubmitted] = useState(false)
+    const previousAxis = useRef<TimeseriesAxis | null>(null)
 
     useEffect(() => {
-        if (!settingsQuery.data) return
+        if (previousAxis.current === null) {
+            previousAxis.current = axis
+            return
+        }
+        if (previousAxis.current === axis) return
+        previousAxis.current = axis
         const range = getDefaultRange(axis, timeZone)
         setDate(range.start)
         setEndDate(range.end)
-    }, [axis, settingsQuery.data, timeZone])
+    }, [axis, timeZone])
 
     const availableMeters = useMemo(
         () => meters.filter((meter) => !gatewayId || meter.gatewayId === gatewayId),
@@ -140,16 +146,10 @@ export function HistoryDataView({ gateways, meters }: Props) {
 
     function handleAxisChange(value: TimeseriesAxis) {
         setAxis(value)
-        const range = getDefaultRange(value, timeZone)
-        setDate(range.start)
-        setEndDate(range.end)
         setSubmitted(false)
     }
 
     function handleRefresh() {
-        const range = getDefaultRange(axis, timeZone)
-        setDate(range.start)
-        setEndDate(range.end)
         setSubmitted(true)
     }
 
@@ -222,12 +222,12 @@ export function HistoryDataView({ gateways, meters }: Props) {
             <div className='sticky top-0 z-10 flex shrink-0 items-center justify-between bg-[#F7F5F0]'>
                 <h1 className='text-3xl font-bold tracking-tight'>{t('historyData.title')}</h1>
                 <span className='border border-[#BFC8C2] px-4 py-2 text-sm text-[#357A59]'>
-                    {rows.length} {t('historyData.records')}
+                    {sortedRows.length} {t('historyData.records')}
                 </span>
             </div>
 
-            <section className='shrink-0 border border-[#D8DDD9] bg-white p-4'>
-                <div className='grid gap-3 xl:grid-cols-6'>
+            <section className='shrink-0 border border-[#D8DDD9] bg-white p-3'>
+                <div className='grid gap-2 xl:grid-cols-[1.2fr_1.2fr_0.7fr_1.5fr_1.5fr_0.9fr]'>
                     <Field label={t('historyData.gateway')}>
                         <Select
                             value={gatewayId ? String(gatewayId) : undefined}
@@ -303,7 +303,7 @@ export function HistoryDataView({ gateways, meters }: Props) {
                                 setDate(event.target.value)
                                 setSubmitted(false)
                             }}
-                            className='control-input'
+                            className='control-input min-w-0 w-full'
                         />
                     </Field>
                     <Field label={t('historyData.endTime')}>
@@ -464,7 +464,9 @@ export function HistoryDataView({ gateways, meters }: Props) {
                                             </td>
                                         ))}
                                     <td className='p-2'>{row.activePower ?? '—'}</td>
-                                    <td className='p-2'>{row.sampleCount ? t('historyData.ok') : '—'}</td>
+                                    <td className='p-2'>
+                                        {row.sampleCount ? t('historyData.online') : t('historyData.offline')}
+                                    </td>
                                 </tr>
                             ))
                         )}
