@@ -294,7 +294,13 @@ export function CloudTargetList({ initialTargets }: { initialTargets: CloudTarge
             onSuccess: (result) => {
                 setTestResults((prev) => ({ ...prev, [id]: result }))
                 if (!result.success) {
-                    toast.error(result.message ?? t('toast.connectionFailed'))
+                    toast.error(
+                        mapCloudTargetError(
+                            new Error(result.message ?? ''),
+                            t,
+                            t('toast.connectionFailed'),
+                        ),
+                    )
                 }
                 void refetch()
             },

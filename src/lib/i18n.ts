@@ -131,6 +131,7 @@ const zhTW: MessageTree = {
         backfillStart: '開始日期',
         backfillEnd: '結束日期',
         authConfigRateLimited: '雲端 API 設定剛剛已更改，請等待 {duration} 後再更改',
+        targetURLRateLimited: '此雲端 URL 剛剛被刪除，請等待 {duration} 後再建立',
         authRateLimited: '雲端認證請求受到限制，請等待 {duration} 後再試',
         authFailed: '雲端認證失敗，請確認 API ID/密鑰設定後再試',
         enableAuthFailed: '無法啟用雲端目標：認證失敗，請檢查 API 設定後再試',
@@ -289,6 +290,7 @@ const zhTW: MessageTree = {
     historyData: {
         maxBuckets: "分鐘範圍超過 1,500 個資料點的上限。",
         minuteRangeTooLong: "分鐘查詢範圍不可超過 {max} 個資料點。",
+        endMustBeAfterStart: '結束時間必須晚於開始時間。',
         ok: "ok",
         minute: "分鐘",
         hour: "小時",
@@ -303,6 +305,9 @@ const zhTW: MessageTree = {
         date: '指定時間',
         startTime: '開始時間',
         endTime: '結束時間',
+        previousRange: '上一段時間',
+        nextRange: '下一段時間',
+        resetTimeDefault: '重設為預設時間',
         refresh: '重新載入',
         gateway: '閘道器',
         meter: '智慧勾表',
@@ -523,6 +528,7 @@ const en: MessageTree = {
         backfillStart: 'Start date',
         backfillEnd: 'End date',
         authConfigRateLimited: 'Cloud API settings were recently changed. Try again in {duration}.',
+        targetURLRateLimited: 'This cloud URL was recently deleted. Try creating it again in {duration}.',
         authRateLimited: 'Cloud authentication is temporarily rate-limited. Try again in {duration}.',
         authFailed: 'Cloud authentication failed. Check the API ID and secret, then try again.',
         enableAuthFailed: 'The cloud target could not be enabled because authentication failed. Check the API settings and try again.',
@@ -681,6 +687,7 @@ const en: MessageTree = {
     historyData: {
         maxBuckets: "Minute range exceeds the 1,500-bucket limit.",
         minuteRangeTooLong: "Minute queries cannot exceed {max} data points.",
+        endMustBeAfterStart: 'End time must be after start time.',
         ok: "ok",
         minute: "Minute",
         hour: "Hour",
@@ -695,6 +702,9 @@ const en: MessageTree = {
         date: 'Date',
         startTime: 'Start time',
         endTime: 'End time',
+        previousRange: 'Previous range',
+        nextRange: 'Next range',
+        resetTimeDefault: 'Reset to default time',
         refresh: 'Reload data',
         gateway: 'Gateway',
         meter: 'Smart meter',
@@ -896,6 +906,7 @@ const ERROR_RULES: ErrorRule[] = [
     { test: (m) => m === 'gateway admin login do not match, reset it manually', key: 'gateway.resetManually' },
     { test: (m) => m === 'this IP is already registered to another gateway', key: 'gateway.alreadyRegistered' },
     { test: (m) => m.toLowerCase().includes('minute_axis_max_buckets'), key: 'historyData.maxBuckets' },
+    { test: (m) => m.toLowerCase() === 'end must be after start', key: 'historyData.endMustBeAfterStart' },
 ]
 
 type Translator = (key: string, values?: Record<string, string | number>) => string
@@ -907,10 +918,13 @@ export function mapCloudTargetError(err: unknown, t: Translator, fallback: strin
     if (/api credentials or endpoint can be changed again in/i.test(message)) {
         return t('cloud.authConfigRateLimited', { duration: duration ?? '5 minutes' })
     }
+    if (/api base url was recently deleted/i.test(message)) {
+        return t('cloud.targetURLRateLimited', { duration: duration ?? '5 minutes' })
+    }
     if (/connection test is rate-limited/i.test(message)) {
         return t('cloud.testRateLimited', { duration: duration ?? '1 minute' })
     }
-    if (/authentication cooldown active|try again in/i.test(message)) {
+    if (/authentication cooldown active|try again in|cloudauth: unexpected status 429|rate limit exceeded/i.test(message)) {
         return t('cloud.authRateLimited', { duration: duration ?? '5 minutes' })
     }
     if (/unexpected status (401|403)/i.test(message)) {

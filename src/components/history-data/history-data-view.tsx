@@ -1,7 +1,7 @@
 'use client'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { CartesianGrid, Legend, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
-import { RefreshCw } from 'lucide-react'
+import { ChevronLeft, ChevronRight, RefreshCw } from 'lucide-react'
 import { toast } from 'sonner'
 import { getGatewayDisplayName } from '@/lib/gateway'
 import { mapErrorKey, useI18n } from '@/lib/i18n'
@@ -86,6 +86,39 @@ function formatYTick(value: number | string) {
     return typeof value === 'number' ? value.toFixed(2) : value
 }
 
+function shiftDateTime(value: string, axis: TimeseriesAxis, amount: number, timeZone: string) {
+    const date = new Date(parseDateTimeLocal(value, timeZone))
+    const parts = new Intl.DateTimeFormat('en-US', {
+        timeZone,
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        hourCycle: 'h23',
+    }).formatToParts(date)
+    const values = Object.fromEntries(parts.map((part) => [part.type, Number(part.value)]))
+    const wallClock = new Date(Date.UTC(values.year, values.month - 1, values.day, values.hour, values.minute))
+
+    if (axis === 'minute') wallClock.setUTCHours(wallClock.getUTCHours() + amount)
+    if (axis === 'hour') wallClock.setUTCDate(wallClock.getUTCDate() + amount * 7)
+    if (axis === 'day') {
+        const targetMonth = wallClock.getUTCMonth() + amount
+        const targetYear = wallClock.getUTCFullYear() + Math.floor(targetMonth / 12)
+        const normalizedMonth = ((targetMonth % 12) + 12) % 12
+        const lastDay = new Date(Date.UTC(targetYear, normalizedMonth + 1, 0)).getUTCDate()
+        wallClock.setUTCFullYear(targetYear, normalizedMonth, Math.min(wallClock.getUTCDate(), lastDay))
+    }
+    if (axis === 'month') {
+        const targetYear = wallClock.getUTCFullYear() + amount
+        const lastDay = new Date(Date.UTC(targetYear, wallClock.getUTCMonth() + 1, 0)).getUTCDate()
+        wallClock.setUTCFullYear(targetYear, wallClock.getUTCMonth(), Math.min(wallClock.getUTCDate(), lastDay))
+    }
+
+    const pad = (part: number) => String(part).padStart(2, '0')
+    return `${wallClock.getUTCFullYear()}-${pad(wallClock.getUTCMonth() + 1)}-${pad(wallClock.getUTCDate())}T${pad(wallClock.getUTCHours())}:${pad(wallClock.getUTCMinutes())}`
+}
+
 function displayNumericValue(value: number | null | undefined, decimals = false) {
     if (typeof value !== 'number' || !Number.isFinite(value)) return '—'
     return decimals ? value.toFixed(2) : value
@@ -104,7 +137,6 @@ export function HistoryDataView({ gateways, meters }: Props) {
     const [selectedMetrics, setSelectedMetrics] = useState<SelectedMetrics>(initialSelectedMetrics)
     const [submitted, setSubmitted] = useState(false)
     const [isSubmitting, setIsSubmitting] = useState(false)
-    const [refreshPending, setRefreshPending] = useState(false)
     const previousAxis = useRef<TimeseriesAxis | null>(null)
 
     useEffect(() => {
@@ -125,7 +157,7 @@ export function HistoryDataView({ gateways, meters }: Props) {
     )
     const selectedMeter = meters.find((meter) => meter.macId === meterId)
     const phaseMode = selectedMeter?.phaseMode ?? 'single_phase'
-    const isThreePhase = phaseMode === 'three_phase' || phaseMode === 'three_phase_balanced'
+    const isThreePhaseUnbalanced = phaseMode === 'three_phase'
 
     function resetCurrentMetrics() {
         setSelectedMetrics((current) => ({
@@ -158,6 +190,11 @@ export function HistoryDataView({ gateways, meters }: Props) {
     }
 
     function validateQueryRange() {
+        if (date && endDate && date >= endDate) {
+            setSubmitted(false)
+            toast.error(t('historyData.endMustBeAfterStart'))
+            return false
+        }
         if (axis !== 'minute') return true
         const start = Date.parse(parseDateTimeLocal(date, timeZone))
         const end = Date.parse(parseDateTimeLocal(endDate, timeZone))
@@ -186,11 +223,19 @@ export function HistoryDataView({ gateways, meters }: Props) {
 
     function handleRefresh() {
         const range = getDefaultRange(axis, timeZone)
-        setIsSubmitting(true)
         setSubmitted(false)
         setDate(range.start)
         setEndDate(range.end)
-        setRefreshPending(true)
+        setIsSubmitting(false)
+    }
+
+    function shiftRange(direction: -1 | 1) {
+        const nextStart = direction === -1 ? shiftDateTime(date, axis, -1, timeZone) : endDate
+        const nextEnd = direction === -1 ? date : shiftDateTime(endDate, axis, 1, timeZone)
+        setDate(nextStart)
+        setEndDate(nextEnd)
+        setSubmitted(false)
+        setIsSubmitting(false)
     }
 
     function toggleMetric(metric: MetricKey, checked: boolean) {
@@ -215,11 +260,6 @@ export function HistoryDataView({ gateways, meters }: Props) {
     useEffect(() => {
         if (submitted && !query.isFetching) setIsSubmitting(false)
     }, [query.isFetching, submitted])
-    useEffect(() => {
-        if (!refreshPending) return
-        setRefreshPending(false)
-        setSubmitted(true)
-    }, [refreshPending])
     const rows = query.data ?? []
     const tableRows = useMemo(
         () =>
@@ -245,7 +285,7 @@ export function HistoryDataView({ gateways, meters }: Props) {
         { key: 'voltage', label: t('historyData.voltage') },
         { key: 'activePower', label: t('historyData.activePower') },
     ]
-    const currentOptions: { key: MetricKey; label: string }[] = isThreePhase
+    const currentOptions: { key: MetricKey; label: string }[] = isThreePhaseUnbalanced
         ? [
               { key: 'avgCurrent', label: t('historyData.averageCurrent') },
               { key: 'l1', label: t('historyData.l1Current') },
@@ -262,7 +302,7 @@ export function HistoryDataView({ gateways, meters }: Props) {
         'meter',
         'voltage',
         'averageCurrent',
-        ...(isThreePhase ? threePhaseColumns.map((metric) => currentColumnLabelKeys[metric]) : []),
+        ...(isThreePhaseUnbalanced ? threePhaseColumns.map((metric) => currentColumnLabelKeys[metric]) : []),
         'activePower',
         'status',
     ]
@@ -354,50 +394,80 @@ export function HistoryDataView({ gateways, meters }: Props) {
                         <input
                             type='datetime-local'
                             value={date}
+                            max={endDate || undefined}
                             onChange={(event) => {
-                                setDate(event.target.value)
+                                const value = event.target.value
+                                if (endDate && value >= endDate) {
+                                    toast.error(t('historyData.endMustBeAfterStart'))
+                                    return
+                                }
+                                setDate(value)
                                 setSubmitted(false)
                             }}
-                            className='control-input min-w-0 w-full'
+                            className='control-input min-w-[15rem] w-full'
                         />
                     </Field>
                     <Field label={t('historyData.endTime')}>
-                        <div className='flex gap-2'>
+                        <div className='flex min-w-0 flex-col gap-2'>
                             <input
                                 type='datetime-local'
                                 value={endDate}
+                                min={date || undefined}
                                 onChange={(event) => {
-                                    setEndDate(event.target.value)
+                                    const value = event.target.value
+                                    if (date && value <= date) {
+                                        toast.error(t('historyData.endMustBeAfterStart'))
+                                        return
+                                    }
+                                    setEndDate(value)
                                     setSubmitted(false)
                                 }}
-                                className='control-input min-w-0 flex-1'
+                            className='control-input min-w-0 w-full'
                             />
-                            <button
-                                type='button'
-                                onClick={handleRefresh}
-                                disabled={isSubmitting || query.isFetching}
-                                aria-label={t('historyData.refresh')}
-                                title={t('historyData.refresh')}
-                                className='inline-flex h-8 w-8 shrink-0 items-center justify-center border border-[#BFC8C2] text-[#153F31] hover:bg-[#F1F2EF] disabled:opacity-60'>
-                                <RefreshCw className={`h-4 w-4 ${isSubmitting || query.isFetching ? 'animate-spin' : ''}`} />
-                            </button>
+                            <div className='flex w-full flex-nowrap items-center justify-end gap-1 overflow-x-auto'>
+                                <button
+                                    type='button'
+                                    onClick={() => shiftRange(-1)}
+                                    disabled={isSubmitting || query.isFetching}
+                                    aria-label={t('historyData.previousRange')}
+                                    title={t('historyData.previousRange')}
+                                    className='inline-flex h-8 w-7 shrink-0 items-center justify-center border border-[#BFC8C2] text-[#153F31] hover:bg-[#F1F2EF] disabled:opacity-60'>
+                                    <ChevronLeft className='h-4 w-4' />
+                                </button>
+                                <button
+                                    type='button'
+                                    onClick={handleRefresh}
+                                    disabled={isSubmitting || query.isFetching}
+                                    aria-label={t('historyData.resetTimeDefault')}
+                                    title={t('historyData.resetTimeDefault')}
+                                    className='inline-flex h-8 w-7 shrink-0 items-center justify-center border border-[#BFC8C2] text-[#153F31] hover:bg-[#F1F2EF] disabled:opacity-60'>
+                                    <RefreshCw className={`h-4 w-4 ${isSubmitting || query.isFetching ? 'animate-spin' : ''}`} />
+                                </button>
+                                <button
+                                    type='button'
+                                    onClick={() => shiftRange(1)}
+                                    disabled={isSubmitting || query.isFetching}
+                                    aria-label={t('historyData.nextRange')}
+                                    title={t('historyData.nextRange')}
+                                    className='inline-flex h-8 w-7 shrink-0 items-center justify-center border border-[#BFC8C2] text-[#153F31] hover:bg-[#F1F2EF] disabled:opacity-60'>
+                                    <ChevronRight className='h-4 w-4' />
+                                </button>
+                                <button
+                                    type='button'
+                                    onClick={submitQuery}
+                                    disabled={isSubmitting || query.isFetching}
+                                    className='h-8 w-24 shrink-0 bg-[#153F31] px-1 text-xs font-medium text-white hover:bg-[#1B503D] disabled:opacity-60'>
+                                    {isSubmitting || query.isFetching ? t('historyData.loading') : t('historyData.query')}
+                                </button>
+                            </div>
                         </div>
                     </Field>
-                    <div className='flex justify-center items-center mt-6'>
-                        <button
-                            type='button'
-                            onClick={submitQuery}
-                            disabled={isSubmitting || query.isFetching}
-                            className='h-8 w-32 bg-[#153F31] px-2.5 text-sm font-medium text-white hover:bg-[#1B503D]  disabled:opacity-60'>
-                            {isSubmitting || query.isFetching ? t('historyData.loading') : t('historyData.query')}
-                        </button>
-                    </div>
                 </div>
 
                 <div className='mt-4 flex flex-wrap items-start gap-x-7 gap-y-3'>
                     <div className='flex flex-wrap items-start gap-x-7 gap-y-3'>
                         <MetricCheckboxes options={metricOptions} selected={selectedMetrics} onChange={toggleMetric} />
-                        {isThreePhase ? (
+                        {isThreePhaseUnbalanced ? (
                             <fieldset className='flex flex-wrap items-center gap-x-4 gap-y-2'>
                                 <legend className='mr-1 text-sm font-medium text-[#4F5A54]'>
                                     {t('historyData.currentGroup')}
@@ -506,10 +576,10 @@ export function HistoryDataView({ gateways, meters }: Props) {
                                     <td className='p-2'>
                                         {getGatewayDisplayName(gateways.find((g) => g.id === gatewayId)!, t)}
                                     </td>
-                                    <td className='p-2'>{meterId}</td>
+                                    <td className='p-2'>{selectedMeter?.name || meterId}</td>
                                     <td className='p-2'>{displayNumericValue(row.voltage)}</td>
                                     <td className='p-2'>{displayNumericValue(getAverageCurrent(row, phaseMode), true)}</td>
-                                    {isThreePhase &&
+                                    {isThreePhaseUnbalanced &&
                                         threePhaseColumns.map((metric) => (
                                             <td key={metric} className='p-2'>
                                                 {displayNumericValue(row[metric])}

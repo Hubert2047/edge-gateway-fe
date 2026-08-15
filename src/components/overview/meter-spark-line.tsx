@@ -28,6 +28,11 @@ export function MeterSparkline({ points, loading, rangeEnd }: MeterSparklineProp
         .map((point) => ({ ...point, bucketTs: Date.parse(point.bucket) }))
         .filter((point) => !Number.isNaN(point.bucketTs) && point.bucketTs >= rangeStart && point.bucketTs <= rangeEnd)
         .sort((a, b) => a.bucketTs - b.bucketTs)
+    const maxPower = actualPoints.reduce((max, point) => Math.max(max, point.activePower), 0)
+    const hasNegativePower = actualPoints.some((point) => point.activePower < 0)
+    const yDomain: [number | string, number | string] = hasNegativePower
+        ? ['dataMin', 'dataMax']
+        : [0, maxPower > 0 ? maxPower * 1.1 : 1]
 
     const data: SparklinePoint[] = []
     for (const point of actualPoints) {
@@ -56,7 +61,7 @@ export function MeterSparkline({ points, loading, rangeEnd }: MeterSparklineProp
                         allowDataOverflow
                         hide
                     />
-                    <YAxis dataKey='activePower' domain={['dataMin', 'dataMax']} hide />
+                    <YAxis dataKey='activePower' domain={yDomain} hide />
                     <Tooltip
                         labelFormatter={(label) => bucketLabels.get(Number(label)) ?? ''}
                         formatter={(value) => [`${Number(value).toFixed(2)} kW`, '']}
