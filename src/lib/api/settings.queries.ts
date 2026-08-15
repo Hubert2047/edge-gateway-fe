@@ -7,7 +7,13 @@ import { getSettings, updateSettings } from './settings'
 export const settingsKeys = { all: ['settings'] as const, current: () => [...settingsKeys.all, 'current'] as const }
 
 export function useSettings() {
-    return useQuery({ queryKey: settingsKeys.current(), queryFn: getSettings, retry: false })
+    return useQuery({
+        queryKey: settingsKeys.current(),
+        queryFn: getSettings,
+        retry: false,
+        staleTime: 5 * 60 * 1000,
+        refetchOnWindowFocus: false,
+    })
 }
 
 export function useUpdateSettings() {

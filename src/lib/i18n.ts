@@ -114,6 +114,7 @@ const zhTW: MessageTree = {
         apiBaseUrl: 'API BASE URL',
         uploadInterval: '上傳頻率（秒）',
         uploadBatchSize: '每批上傳筆數',
+        flushPause: 'Flush 間隔（毫秒）',
         lastUpload: '上次正確上傳時間',
         pending: '待續傳',
         realtimePending: '即時待上傳',
@@ -130,7 +131,8 @@ const zhTW: MessageTree = {
         backfillStart: '開始日期',
         backfillEnd: '結束日期',
         authConfigRateLimited: '雲端 API 設定剛剛已更改，請等待 {duration} 後再更改',
-        authRateLimited: '雲端認證請求過於頻繁，請等待 5 分鐘後再試',
+        authRateLimited: '雲端認證請求受到限制，請等待 {duration} 後再試',
+        authFailed: '雲端認證失敗，請確認 API ID/密鑰設定後再試',
         enableAuthFailed: '無法啟用雲端目標：認證失敗，請檢查 API 設定後再試',
         tokenRequired: '雲端目標沒有有效 token，請先啟用以完成認證',
         testRateLimited: '連線測試已限流，請等待 {duration} 後再試',
@@ -181,6 +183,7 @@ const zhTW: MessageTree = {
         portInvalid: '請輸入有效的 PORT',
         intervalInvalid: '請輸入有效的秒數',
         batchSizeInvalid: '每批上傳筆數必須介於 1 到 500',
+        flushPauseInvalid: 'Flush 間隔必須介於 1 到 60000 毫秒',
         idRequired: '請輸入 ID',
         voltageInvalid: '請輸入有效的電壓',
         powerFactorInvalid: '請輸入 0 ~ 1 之間的功率因數',
@@ -285,6 +288,7 @@ const zhTW: MessageTree = {
 
     historyData: {
         maxBuckets: "分鐘範圍超過 1,500 個資料點的上限。",
+        minuteRangeTooLong: "分鐘查詢範圍不可超過 {max} 個資料點。",
         ok: "ok",
         minute: "分鐘",
         hour: "小時",
@@ -502,6 +506,7 @@ const en: MessageTree = {
         apiBaseUrl: 'API BASE URL',
         uploadInterval: 'Upload interval (sec)',
         uploadBatchSize: 'Batch size',
+        flushPause: 'Flush pause (ms)',
         lastUpload: 'Last successful upload',
         pending: 'Pending uploads',
         realtimePending: 'Realtime pending',
@@ -518,7 +523,8 @@ const en: MessageTree = {
         backfillStart: 'Start date',
         backfillEnd: 'End date',
         authConfigRateLimited: 'Cloud API settings were recently changed. Try again in {duration}.',
-        authRateLimited: 'Cloud authentication is temporarily rate-limited. Try again in 5 minutes.',
+        authRateLimited: 'Cloud authentication is temporarily rate-limited. Try again in {duration}.',
+        authFailed: 'Cloud authentication failed. Check the API ID and secret, then try again.',
         enableAuthFailed: 'The cloud target could not be enabled because authentication failed. Check the API settings and try again.',
         tokenRequired: 'The cloud target has no valid token. Enable it first to authenticate.',
         testRateLimited: 'Connection tests are rate-limited. Try again in {duration}.',
@@ -569,6 +575,7 @@ const en: MessageTree = {
         portInvalid: 'Please enter a valid port',
         intervalInvalid: 'Please enter a valid number of seconds',
         batchSizeInvalid: 'Batch size must be between 1 and 500',
+        flushPauseInvalid: 'Flush pause must be between 1 and 60000 ms',
         idRequired: 'Please enter an ID',
         voltageInvalid: 'Please enter a valid voltage',
         powerFactorInvalid: 'Enter a power factor between 0 and 1',
@@ -673,6 +680,7 @@ const en: MessageTree = {
 
     historyData: {
         maxBuckets: "Minute range exceeds the 1,500-bucket limit.",
+        minuteRangeTooLong: "Minute queries cannot exceed {max} data points.",
         ok: "ok",
         minute: "Minute",
         hour: "Hour",
@@ -902,8 +910,11 @@ export function mapCloudTargetError(err: unknown, t: Translator, fallback: strin
     if (/connection test is rate-limited/i.test(message)) {
         return t('cloud.testRateLimited', { duration: duration ?? '1 minute' })
     }
-    if (/authentication cooldown active|unexpected status 429/i.test(message)) {
-        return t('cloud.authRateLimited')
+    if (/authentication cooldown active|try again in/i.test(message)) {
+        return t('cloud.authRateLimited', { duration: duration ?? '5 minutes' })
+    }
+    if (/unexpected status (401|403)/i.test(message)) {
+        return t('cloud.authFailed')
     }
     if (/no valid cached token/i.test(message)) {
         return t('cloud.tokenRequired')

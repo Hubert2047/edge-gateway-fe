@@ -2,6 +2,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { CartesianGrid, Legend, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import { RefreshCw } from 'lucide-react'
+import { toast } from 'sonner'
 import { getGatewayDisplayName } from '@/lib/gateway'
 import { mapErrorKey, useI18n } from '@/lib/i18n'
 import { fillTimeseriesBuckets } from '@/lib/timeseries'
@@ -13,7 +14,6 @@ import type { Meter } from '@/types/meter'
 import type { TimeseriesAxis } from '@/types/timeseries'
 import {
     formatDisplayTime,
-    formatValue,
     getAverageCurrent,
     getDefaultRange,
     getMetricLabel,
@@ -49,6 +49,7 @@ const initialSelectedMetrics: SelectedMetrics = {
     l3: false,
 }
 const DEFAULT_TIME_ZONE = 'Asia/Taipei'
+const MAX_MINUTE_BUCKETS = 1500
 
 const currentColumnLabelKeys: Record<CurrentColumnKey, string> = {
     l1: 'l1Current',
@@ -85,6 +86,11 @@ function formatYTick(value: number | string) {
     return typeof value === 'number' ? value.toFixed(2) : value
 }
 
+function displayNumericValue(value: number | null | undefined, decimals = false) {
+    if (typeof value !== 'number' || !Number.isFinite(value)) return '—'
+    return decimals ? value.toFixed(2) : value
+}
+
 export function HistoryDataView({ gateways, meters }: Props) {
     const { t } = useI18n()
     const settingsQuery = useSettings()
@@ -97,6 +103,8 @@ export function HistoryDataView({ gateways, meters }: Props) {
     const [meterId, setMeterId] = useState(meters[0]?.macId ?? '')
     const [selectedMetrics, setSelectedMetrics] = useState<SelectedMetrics>(initialSelectedMetrics)
     const [submitted, setSubmitted] = useState(false)
+    const [isSubmitting, setIsSubmitting] = useState(false)
+    const [refreshPending, setRefreshPending] = useState(false)
     const previousAxis = useRef<TimeseriesAxis | null>(null)
 
     useEffect(() => {
@@ -149,8 +157,40 @@ export function HistoryDataView({ gateways, meters }: Props) {
         setSubmitted(false)
     }
 
-    function handleRefresh() {
+    function validateQueryRange() {
+        if (axis !== 'minute') return true
+        const start = Date.parse(parseDateTimeLocal(date, timeZone))
+        const end = Date.parse(parseDateTimeLocal(endDate, timeZone))
+        if (!Number.isFinite(start) || !Number.isFinite(end)) return true
+        const buckets = Math.ceil((end - start) / (60 * 1000))
+        if (buckets > MAX_MINUTE_BUCKETS) {
+            setSubmitted(false)
+            toast.error(t('historyData.minuteRangeTooLong', { max: MAX_MINUTE_BUCKETS }))
+            return false
+        }
+        return true
+    }
+
+    function submitQuery() {
+        if (!validateQueryRange()) {
+            setIsSubmitting(false)
+            return
+        }
+        setIsSubmitting(true)
+        if (submitted) {
+            void query.refetch()
+            return
+        }
         setSubmitted(true)
+    }
+
+    function handleRefresh() {
+        const range = getDefaultRange(axis, timeZone)
+        setIsSubmitting(true)
+        setSubmitted(false)
+        setDate(range.start)
+        setEndDate(range.end)
+        setRefreshPending(true)
     }
 
     function toggleMetric(metric: MetricKey, checked: boolean) {
@@ -165,13 +205,28 @@ export function HistoryDataView({ gateways, meters }: Props) {
         end: parseDateTimeLocal(endDate, timeZone),
     }
     const query = useTimeseries(params, submitted && Boolean(gatewayId && meterId))
+    const queryErrorMessage = query.error instanceof ApiError ? query.error.message : ''
+    useEffect(() => {
+        if (queryErrorMessage) {
+            toast.error(t(mapErrorKey(queryErrorMessage)))
+            setIsSubmitting(false)
+        }
+    }, [queryErrorMessage])
+    useEffect(() => {
+        if (submitted && !query.isFetching) setIsSubmitting(false)
+    }, [query.isFetching, submitted])
+    useEffect(() => {
+        if (!refreshPending) return
+        setRefreshPending(false)
+        setSubmitted(true)
+    }, [refreshPending])
     const rows = query.data ?? []
     const tableRows = useMemo(
         () =>
-            submitted
+            submitted && query.isSuccess && !query.isFetching
                 ? fillTimeseriesBuckets(rows, axis, date, endDate, timeZone, phaseMode)
                 : [],
-        [axis, date, endDate, phaseMode, submitted, timeZone],
+        [axis, date, endDate, phaseMode, query.isFetching, query.isSuccess, rows, submitted, timeZone],
     )
     const sortedRows = useMemo(() => [...tableRows].sort((a, b) => b.bucketTs - a.bucketTs), [tableRows])
     const visibleMetrics = (Object.keys(selectedMetrics) as MetricKey[]).filter((metric) => selectedMetrics[metric])
@@ -320,21 +375,21 @@ export function HistoryDataView({ gateways, meters }: Props) {
                             <button
                                 type='button'
                                 onClick={handleRefresh}
-                                disabled={query.isFetching}
+                                disabled={isSubmitting || query.isFetching}
                                 aria-label={t('historyData.refresh')}
                                 title={t('historyData.refresh')}
                                 className='inline-flex h-8 w-8 shrink-0 items-center justify-center border border-[#BFC8C2] text-[#153F31] hover:bg-[#F1F2EF] disabled:opacity-60'>
-                                <RefreshCw className={`h-4 w-4 ${query.isFetching ? 'animate-spin' : ''}`} />
+                                <RefreshCw className={`h-4 w-4 ${isSubmitting || query.isFetching ? 'animate-spin' : ''}`} />
                             </button>
                         </div>
                     </Field>
                     <div className='flex justify-center items-center mt-6'>
                         <button
                             type='button'
-                            onClick={() => setSubmitted(true)}
-                            disabled={query.isFetching}
+                            onClick={submitQuery}
+                            disabled={isSubmitting || query.isFetching}
                             className='h-8 w-32 bg-[#153F31] px-2.5 text-sm font-medium text-white hover:bg-[#1B503D]  disabled:opacity-60'>
-                            {query.isFetching ? t('historyData.loading') : t('historyData.query')}
+                            {isSubmitting || query.isFetching ? t('historyData.loading') : t('historyData.query')}
                         </button>
                     </div>
                 </div>
@@ -422,9 +477,6 @@ export function HistoryDataView({ gateways, meters }: Props) {
                         </LineChart>
                     </ResponsiveContainer>
                 </div>
-                {query.error instanceof ApiError && (
-                    <p className='mt-4 text-center text-sm text-[#B54E45]'>{t(mapErrorKey(query.error.message))}</p>
-                )}
             </section>
 
             <section className='shrink-0 overflow-x-auto border border-[#D8DDD9] bg-white'>
@@ -455,15 +507,15 @@ export function HistoryDataView({ gateways, meters }: Props) {
                                         {getGatewayDisplayName(gateways.find((g) => g.id === gatewayId)!, t)}
                                     </td>
                                     <td className='p-2'>{meterId}</td>
-                                    <td className='p-2'>{row.voltage ?? '—'}</td>
-                                    <td className='p-2'>{formatValue(getAverageCurrent(row, phaseMode))}</td>
+                                    <td className='p-2'>{displayNumericValue(row.voltage)}</td>
+                                    <td className='p-2'>{displayNumericValue(getAverageCurrent(row, phaseMode), true)}</td>
                                     {isThreePhase &&
                                         threePhaseColumns.map((metric) => (
                                             <td key={metric} className='p-2'>
-                                                {row[metric] ?? '—'}
+                                                {displayNumericValue(row[metric])}
                                             </td>
                                         ))}
-                                    <td className='p-2'>{row.activePower ?? '—'}</td>
+                                    <td className='p-2'>{displayNumericValue(row.activePower)}</td>
                                     <td className='p-2'>
                                         {row.sampleCount ? t('historyData.online') : t('historyData.offline')}
                                     </td>

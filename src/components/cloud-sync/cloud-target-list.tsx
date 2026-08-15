@@ -41,6 +41,7 @@ function emptyForm(): CloudTargetFormValues {
         apiSecret: '',
         uploadIntervalSec: 60,
         uploadBatchSize: 100,
+        flushPauseMs: 100,
         enabled: false,
         backfillEnabled: false,
         backfillFromTs: '',
@@ -57,6 +58,7 @@ function targetToForm(target: CloudTarget): CloudTargetFormValues {
         apiSecret: target.apiSecretMasked ?? '',
         uploadIntervalSec: target.uploadIntervalSec ?? 0,
         uploadBatchSize: target.uploadBatchSize ?? 100,
+        flushPauseMs: target.flushPauseMs ?? 100,
         enabled: target.enabled ?? false,
     }
 }
@@ -69,6 +71,7 @@ type FormErrors = Partial<
         | 'cloudServerSecret'
         | 'uploadIntervalSec'
         | 'uploadBatchSize'
+        | 'flushPauseMs'
         | 'backfillFromTs'
         | 'backfillToTs',
         string
@@ -85,6 +88,8 @@ function validateForm(form: CloudTargetFormValues): FormErrors {
         errors.uploadIntervalSec = 'validation.intervalInvalid'
     if (!form.uploadBatchSize || form.uploadBatchSize < 1 || form.uploadBatchSize > 500)
         errors.uploadBatchSize = 'validation.batchSizeInvalid'
+    if (!form.flushPauseMs || form.flushPauseMs < 1 || form.flushPauseMs > 60000)
+        errors.flushPauseMs = 'validation.flushPauseInvalid'
     if (form.backfillEnabled) {
         if (!form.backfillFromTs) errors.backfillFromTs = 'validation.backfillStartRequired'
         if (!form.backfillToTs) errors.backfillToTs = 'validation.backfillEndRequired'
@@ -215,7 +220,7 @@ export function CloudTargetList({ initialTargets }: { initialTargets: CloudTarge
         updateMutation.mutate(
             { id: target.id, form: { ...form, enabled: checked } },
             {
-                onError: () => toast.error(t('toast.statusFailed')),
+                onError: (err) => toast.error(mapCloudTargetError(err, t, t('toast.statusFailed'))),
             },
         )
         clearRowForm(target.id)
@@ -562,6 +567,25 @@ export function CloudTargetList({ initialTargets }: { initialTargets: CloudTarge
                                                             <p className='text-xs text-destructive'>{t(errors.uploadBatchSize)}</p>
                                                         )}
                                                     </div>
+                                                    <div className='w-[8.5rem] shrink-0 space-y-1.5'>
+                                                        <Label htmlFor={`flush-pause-${target.id}`} className='whitespace-nowrap text-xs text-muted-foreground'>
+                                                            {t('cloud.flushPause')}
+                                                        </Label>
+                                                        <div className='flex items-center gap-1'>
+                                                            <Input
+                                                                id={`flush-pause-${target.id}`}
+                                                                type='number'
+                                                                min={1}
+                                                                max={60000}
+                                                                value={form.flushPauseMs}
+                                                                disabled={rowBusy}
+                                                                onChange={(e) => updateRowForm(target.id, { flushPauseMs: Number(e.target.value) })}
+                                                                className={errors.flushPauseMs ? 'border-destructive w-20' : 'w-20'}
+                                                            />
+                                                            <span className='text-xs text-muted-foreground'>ms</span>
+                                                        </div>
+                                                        {errors.flushPauseMs && <p className='text-xs text-destructive'>{t(errors.flushPauseMs)}</p>}
+                                                    </div>
                                                     <div className='min-w-[14rem] flex-1 space-y-1 pt-1 text-xs text-muted-foreground'>
                                                         <div className='flex gap-4'>
                                                             <p className='leading-snug'>{t('cloud.lastUpload')}</p>
@@ -803,6 +827,24 @@ export function CloudTargetList({ initialTargets }: { initialTargets: CloudTarge
                             {newErrors.uploadIntervalSec && (
                                 <p className='text-xs text-destructive'>{t(newErrors.uploadIntervalSec)}</p>
                             )}
+                        </div>
+                        <div className='space-y-1.5'>
+                            <Label htmlFor='new-flush-pause' className='text-xs text-muted-foreground'>{t('cloud.flushPause')}</Label>
+                            <div className='flex items-center gap-1'>
+                                <Input
+                                    id='new-flush-pause'
+                                    type='number'
+                                    min={1}
+                                    max={60000}
+                                    placeholder='100'
+                                    value={newForm.flushPauseMs}
+                                    disabled={createMutation.isPending}
+                                    onChange={(e) => updateNewForm({ flushPauseMs: Number(e.target.value) })}
+                                    className={`w-24 ${newErrors.flushPauseMs ? 'border-destructive' : ''}`}
+                                />
+                                <span className='text-xs text-muted-foreground'>ms</span>
+                            </div>
+                            {newErrors.flushPauseMs && <p className='text-xs text-destructive'>{t(newErrors.flushPauseMs)}</p>}
                         </div>
 
                         <div className='space-y-1.5'>

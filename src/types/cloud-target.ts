@@ -14,6 +14,7 @@ export interface CloudTarget {
     apiSecretMasked: string
     uploadIntervalSec: number
     uploadBatchSize: number
+    flushPauseMs: number
     enabled: boolean
     connectionStatus: string
     lastUploadAt: string | null
@@ -35,6 +36,7 @@ export interface CloudTargetFormValues {
     apiSecret: string
     uploadIntervalSec: number
     uploadBatchSize: number
+    flushPauseMs: number
     enabled: boolean
     backfillEnabled?: boolean
     backfillFromTs?: string
