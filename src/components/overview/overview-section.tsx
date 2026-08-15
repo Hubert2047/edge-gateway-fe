@@ -7,6 +7,7 @@ export function OverviewSection({
     href,
     action,
     canManage,
+    titleExtra,
     className,
     children,
 }: {
@@ -14,13 +15,17 @@ export function OverviewSection({
     href: string
     action: string
     canManage: boolean
+    titleExtra?: ReactNode
     className?: string
     children: ReactNode
 }) {
     return (
         <section className={className}>
-            <div className='mb-4 flex items-center justify-between'>
-                <h3 className='text-xl font-bold'>{title}</h3>
+            <div className='mb-4 flex items-center justify-between gap-3'>
+                <div className='flex min-w-0 items-center gap-3'>
+                    <h3 className='shrink-0 text-xl font-bold'>{title}</h3>
+                    {titleExtra}
+                </div>
                 {canManage && (
                     <Link
                         href={href}

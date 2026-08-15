@@ -207,6 +207,8 @@ src/
   session strategy).
 - i18n: none — UI strings are hard-coded Traditional Chinese directly in components.
 - Avoid code comments unless truly necessary.
+- Use shadcn/ui `Select` for selectable controls in the UI instead of native `<select>` elements.
+- For draggable overview meter cards, keep the drag handle limited to the meter name; the rest of the card must remain a normal clickable area without a grab cursor.
 - Prefer rewriting the whole file on major changes, rather than small diffs (per your own preference).
 - Keep feature container/list components focused on data flow and orchestration. Extract self-contained UI sections or rows with their own state and actions into sibling components within the same feature folder instead of accumulating them in one large component.
 - A gateway is identified everywhere by its numeric `id`; do not introduce a

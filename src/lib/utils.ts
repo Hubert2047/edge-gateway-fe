@@ -218,6 +218,7 @@ export function transformPhaseMode(phaseMode: PhaseMode) {
 }
 export function getAverageCurrent(
     data: { l1?: number | null; l2?: number | null; l3?: number | null } | undefined,
+    
     phaseMode: PhaseMode,
 ): number | null {
     if (!data) return null

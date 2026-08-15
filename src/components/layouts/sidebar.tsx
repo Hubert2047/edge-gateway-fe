@@ -17,15 +17,15 @@ const NAV_ITEMS: NavItem[] = [
     { key: 'nav.gateways', href: ROUTES.gateways, adminOnly: true },
     { key: 'nav.meters', href: ROUTES.meters, adminOnly: true },
     { key: 'nav.historyData', href: ROUTES.historyData },
-    { key: 'nav.historyEvents', href: ROUTES.historyEvents, adminOnly: true },
-    { key: 'nav.processControl', href: ROUTES.processControl, adminOnly: true },
-    { key: 'nav.processRules', href: ROUTES.processRules, adminOnly: true },
+    // { key: 'nav.historyEvents', href: ROUTES.historyEvents, adminOnly: true },
+    // { key: 'nav.processControl', href: ROUTES.processControl, adminOnly: true },
+    // { key: 'nav.processRules', href: ROUTES.processRules, adminOnly: true },
     { key: 'nav.users', href: ROUTES.users, adminOnly: true },
     { key: 'nav.settings', href: ROUTES.settings },
 ]
 
 const externalLinks = [
-    { key: 'nav.apiDocs', href: '#' },
+    // { key: 'nav.apiDocs', href: '#' },
     { key: 'nav.mmold', href: 'https://mmold.com', fallback: 'MMold.com' },
 ]
 
