@@ -9,7 +9,6 @@ export const userKeys = {
     all: ['users'] as const,
     list: () => [...userKeys.all, 'list'] as const,
 }
-
 export function useUsers(initialData: AppUser[]) {
     return useQuery({ queryKey: userKeys.list(), queryFn: getUsers, initialData, refetchInterval: 30_000 })
 }
@@ -51,7 +50,7 @@ async function getUsers() {
 async function createUser(values: CreateUserValues) {
     return apiFetch<AppUser>(USER_ENDPOINT.base, {
         method: 'POST',
-        body: JSON.stringify({ ...values, role: toBackendRole(values.role) }),
+        body: JSON.stringify(values),
     })
 }
 
@@ -73,6 +72,3 @@ async function updateUser(id: string, username: string, role: UserRole, enabled:
     })
 }
 
-function toBackendRole(role: UserRole) {
-    return role === 'admin' ? 'admin' : 'user'
-}

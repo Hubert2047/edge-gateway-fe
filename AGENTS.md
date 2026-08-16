@@ -221,21 +221,20 @@ src/
   virtual row when the backend has not returned one.
 
 ## Role-based access
-- Roles are normalized from the backend value to `admin` or `viewer` in `lib/roles.ts`.
+- Roles are normalized from the backend value to `admin`, `user`, or `guest` in `lib/roles.ts`.
 - `admin` can access all application pages.
-- `viewer` can access only read-only `/overview`, `/history-data`, and `/settings`.
+- `user` and `guest` can access only read-only `/overview`, `/history-data`, and `/settings`.
 - Admin-only pages are `/cloud-sync`, `/gateways`, `/meters`, `/history-events`,
   `/process-control`, `/process-rules`, and `/users`.
   They are filtered from the sidebar and protected by `src/proxy.ts` plus server-page guards.
-- If a viewer tries to open an admin-only URL directly, they are redirected to `/overview`.
+- If a non-admin user tries to open an admin-only URL directly, they are redirected to `/overview`.
 - `/settings` is available to every authenticated user. Every user can save only their own locale through the internal `PUT /api/v1/settings` proxy; only admins receive, see, or can update the global `timeZone` app config. Do not expose app-config controls or values to viewers.
 - Overview detail links to Gateway, Cloud Sync, and Meter management are administrator-only. Do not render them for viewers.
 - `/users` is also admin-only and uses the backend user endpoints through Next.js proxy routes.
 - Current backend user endpoints support list/create, enabled toggle, role update, delete, and
   admin password reset via `PUT /users/:id/password`. Username editing still needs a separate
-  endpoint if it is required later. The UI exposes only `admin` and `viewer`; `viewer` is mapped
-  to the backend's `user` role because the current database CHECK constraint allows `admin`,
-  `user`, and `readonly` only.
+  endpoint if it is required later. The UI exposes the backend roles `admin`, `user`, and `guest`
+  directly.
 
 ## Known TODOs / not yet implemented
 - Cloud-sync flush actions start the existing asynchronous uploader worker. The

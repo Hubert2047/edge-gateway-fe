@@ -1,9 +1,10 @@
-export type AppRole = 'admin' | 'viewer'
+export type AppRole = 'admin' | 'user' | 'guest'
 
 export function normalizeRole(role: unknown): AppRole | null {
     if (typeof role !== 'string') return null
     const normalized = role.toLowerCase()
     if (normalized === 'admin') return 'admin'
-    if (normalized === 'viewer' || normalized === 'user' || normalized === 'readonly') return 'viewer'
+    if (normalized === 'user') return 'user'
+    if (normalized === 'guest') return 'guest'
     return null
 }

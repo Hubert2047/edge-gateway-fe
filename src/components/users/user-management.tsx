@@ -37,7 +37,7 @@ export function UserManagement({ initialUsers }: { initialUsers: AppUser[] }) {
     const updateMutation = useUpdateUser()
     const deleteMutation = useDeleteUser()
     const resetPasswordMutation = useResetUserPassword()
-    const [form, setForm] = useState<CreateUserValues>({ username: '', password: '', role: 'viewer' })
+    const [form, setForm] = useState<CreateUserValues>({ username: '', password: '', role: 'user' })
     const [resetUser, setResetUser] = useState<AppUser | null>(null)
     const [resetPassword, setResetPassword] = useState('')
     const [drafts, setDrafts] = useState<Record<string, UserDraft>>({})
@@ -57,7 +57,7 @@ export function UserManagement({ initialUsers }: { initialUsers: AppUser[] }) {
         }
         createMutation.mutate(form, {
             onSuccess: () => {
-                setForm({ username: '', password: '', role: 'viewer' })
+                setForm({ username: '', password: '', role: 'user' })
                 toast.success(t('users.created'))
             },
             onError: (error) => toast.error(getErrorMessage(error, t('users.createFailed'))),
@@ -169,7 +169,8 @@ export function UserManagement({ initialUsers }: { initialUsers: AppUser[] }) {
                             onChange={(event) => setForm({ ...form, role: event.target.value as UserRole })}
                             className='w-42 control-input'>
                             <option value='admin'>{t('users.admin')}</option>
-                            <option value='viewer'>{t('users.viewer')}</option>
+                            <option value='user'>{t('users.user')}</option>
+                            <option value='guest'>{t('users.guest')}</option>
                         </select>
                     </Field>
                     <button
@@ -243,7 +244,8 @@ export function UserManagement({ initialUsers }: { initialUsers: AppUser[] }) {
                                                 }
                                                 className='control-input w-32'>
                                                 <option value='admin'>{t('users.admin')}</option>
-                                                <option value='viewer'>{t('users.viewer')}</option>
+                                                <option value='user'>{t('users.user')}</option>
+                                                <option value='guest'>{t('users.guest')}</option>
                                             </select>
                                         </td>
                                         <td className='px-4 py-3'>
