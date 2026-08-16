@@ -303,7 +303,11 @@ export function OverviewDashboard({
                     action={t('common.settings')}
                     canManage={canManage}
                     titleExtra={
-                        <Select value={selectedGatewayId} onValueChange={setSelectedGatewayId}>
+                        <Select
+                            value={selectedGatewayId}
+                            onValueChange={(value) => {
+                                if (value !== null) setSelectedGatewayId(value)
+                            }}>
                             <SelectTrigger
                                 aria-label={t('overview.gatewayFilter')}
                                 className='h-9 min-w-0 max-w-48 bg-white text-sm font-normal'>

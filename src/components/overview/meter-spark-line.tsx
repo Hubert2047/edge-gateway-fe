@@ -13,12 +13,37 @@ type SparklinePoint = ActivePowerPoint & {
 
 const MINUTE_MS = 60 * 1000
 const RANGE_MS = 24 * 60 * MINUTE_MS
+const TAIPEI_TIME_ZONE = 'Asia/Taipei'
+
+const bucketDateKeyFormatter = new Intl.DateTimeFormat('en-CA', {
+    timeZone: TAIPEI_TIME_ZONE,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+})
+
+const bucketDateLabelFormatter = new Intl.DateTimeFormat('zh-TW', {
+    timeZone: TAIPEI_TIME_ZONE,
+    month: 'numeric',
+    day: 'numeric',
+})
+
+const bucketTimeFormatter = new Intl.DateTimeFormat('zh-TW', {
+    timeZone: TAIPEI_TIME_ZONE,
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+})
 
 function formatBucketTime(bucket: string) {
-    const match = bucket.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/)
-    if (!match) return bucket
-    const [, , , , hour, minute] = match
-    return `${hour}:${minute}`
+    const date = new Date(bucket)
+    if (Number.isNaN(date.getTime())) return bucket
+
+    const time = bucketTimeFormatter.format(date)
+    const todayKey = bucketDateKeyFormatter.format(new Date())
+    if (bucketDateKeyFormatter.format(date) === todayKey) return time
+
+    return `${bucketDateLabelFormatter.format(date)} ${time}`
 }
 
 export function MeterSparkline({ points, loading, rangeEnd }: MeterSparklineProps) {
