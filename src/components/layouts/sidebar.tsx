@@ -2,13 +2,14 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { signOut, useSession } from 'next-auth/react'
+import { useSession } from 'next-auth/react'
 import { Menu, X } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useI18n } from '@/lib/i18n'
 import { normalizeRole } from '@/lib/roles'
 import { ROUTES } from '@/constances/route'
 import Image from 'next/image'
+import { logoutAndRedirect } from '@/lib/auth-client'
 type NavItem = { key: string; href: string; adminOnly?: boolean }
 
 const NAV_ITEMS: NavItem[] = [
@@ -119,7 +120,7 @@ export function Sidebar() {
                     </p>
                 </div>
                 <button
-                    onClick={() => signOut({ callbackUrl: '/login' })}
+                    onClick={logoutAndRedirect}
                     className='cursor-pointer bg-sidebar-accent px-3 py-1.5 text-xs hover:bg-sidebar-accent/80'>
                     {t('nav.logout')}
                 </button>
