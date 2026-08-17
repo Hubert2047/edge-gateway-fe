@@ -20,21 +20,21 @@ function alignStart(value: string, axis: TimeseriesAxis) {
 }
 
 function nextBucket(bucketTs: number, axis: TimeseriesAxis, timeZone: string) {
-    if (axis === 'minute') return bucketTs + 60 * 1000
-    if (axis === 'hour') return bucketTs + 60 * 60 * 1000
+    if (axis === 'minute') return bucketTs + 60
+    if (axis === 'hour') return bucketTs + 60 * 60
 
-    const parts = getLocalDateParts(new Date(bucketTs), timeZone)
+    const parts = getLocalDateParts(new Date(bucketTs * 1000), timeZone)
     const nextLocalDate =
         axis === 'day'
             ? new Date(Date.UTC(parts.year, parts.month - 1, parts.day + 1))
             : new Date(Date.UTC(parts.year, parts.month, 1))
-    return Date.parse(parseDateTimeLocal(formatWallClockDate(nextLocalDate), timeZone))
+    return Date.parse(parseDateTimeLocal(formatWallClockDate(nextLocalDate), timeZone)) / 1000
 }
 
 function emptyPoint(bucketTs: number, phaseMode: PhaseMode): TimeseriesPoint {
     return {
         bucketTs,
-        bucket: new Date(bucketTs).toISOString(),
+        bucket: new Date(bucketTs * 1000).toISOString(),
         sampleCount: 0,
         phaseMode,
         voltage: null,
@@ -56,8 +56,8 @@ export function fillTimeseriesBuckets(
     phaseMode: PhaseMode,
 ) {
     const pointByBucket = new Map(points.map((point) => [point.bucketTs, point]))
-    const endTs = Date.parse(parseDateTimeLocal(end, timeZone))
-    let bucketTs = Date.parse(parseDateTimeLocal(alignStart(start, axis), timeZone))
+    const endTs = Date.parse(parseDateTimeLocal(end, timeZone)) / 1000
+    let bucketTs = Date.parse(parseDateTimeLocal(alignStart(start, axis), timeZone)) / 1000
     const result: TimeseriesPoint[] = []
 
     while (bucketTs < endTs) {

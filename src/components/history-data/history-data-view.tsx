@@ -196,10 +196,10 @@ export function HistoryDataView({ gateways, meters }: Props) {
             return false
         }
         if (axis !== 'minute') return true
-        const start = Date.parse(parseDateTimeLocal(date, timeZone))
-        const end = Date.parse(parseDateTimeLocal(endDate, timeZone))
+        const start = Date.parse(parseDateTimeLocal(date, timeZone)) / 1000
+        const end = Date.parse(parseDateTimeLocal(endDate, timeZone)) / 1000
         if (!Number.isFinite(start) || !Number.isFinite(end)) return true
-        const buckets = Math.ceil((end - start) / (60 * 1000))
+        const buckets = Math.ceil((end - start) / 60)
         if (buckets > MAX_MINUTE_BUCKETS) {
             setSubmitted(false)
             toast.error(t('historyData.minuteRangeTooLong', { max: MAX_MINUTE_BUCKETS }))

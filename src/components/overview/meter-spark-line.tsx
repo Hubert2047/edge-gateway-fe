@@ -11,8 +11,8 @@ type SparklinePoint = ActivePowerPoint & {
     bucketTs: number
 }
 
-const MINUTE_MS = 60 * 1000
-const RANGE_MS = 24 * 60 * MINUTE_MS
+const MINUTE_SECONDS = 60
+const RANGE_SECONDS = 24 * 60 * MINUTE_SECONDS
 const TAIPEI_TIME_ZONE = 'Asia/Taipei'
 
 const bucketDateKeyFormatter = new Intl.DateTimeFormat('en-CA', {
@@ -47,10 +47,10 @@ function formatBucketTime(bucket: string) {
 }
 
 export function MeterSparkline({ points, loading, rangeEnd }: MeterSparklineProps) {
-    const rangeStart = rangeEnd - RANGE_MS
+    const rangeStart = rangeEnd - RANGE_SECONDS
     const actualPoints = points
         .filter((point): point is ActivePowerPoint & { activePower: number } => point.activePower != null)
-        .map((point) => ({ ...point, bucketTs: Date.parse(point.bucket) }))
+        .map((point) => ({ ...point, bucketTs: Date.parse(point.bucket) / 1000 }))
         .filter((point) => !Number.isNaN(point.bucketTs) && point.bucketTs >= rangeStart && point.bucketTs <= rangeEnd)
         .sort((a, b) => a.bucketTs - b.bucketTs)
     const maxPower = actualPoints.reduce((max, point) => Math.max(max, point.activePower), 0)
@@ -62,9 +62,9 @@ export function MeterSparkline({ points, loading, rangeEnd }: MeterSparklineProp
     const data: SparklinePoint[] = []
     for (const point of actualPoints) {
         const previous = data.at(-1)
-        if (previous?.activePower != null && point.bucketTs - previous.bucketTs > MINUTE_MS) {
-            const gapTs = previous.bucketTs + MINUTE_MS
-            data.push({ bucket: new Date(gapTs).toISOString(), bucketTs: gapTs, activePower: null })
+        if (previous?.activePower != null && point.bucketTs - previous.bucketTs > MINUTE_SECONDS) {
+            const gapTs = previous.bucketTs + MINUTE_SECONDS
+            data.push({ bucket: new Date(gapTs * 1000).toISOString(), bucketTs: gapTs, activePower: null })
         }
         data.push(point)
     }
