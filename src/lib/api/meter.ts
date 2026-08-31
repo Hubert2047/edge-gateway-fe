@@ -60,7 +60,7 @@ export function useUpdateMeter(gatewayId: number) {
 export function useDeleteMeter(gatewayId: number) {
     const queryClient = useQueryClient()
     return useMutation({
-        mutationFn: (macId: string) => deleteMeter(macId, gatewayId),
+        mutationFn: ({ macId, purgeHistory }: { macId: string; purgeHistory: boolean }) => deleteMeter(macId, gatewayId, purgeHistory),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: meterKeys.list(gatewayId) })
             queryClient.invalidateQueries({ queryKey: overviewKeys.meters() })
@@ -122,8 +122,9 @@ async function updateMetersBatch(values: MeterBatchUpdateValues[]): Promise<Mete
     })
 }
 
-async function deleteMeter(macId: string, gatewayId: number): Promise<void> {
-    return apiFetch<void>(METER_ENDPOINT.delete(macId, gatewayId), {
-        method: 'DELETE',
-    })
+async function deleteMeter(macId: string, gatewayId: number, purgeHistory: boolean): Promise<void> {
+	return apiFetch<void>(METER_ENDPOINT.delete(macId, gatewayId), {
+		method: 'DELETE',
+		body: JSON.stringify({ purgeHistory }),
+	})
 }

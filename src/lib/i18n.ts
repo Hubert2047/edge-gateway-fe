@@ -161,6 +161,15 @@ const zhTW: MessageTree = {
         partialSaved: '成功 {success} 筆，失敗 {failure} 筆',
         confirmSaveAll: '確認全部儲存',
         confirmSaveAllDescription: '確定要儲存{name}嗎？',
+        confirmDelete: '從閘道器移除智慧勾表',
+        confirmDeleteDescription: '確定要從閘道器移除「{name}」嗎？歷史資料將保留，且此操作會變更硬體設定。',
+        deleteGatewayUnreachable: '無法連線到閘道器，智慧勾表未被移除。請確認閘道器在線後再試。',
+        deleteGatewayRejected: '閘道器拒絕移除智慧勾表，請確認設備狀態後再試。',
+        deleteVirtualGateway: '虛擬閘道器的智慧勾表無法從硬體移除。',
+        purgeHistory: '永久刪除舊資料',
+        purgeHistoryDescription: '將在背景永久刪除這個智慧勾表的歷史讀值、彙總資料、設定歷程與未上傳任務，無法復原。',
+        deleted: '智慧勾表已從閘道器移除，歷史資料已保留。',
+        purgeQueued: '智慧勾表已從閘道器移除，歷史資料正在背景刪除。',
     },
 
     login: {
@@ -559,6 +568,15 @@ const en: MessageTree = {
         partialSaved: 'Succeeded: {success}, failed: {failure}',
         confirmSaveAll: 'Confirm save all',
         confirmSaveAllDescription: 'Save {name}?',
+        confirmDelete: 'Remove smart meter from gateway',
+        confirmDeleteDescription: 'Remove “{name}” from the gateway? Historical data will be retained and this changes the hardware configuration.',
+        deleteGatewayUnreachable: 'Cannot reach the gateway. The smart meter was not removed. Confirm the gateway is online and try again.',
+        deleteGatewayRejected: 'The gateway rejected the smart-meter removal. Check the device status and try again.',
+        deleteVirtualGateway: 'Smart meters on a virtual gateway cannot be removed from hardware.',
+        purgeHistory: 'Permanently delete historical data',
+        purgeHistoryDescription: 'Historical readings, rollups, configuration history, and pending upload tasks will be permanently deleted in the background and cannot be recovered.',
+        deleted: 'The smart meter was removed from the gateway and its historical data was retained.',
+        purgeQueued: 'The smart meter was removed from the gateway; its historical data is being deleted in the background.',
     },
 
     login: {
@@ -907,6 +925,9 @@ const ERROR_RULES: ErrorRule[] = [
     { test: (m) => m === 'unable to reach gateway', key: 'gateway.unableToReach' },
     { test: (m) => m === 'gateway admin login do not match, reset it manually', key: 'gateway.resetManually' },
     { test: (m) => m === 'this IP is already registered to another gateway', key: 'gateway.alreadyRegistered' },
+    { test: (m) => m === 'meter_delete_gateway_unreachable', key: 'meter.deleteGatewayUnreachable' },
+    { test: (m) => m === 'meter_delete_gateway_rejected', key: 'meter.deleteGatewayRejected' },
+    { test: (m) => m === 'meter_delete_virtual_gateway', key: 'meter.deleteVirtualGateway' },
     { test: (m) => m.toLowerCase().includes('minute_axis_max_buckets'), key: 'historyData.maxBuckets' },
     { test: (m) => m.toLowerCase() === 'end must be after start', key: 'historyData.endMustBeAfterStart' },
 ]

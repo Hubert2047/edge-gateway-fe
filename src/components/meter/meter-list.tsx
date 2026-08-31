@@ -79,7 +79,7 @@ function validateForm(form: MeterFormValues, meterType: string): FormErrors {
 
 type PendingAction =
     | { type: 'save'; macId: string; displayName: string }
-    | { type: 'delete'; macId: string; displayName: string }
+    | { type: 'delete'; macId: string; displayName: string; purgeHistory: boolean }
     | { type: 'saveAll'; macIds: string[]; displayName: string }
     | null
 
@@ -152,7 +152,7 @@ export function MeterList({
 
     function requestDelete(meter: Meter) {
         const { form } = getRowForm(meter)
-        setPendingAction({ type: 'delete', macId: meter.macId, displayName: form.name || meter.macId })
+        setPendingAction({ type: 'delete', macId: meter.macId, displayName: form.name || meter.macId, purgeHistory: false })
     }
 
     function requestSaveAll() {
@@ -199,8 +199,9 @@ export function MeterList({
 
         if (action.type === 'delete') {
             setDeletingMacId(action.macId)
-            deleteMeterMutation.mutate(action.macId, {
+            deleteMeterMutation.mutate({ macId: action.macId, purgeHistory: action.purgeHistory }, {
                 onSettled: () => setDeletingMacId((prev) => (prev === action.macId ? null : prev)),
+                onSuccess: () => toast.success(action.purgeHistory ? t('meter.purgeQueued') : t('meter.deleted')),
                 onError: (err) => toast.error(getErrorMessage(err, t('toast.deleteFailed'))),
             })
         }
@@ -228,7 +229,7 @@ export function MeterList({
 
     const dialogText = {
         save: { title: t('common.confirmSave'), desc: (name: string) => t('common.confirmSaveDescription', { name }) },
-        delete: { title: t('common.confirmDelete'), desc: (name: string) => t('common.confirmDeleteDescription', { name }) },
+        delete: { title: t('meter.confirmDelete'), desc: (name: string) => t('meter.confirmDeleteDescription', { name }) },
         saveAll: { title: t('meter.confirmSaveAll'), desc: (name: string) => t('meter.confirmSaveAllDescription', { name }) },
     } as const
 
@@ -413,14 +414,14 @@ export function MeterList({
                                                     onClick={() => requestSave(meter)}>
                                                     {saving ? <Loader2 className='h-4 w-4 animate-spin' /> : t('common.save')}
                                                 </Button>
-                                                {/* <Button
+                                                <Button
                                                     size='sm'
                                                     className='w-16 bg-rose-50 text-rose-600 hover:bg-rose-100 border border-rose-200'
                                                     variant='ghost'
                                                     disabled={rowBusy}
                                                     onClick={() => requestDelete(meter)}>
                                                     {deleting ? <Loader2 className='h-4 w-4 animate-spin' /> : t('common.delete')}
-                                                </Button> */}
+                                                </Button>
                                             </div>
                                         </td>
                                     </tr>
@@ -439,6 +440,18 @@ export function MeterList({
                             {pendingAction ? dialogText[pendingAction.type].desc(pendingAction.displayName) : ''}
                         </AlertDialogDescription>
                     </AlertDialogHeader>
+                    {pendingAction?.type === 'delete' && (
+                        <label className='flex cursor-pointer items-start gap-3 rounded-md border border-destructive/40 bg-destructive/5 p-3 text-sm'>
+                            <Checkbox
+                                checked={pendingAction.purgeHistory}
+                                onCheckedChange={(checked) => setPendingAction({ ...pendingAction, purgeHistory: checked === true })}
+                            />
+                            <span>
+                                <span className='font-medium text-destructive'>{t('meter.purgeHistory')}</span>
+                                <span className='mt-1 block text-muted-foreground'>{t('meter.purgeHistoryDescription')}</span>
+                            </span>
+                        </label>
+                    )}
                     <AlertDialogFooter>
                         <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
                         <AlertDialogAction
