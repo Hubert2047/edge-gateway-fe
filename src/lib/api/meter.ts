@@ -64,6 +64,7 @@ export function useDeleteMeter(gatewayId: number) {
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: meterKeys.list(gatewayId) })
             queryClient.invalidateQueries({ queryKey: overviewKeys.meters() })
+            queryClient.invalidateQueries({ queryKey: ['gateways'] })
         },
     })
 }

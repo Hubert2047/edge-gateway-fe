@@ -17,11 +17,13 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<Params
     })
 }
 
-export async function DELETE(_req: NextRequest, { params }: { params: Promise<Params> }) {
+export async function DELETE(req: NextRequest, { params }: { params: Promise<Params> }) {
     return handleRoute(async () => {
         const { meterID, id } = await params
+        const body = await req.json()
         return serverApiFetch<void>(METER_ENDPOINT.delete(meterID, id), {
             method: 'DELETE',
+            body: JSON.stringify(body),
         })
     })
 }
