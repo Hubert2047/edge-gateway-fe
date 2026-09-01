@@ -8,7 +8,10 @@ export async function proxy(request: NextRequest) {
         return NextResponse.next()
     }
 
-    const token = await getToken({ req: request })
+    const token = await getToken({
+        req: request,
+        secureCookie: request.nextUrl.protocol === 'https:',
+    })
     if (!token) {
         return NextResponse.redirect(new URL('/login', request.url))
     }
